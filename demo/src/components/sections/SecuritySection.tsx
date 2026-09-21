@@ -10,11 +10,11 @@ export const SecuritySection: React.FC = () => {
         <div className="sec-head center" data-reveal>
           <div className="eyebrow">
             <span className="eb-dot" />
-            DATA SOVEREIGNTY &amp; PRIVACY
+            SECURITY
           </div>
-          <h2 className="h2">100% BYOK. Zero Vendor Lock-in.</h2>
+          <h2 className="h2">Your keys. Your database.</h2>
           <p className="lead">
-            Bring Your Own Keys. Your database credentials stay encrypted on your hardware with direct connection to your private Supabase instance.
+            Your credentials stay encrypted locally on your machine. Connect directly to your private Supabase.
           </p>
         </div>
 
@@ -33,10 +33,10 @@ export const SecuritySection: React.FC = () => {
 
               <div className="bk-keys">
                 <span className="bk-key">
-                  <KeyRound size={13} /> Supabase URL + Anon Key
+                  <KeyRound size={13} /> Supabase URL &amp; Key
                 </span>
                 <span className="bk-key">
-                  <KeyRound size={13} /> OpenAI / Anthropic Key
+                  <KeyRound size={13} /> AI API Key
                 </span>
               </div>
 
@@ -44,8 +44,8 @@ export const SecuritySection: React.FC = () => {
 
               <div className="bk-node">
                 <HardDrive size={18} className="text-accent" />
-                <b>Local Keyring Storage</b>
-                <small>Secured on your workstation NVMe</small>
+                <b>Local Keyring</b>
+                <small>Secured on your local NVMe</small>
               </div>
 
               <div className="bk-link" />
@@ -53,10 +53,10 @@ export const SecuritySection: React.FC = () => {
               <div className="bk-split">
                 <div className="bk-node">
                   <b>Local SQLite</b>
-                  <small>0ms local SSD persistence</small>
+                  <small>0ms SSD storage</small>
                 </div>
                 <div className="bk-node">
-                  <b>Your Supabase</b>
+                  <b>Private Supabase</b>
                   <small>Mesh sync across stores</small>
                 </div>
               </div>

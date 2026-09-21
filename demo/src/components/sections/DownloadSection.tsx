@@ -10,11 +10,11 @@ export const DownloadSection: React.FC = () => {
         <div className="sec-head center" data-reveal>
           <div className="eyebrow">
             <span className="eb-dot" />
-            03 // DEPLOYMENT
+            DOWNLOAD
           </div>
-          <h2 className="h2">Deploy Kivo to Your Store Terminals.</h2>
+          <h2 className="h2">Ready to run your store?</h2>
           <p className="lead">
-            Lightning-fast, crash-resilient 64-bit desktop application. Free, open-source, and self-sovereign.
+            Download Kivo v1.4.0 for Windows 10 &amp; 11. Free, local, and open source.
           </p>
         </div>
 
@@ -26,10 +26,10 @@ export const DownloadSection: React.FC = () => {
             </div>
 
             <h3 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--heading)' }}>
-              Kivo Desktop for Windows
+              Kivo for Windows
             </h3>
             <p style={{ fontSize: '14px', color: 'var(--body)', marginTop: '6px', marginBottom: '26px' }}>
-              Production Release v1.4.0 · Compatible with Windows 10 &amp; 11 (64-bit MSI / Portable)
+              Release v1.4.0 · 64-bit MSI &amp; Portable
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -41,7 +41,7 @@ export const DownloadSection: React.FC = () => {
                 style={{ width: '100%', justifyContent: 'center', height: '52px', fontSize: '15.5px' }}
               >
                 <Download size={18} />
-                <span>Download v1.4.0 Installer (.msi)</span>
+                <span>Download Installer (.msi)</span>
               </a>
 
               <a
@@ -52,14 +52,14 @@ export const DownloadSection: React.FC = () => {
                 style={{ width: '100%', justifyContent: 'center', height: '48px', fontSize: '14.5px' }}
               >
                 <GithubIcon size={16} />
-                <span>View Source Code on GitHub</span>
+                <span>View on GitHub</span>
               </a>
             </div>
 
-            {/* Technical Trust Strip (No pills) */}
+            {/* Technical Trust Strip */}
             <div className="download-spec-row">
               <span className="spec-meta-item">
-                <span className="spec-meta-dot g" /> 100% OFFLINE ENGINE
+                <span className="spec-meta-dot g" /> 100% OFFLINE
               </span>
               <span className="spec-meta-sep">/</span>
               <span className="spec-meta-item">

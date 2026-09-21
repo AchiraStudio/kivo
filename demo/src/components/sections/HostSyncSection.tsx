@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Smartphone,
   Tablet,
@@ -97,14 +97,14 @@ export const HostSyncSection: React.FC = () => {
         {/* Section Header */}
         <div className="sec-head center" data-reveal>
           <div className="eyebrow">
-            <span className="eb-dot"></span>MULTI-DEVICE HOST SYSTEM
+            <span className="eb-dot"></span>MULTI-DEVICE LAN
           </div>
           <h2 className="h2">
-            Turn Any Phone or Tablet <br className="hide-m" />
-            <span className="grad">into a Cashier Instantly.</span>
+            Turn any phone or tablet <br className="hide-m" />
+            <span className="grad">into a register.</span>
           </h2>
           <p className="lead" style={{ maxWidth: '640px', margin: '0 auto' }}>
-            No app downloads. No passwords to remember. Just scan the host QR code and your staff can immediately ring up sales, take orders at tables, and check inventory.
+            Scan the host QR code from any mobile browser. Ring up orders and check inventory on the shop floor with zero install.
           </p>
         </div>
 
@@ -134,7 +134,7 @@ export const HostSyncSection: React.FC = () => {
                   onClick={() => setDeviceType('tablet')}
                 >
                   <Tablet size={14} />
-                  <span>Tablet / iPad</span>
+                  <span>Tablet</span>
                 </button>
                 <button
                   type="button"
@@ -155,7 +155,7 @@ export const HostSyncSection: React.FC = () => {
               <div className="terminal-topbar">
                 <div className="term-indicator">
                   <Radio size={14} className="animate-pulse" style={{ color: 'var(--success)' }} />
-                  <span className="term-title">Kivo Host PC (Main Server)</span>
+                  <span className="term-title">Host PC Server</span>
                 </div>
                 <span className="term-ip-pill mono">192.168.1.15:1420</span>
               </div>
@@ -167,7 +167,7 @@ export const HostSyncSection: React.FC = () => {
                     <Key size={16} />
                   </div>
                   <div className="hsb-meta">
-                    <span className="hsb-title">Auto-Login Active</span>
+                    <span className="hsb-title">Instant LAN Session</span>
                     <span className="hsb-desc">Connected devices sign in automatically as <b>"Admin Store"</b></span>
                   </div>
                 </div>
@@ -180,10 +180,10 @@ export const HostSyncSection: React.FC = () => {
                   </div>
                   <div className="qr-instructions">
                     <span className="qr-lead">Scan to Connect</span>
-                    <span className="qr-sub">Zero-lag pairing via standard Wi-Fi</span>
+                    <span className="qr-sub">Instant browser terminal via local Wi-Fi</span>
                     <div className="qr-latency-tag">
                       <Zap size={12} style={{ color: 'var(--warning)' }} />
-                      <span>Sub-millisecond SQLite replication</span>
+                      <span>Sub-millisecond local replication</span>
                     </div>
                   </div>
                 </div>
@@ -191,7 +191,7 @@ export const HostSyncSection: React.FC = () => {
                 {/* Live Host Ledger Feed */}
                 <div className="host-ledger-feed">
                   <div className="feed-header">
-                    <span>Host Live Ledger (SQLite WAL)</span>
+                    <span>Live Host Ledger (SQLite WAL)</span>
                     <span className={`sync-flash ${lastSyncSignal ? 'flashing' : ''}`}>
                       <Wifi size={12} /> {lastSyncSignal ? 'Syncing...' : 'Realtime'}
                     </span>

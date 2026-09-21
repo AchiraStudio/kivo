@@ -18,11 +18,11 @@ export const TechArchitecture: React.FC = () => {
         <div className="sec-head center" data-reveal>
           <div className="eyebrow">
             <span className="eb-dot" />
-            02 // NATIVE ARCHITECTURE
+            ARCHITECTURE
           </div>
-          <h2 className="h2">Native Speed. Minimal Footprint.</h2>
+          <h2 className="h2">Native speed. 15MB binary.</h2>
           <p className="lead">
-            No bloated Electron or Chromium runtimes. A pure Rust engine powering an embedded SQLite database directly on your NVMe SSD.
+            Built with Rust and Tauri v2 on local SQLite. No Electron, no Chromium runtime overhead.
           </p>
         </div>
 
@@ -34,8 +34,8 @@ export const TechArchitecture: React.FC = () => {
                 <LayoutDashboard size={20} />
               </span>
               <div>
-                <b>React 19 + TypeScript UI</b>
-                <small>60fps fluid desktop interface running with native hardware acceleration</small>
+                <b>React 19 + TypeScript</b>
+                <small>60fps desktop UI with hardware acceleration</small>
               </div>
             </div>
 
@@ -46,8 +46,8 @@ export const TechArchitecture: React.FC = () => {
                 <Cpu size={20} />
               </span>
               <div>
-                <b>Tauri v2 · Rust Native Engine</b>
-                <small>Ultra-lean 15MB binary footprint with memory-safe concurrency</small>
+                <b>Tauri v2 + Rust</b>
+                <small>15MB binary footprint with memory-safe concurrency</small>
               </div>
             </div>
 
@@ -58,8 +58,8 @@ export const TechArchitecture: React.FC = () => {
                 <Database size={20} />
               </span>
               <div>
-                <b>Local SQLite (WAL Mode)</b>
-                <small>Sub-millisecond ACID transactions committed locally to SSD</small>
+                <b>SQLite (WAL Mode)</b>
+                <small>Sub-millisecond ACID transactions on local SSD</small>
               </div>
             </div>
 
@@ -73,39 +73,39 @@ export const TechArchitecture: React.FC = () => {
               <div className="bk-node">
                 <Cloud size={16} className="text-accent" />
                 <b>Supabase</b>
-                <small>Cloud mesh sync</small>
+                <small>Cloud sync</small>
               </div>
               <div className="bk-node">
                 <Sparkles size={16} className="text-warning" />
                 <b>Kivo AI</b>
-                <small>100% BYOK LLM</small>
+                <small>BYOK Copilot</small>
               </div>
             </div>
           </div>
 
-          {/* Core Technology Spec Badges (No pills) */}
+          {/* Core Technology Spec Badges */}
           <div data-reveal style={{ '--d': '100ms' } as React.CSSProperties}>
             <div className="tech-badge-deck" style={{ justifyContent: 'center' }}>
               <div className="tech-badge">
-                <Cpu size={14} /> <span>CORE // Rust</span>
+                <Cpu size={14} /> <span>Rust Core</span>
               </div>
               <div className="tech-badge">
-                <LayoutDashboard size={14} /> <span>FRAMEWORK // Tauri v2</span>
+                <LayoutDashboard size={14} /> <span>Tauri v2</span>
               </div>
               <div className="tech-badge">
-                <Database size={14} /> <span>PERSISTENCE // SQLite WAL</span>
+                <Database size={14} /> <span>SQLite WAL</span>
               </div>
               <div className="tech-badge">
-                <Atom size={14} /> <span>UI // React 19</span>
+                <Atom size={14} /> <span>React 19</span>
               </div>
               <div className="tech-badge">
-                <Braces size={14} /> <span>SAFETY // TypeScript</span>
+                <Braces size={14} /> <span>TypeScript</span>
               </div>
               <div className="tech-badge">
-                <Cloud size={14} /> <span>MESH // Supabase</span>
+                <Cloud size={14} /> <span>Supabase</span>
               </div>
               <div className="tech-badge">
-                <Boxes size={14} /> <span>STATE // Zustand</span>
+                <Boxes size={14} /> <span>Zustand</span>
               </div>
             </div>
 

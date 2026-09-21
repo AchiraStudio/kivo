@@ -10,7 +10,6 @@ import {
   Sparkles,
   ArrowUpRight,
 } from 'lucide-react';
-import { scrollToTarget } from '../../utils/scroll';
 
 interface PillarItem {
   id: string;
@@ -29,90 +28,90 @@ const PILLARS: PillarItem[] = [
     id: 'pos',
     tabId: 'pos',
     name: 'Point of Sale',
-    headline: 'Sub-Millisecond Barcode Checkout',
-    summary: 'Instant product search, split tender across Cash, Cards, and QRIS, and direct ESC/POS thermal printing.',
+    headline: 'Barcode Checkout & Thermal Printing',
+    summary: 'Instant product search, split tender (Cash, QRIS, Cards), and raw ESC/POS thermal printing.',
     telemetryTag: '0ms Commit',
     icon: ShoppingCart,
     color: 'var(--primary)',
     highlights: [
-      { label: '0-Delay Search', detail: 'Instant barcode scan & 2-char fuzzy product search' },
-      { label: 'Split Tender', detail: 'Combine Cash, QRIS, Credit/Debit, and Store Credit' },
-      { label: 'Hardware Native', detail: 'Direct raw ESC/POS printing & cash drawer auto-kick' },
+      { label: 'Instant Scan', detail: '0-delay barcode scan and product lookup' },
+      { label: 'Split Tender', detail: 'Combine Cash, QRIS, Cards, and Store Credit' },
+      { label: 'Hardware Native', detail: 'Direct ESC/POS receipt prints and drawer kick' },
     ],
   },
   {
     id: 'inventory',
     tabId: 'inventory',
-    name: 'Multi-Unit Catalog',
-    headline: 'Hierarchical Box → Pack → Pcs Conversions',
-    summary: 'Automated tiered conversions, FIFO expiry batch lifecycles, and rapid reconciliation stock opname.',
+    name: 'Inventory & Units',
+    headline: 'Multi-Tier Units & Batch FIFO',
+    summary: 'Automated Box → Pack → Pcs conversions, strict FIFO expiry lot tracking, and rapid stock opname.',
     telemetryTag: '3-Tier Units',
     icon: Package,
     color: 'var(--accent)',
     highlights: [
-      { label: 'Nested Units', detail: 'Carton → Inner Pack → Base PCS auto-conversion' },
-      { label: 'Batch Lot & Expiry', detail: 'Strict FIFO tracking with proactive expiry warnings' },
-      { label: 'Stock Opname', detail: 'Variance tracking with single-click ledger reconciliation' },
+      { label: 'Unit Ratios', detail: 'Automated Box, Pack, and Pcs conversion tiers' },
+      { label: 'Batch Expiry', detail: 'FIFO tracking with proactive expiry warnings' },
+      { label: 'Stock Opname', detail: 'Real-time variance reconciliation' },
     ],
   },
   {
     id: 'accounting',
     tabId: 'reports',
     name: 'General Ledger',
-    headline: 'Real-Time Double-Entry Books',
-    summary: 'Every register sale, receiving slip, and return automatically creates balanced debit-credit journal vouchers.',
+    headline: 'Automated Double-Entry Ledger',
+    summary: 'Every register sale, receipt, and return automatically creates balanced journal vouchers.',
     telemetryTag: 'Double-Entry',
     icon: BookOpen,
     color: 'var(--warning)',
     highlights: [
-      { label: 'Auto Journaling', detail: 'Zero manual bookkeeping needed for daily operations' },
+      { label: 'Auto Journaling', detail: 'Zero manual bookkeeping for daily transactions' },
       { label: 'Live Financials', detail: 'Instant Profit & Loss, Balance Sheet, and Trial Balance' },
-      { label: 'Standard COA', detail: 'Standard Chart of Accounts for Assets, Liabilities & Equity' },
+      { label: 'Standard COA', detail: 'Full Chart of Accounts for Assets, Liabilities & Equity' },
     ],
   },
   {
     id: 'purchasing',
     tabId: 'purchasing',
     name: 'Procurement',
-    headline: 'Seamless PO to Goods Receiving',
-    summary: 'Purchase orders, partial shipment receipts, automatic COGS calculations, and transparent accounts payable.',
+    headline: 'Purchase Orders & Landed Cost',
+    summary: 'Purchase orders, partial receiving slips, automated COGS updates, and payables aging.',
     telemetryTag: 'Auto COGS',
     icon: Truck,
     color: 'var(--success)',
     highlights: [
-      { label: 'Supplier POs', detail: 'Create, issue, and track purchase orders effortlessly' },
-      { label: 'GRN Receiving', detail: 'Inspect goods received with immediate inventory increment' },
-      { label: 'Payables Aging', detail: 'Track supplier invoices and due dates without surprises' },
+      { label: 'Supplier POs', detail: 'Create and track purchase orders with ease' },
+      { label: 'Goods Receiving', detail: 'Inspect shipments with immediate stock increments' },
+      { label: 'Payables Aging', detail: 'Track supplier invoices and due dates' },
     ],
   },
   {
     id: 'customers',
     tabId: 'customers',
     name: 'Loyalty & CRM',
-    headline: 'Dynamic Member Rewards & VIP Tiers',
-    summary: 'Cross-branch customer profiles, automated points accrual, credit limits, and automated promo rules.',
+    headline: 'Customer Profiles & VIP Tiers',
+    summary: 'Cross-branch customer profiles, reward points accrual, and safe store credit limits.',
     telemetryTag: 'VIP Tiers',
     icon: Users,
     color: 'var(--primary)',
     highlights: [
-      { label: 'Omnichannel Profiles', detail: 'Track lifetime spend and purchase frequency across stores' },
-      { label: 'Points Accrual', detail: 'Automatic reward points redeemable directly at checkout' },
-      { label: 'Store Credit Limit', detail: 'Safe credit lines for trusted wholesale and VIP clients' },
+      { label: 'Store Profiles', detail: 'Track customer lifetime spend and visits' },
+      { label: 'Reward Points', detail: 'Automated points redemption at register' },
+      { label: 'Credit Lines', detail: 'Store credit for trusted wholesale accounts' },
     ],
   },
   {
     id: 'cloud',
     tabId: 'dashboard',
     name: 'Supabase Mesh',
-    headline: '100% BYOK Multi-Branch Cloud Sync',
-    summary: 'Direct connection to your private Supabase database. Your data stays sovereign on your local SSD and replicates when online.',
+    headline: 'Private Supabase Cloud Sync',
+    summary: 'Direct connection to your private Supabase database. Local-first persistence with sovereign cloud sync.',
     telemetryTag: 'BYOK Sync',
     icon: Cloud,
     color: 'var(--accent)',
     highlights: [
-      { label: 'Zero Middleman', detail: 'Connect directly to your private Supabase credentials' },
-      { label: 'Local-First SSD', detail: 'Transactions commit locally first, then replicate in background' },
-      { label: 'Multi-Store Mesh', detail: 'Centralized catalog and branch reports across all outlets' },
+      { label: '100% BYOK', detail: 'Direct connection to your private credentials' },
+      { label: 'Local-First SSD', detail: 'Instant local commits, background cloud sync' },
+      { label: 'Multi-Store', detail: 'Centralized catalog and branch reports' },
     ],
   },
 ];
@@ -122,27 +121,22 @@ export const FeatureGrid: React.FC = () => {
   const active = PILLARS[activeIdx];
   const ActiveIcon = active.icon;
 
-  const jumpToInteractiveApp = (tabId: string) => {
-    window.dispatchEvent(new CustomEvent('kivo-switch-tab', { detail: tabId }));
-    scrollToTarget('appWin', { offset: 80 });
-  };
-
   return (
     <section className="section" id="features">
       <div className="wrap">
-        {/* Section Header with Refined Framing */}
+        {/* Section Header */}
         <div className="sec-head center" data-reveal>
           <div className="eyebrow">
             <span className="eb-dot" />
-            01 // CAPABILITY MATRIX
+            CAPABILITIES
           </div>
-          <h2 className="h2">Unified Architecture. Zero Bloat.</h2>
+          <h2 className="h2">All-in-one store engine.</h2>
           <p className="lead">
-            Every store capability running on a single native local engine. Switch modules with zero latency.
+            From barcode checkout to double-entry ledger — zero latency, zero bloat.
           </p>
         </div>
 
-        {/* Architectural Segmented Deck (No pill buttons) */}
+        {/* Architectural Segmented Deck */}
         <div className="pillar-stage" data-reveal>
           <div className="deck-tabs" role="tablist">
             {PILLARS.map((p, idx) => {
@@ -192,22 +186,21 @@ export const FeatureGrid: React.FC = () => {
               ))}
             </div>
 
-            {/* Direct Action Link to Interactive App */}
+            {/* Direct Action Link */}
             <div className="deck-footer">
-              <button
-                type="button"
+              <a
+                href="#download"
                 className="btn btn-primary"
-                onClick={() => jumpToInteractiveApp(active.tabId)}
               >
                 <Sparkles size={15} />
-                <span>Launch {active.name} in Live App</span>
+                <span>Get Started with Kivo</span>
                 <ArrowRight size={14} />
-              </button>
+              </a>
             </div>
           </div>
         </div>
 
-        {/* Architectural Monolith Tiles (No pill badges) */}
+        {/* Monolith Quick-Select Grid */}
         <div className="deck-card-grid" data-reveal>
           {PILLARS.map((item, idx) => {
             const Icon = item.icon;
@@ -236,7 +229,7 @@ export const FeatureGrid: React.FC = () => {
                 <h4 className="deck-card-name">{item.name}</h4>
                 <p className="deck-card-summary">{item.summary}</p>
                 <div className="deck-card-arrow">
-                  <span>Explore Module</span>
+                  <span>View Details</span>
                   <ArrowUpRight size={14} />
                 </div>
               </div>

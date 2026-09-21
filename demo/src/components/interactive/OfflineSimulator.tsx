@@ -130,11 +130,11 @@ export const OfflineSimulator: React.FC = () => {
         <div className="sec-head center" data-reveal>
           <div className="eyebrow">
             <span className="eb-dot" />
-            <span>OFFLINE RESILIENCE</span>
+            <span>OFFLINE ENGINE</span>
           </div>
-          <h2 className="h2">Cut the Wi-Fi. Watch it Keep Running.</h2>
+          <h2 className="h2">Cut the Wi-Fi. It keeps running.</h2>
           <p className="lead">
-            Transactions commit locally to NVMe SSD in 0ms. When connectivity returns, pending outbox records drain to Supabase automatically.
+            Transactions commit locally in 0ms. Outbox records drain to Supabase automatically when back online.
           </p>
         </div>
 
@@ -144,7 +144,7 @@ export const OfflineSimulator: React.FC = () => {
             <div className="off-state">
               <span className={`dot ${isOnline ? 'g' : 'w'}`} />
               <span style={{ fontWeight: 800, color: 'var(--heading)', fontSize: 13 }}>
-                {isOnline ? 'ONLINE · CONNECTED TO SUPABASE CLOUD' : 'OFFLINE · OPERATING 100% ON LOCAL SQLITE'}
+                {isOnline ? 'ONLINE · Supabase Connected' : 'OFFLINE · Local SQLite'}
               </span>
             </div>
 
@@ -177,7 +177,7 @@ export const OfflineSimulator: React.FC = () => {
                 disabled={isRunningScenario}
               >
                 <Zap size={14} />
-                <span>+ Cashier Sale</span>
+                <span>+ New Sale</span>
               </button>
 
               <button
@@ -187,7 +187,7 @@ export const OfflineSimulator: React.FC = () => {
                 disabled={isRunningScenario}
               >
                 <Play size={13} />
-                <span>{isRunningScenario ? 'Simulating Outage…' : 'Simulate Outage ➔ Recovery'}</span>
+                <span>{isRunningScenario ? 'Simulating…' : 'Simulate Outage'}</span>
               </button>
             </div>
           </div>
@@ -195,42 +195,42 @@ export const OfflineSimulator: React.FC = () => {
           {/* Visual Data Flow Nodes */}
           <div className="off-flow">
             <div className={`fnode ${hotPos ? 'hot' : ''}`}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--dim)' }}>1. POS TERMINAL</div>
-              <p style={{ fontWeight: 800, color: 'var(--heading)', margin: '4px 0 2px' }}>Cashier Counter</p>
-              <span style={{ fontSize: 11, color: 'var(--body)' }}>Thermal Receipt &amp; Drawer</span>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--dim)' }}>1. TERMINAL</div>
+              <p style={{ fontWeight: 800, color: 'var(--heading)', margin: '4px 0 2px' }}>Cashier POS</p>
+              <span style={{ fontSize: 11, color: 'var(--body)' }}>Local Checkout</span>
             </div>
 
             <span className="farrow">➔</span>
 
             <div className={`fnode ${hotSql ? 'hot' : ''}`}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)' }}>2. LOCAL SQLITE</div>
-              <p style={{ fontWeight: 800, color: 'var(--heading)', margin: '4px 0 2px' }}>WAL Mode 0ms</p>
-              <span style={{ fontSize: 11, color: 'var(--body)' }}>Instant Local NVMe Write</span>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)' }}>2. SQLITE WAL</div>
+              <p style={{ fontWeight: 800, color: 'var(--heading)', margin: '4px 0 2px' }}>0ms Latency</p>
+              <span style={{ fontSize: 11, color: 'var(--body)' }}>Local NVMe Write</span>
             </div>
 
             <span className="farrow">➔</span>
 
             <div className={`fnode ${hotQueue ? 'hot' : ''}`}>
               <div style={{ fontSize: 11, fontWeight: 800, color: queue.length > 0 ? 'var(--warning)' : 'var(--dim)' }}>
-                3. SYNC QUEUE
+                3. SYNC BUFFER
               </div>
               <p style={{ fontWeight: 800, color: 'var(--heading)', margin: '4px 0 2px' }}>
                 {queue.length} Pending
               </p>
-              <span style={{ fontSize: 11, color: 'var(--body)' }}>Auto-Persisted Buffer</span>
+              <span style={{ fontSize: 11, color: 'var(--body)' }}>Persisted Outbox</span>
             </div>
 
             <span className="farrow">➔</span>
 
             <div className={`fnode ${hotCloud ? 'hot' : ''} ${!isOnline ? 'down' : ''}`}>
               <div style={{ fontSize: 11, fontWeight: 800, color: isOnline ? 'var(--primary)' : 'var(--danger)' }}>
-                4. KIVO CLOUD
+                4. SUPABASE
               </div>
               <p style={{ fontWeight: 800, color: 'var(--heading)', margin: '4px 0 2px' }}>
-                {isOnline ? 'Supabase Cloud' : 'Connection Dropped'}
+                {isOnline ? 'Cloud Synced' : 'Connection Dropped'}
               </p>
               <span style={{ fontSize: 11, color: 'var(--body)' }}>
-                {isOnline ? 'Mesh Synced Across Stores' : 'Waiting for Recovery…'}
+                {isOnline ? 'Mesh Synced' : 'Waiting for Wi-Fi…'}
               </span>
             </div>
           </div>
@@ -242,23 +242,23 @@ export const OfflineSimulator: React.FC = () => {
               <div className="off-stats">
                 <div className="stat-card">
                   <div className="v">{localSales}</div>
-                  <div className="l">Local Transactions (SQLite)</div>
+                  <div className="l">Local Sales</div>
                 </div>
                 <div className="stat-card">
                   <div className="v" style={{ color: queue.length > 0 ? 'var(--warning)' : 'var(--heading)' }}>
                     {queue.length}
                   </div>
-                  <div className="l">Pending Offline Queue</div>
+                  <div className="l">Queued Buffer</div>
                 </div>
                 <div className="stat-card">
                   <div className="v" style={{ color: 'var(--success)' }}>{syncedSales}</div>
-                  <div className="l">Synced to Cloud Mesh</div>
+                  <div className="l">Cloud Synced</div>
                 </div>
               </div>
 
               <div style={{ marginTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
-                  <span>Transactions Awaiting Sync:</span>
+                  <span>Outbox Queue:</span>
                   <span className="mono" style={{ color: queue.length > 0 ? 'var(--warning)' : 'var(--dim)' }}>
                     {queue.length} pending
                   </span>
@@ -266,7 +266,7 @@ export const OfflineSimulator: React.FC = () => {
                 <div className="queue-box" id="queueList">
                   {queue.length === 0 ? (
                     <div className="qempty">
-                      Queue empty — all local transactions are 100% synchronized with Cloud.
+                      Queue empty — all transactions synced with cloud.
                     </div>
                   ) : (
                     queue.map(item => (

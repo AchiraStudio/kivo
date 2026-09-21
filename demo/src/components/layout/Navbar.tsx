@@ -6,7 +6,6 @@ import {
   X,
   Download,
   Sparkles,
-  Monitor,
   ShieldCheck,
   Smartphone,
   Cpu,
@@ -25,11 +24,10 @@ interface NavLinkItem {
 }
 
 const NAV_LINKS: NavLinkItem[] = [
-  { label: 'Showcase', href: '#features', icon: Sparkles },
-  { label: 'Live App', href: '#appWin', isLive: true, icon: Monitor },
-  { label: 'Offline Engine', href: '#offline', icon: ShieldCheck },
-  { label: 'Multi-Device Host', href: '#host', icon: Smartphone },
-  { label: 'AI Intelligence', href: '#ai', icon: Cpu },
+  { label: 'Features', href: '#features', icon: Sparkles },
+  { label: 'Offline', href: '#offline', icon: ShieldCheck },
+  { label: 'LAN Host', href: '#host', icon: Smartphone },
+  { label: 'AI Copilot', href: '#ai', icon: Cpu },
   { label: 'Hardware', href: '#hardware', icon: Printer },
   { label: 'Architecture', href: '#how', icon: Layers },
 ];
@@ -45,7 +43,6 @@ export const Navbar: React.FC = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('top');
-  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -70,12 +67,12 @@ export const Navbar: React.FC = () => {
     };
   }, [mobileOpen]);
 
-  // Scroll spy & reading progress
+  // Active section spy
   useEffect(() => {
-    const sections = ['top', 'features', 'appWin', 'offline', 'host', 'ai', 'hardware', 'how', 'download'];
-
     const handleScroll = () => {
       const scrollPos = window.scrollY + 140;
+      const sections = ['top', 'features', 'offline', 'host', 'ai', 'hardware', 'how', 'download'];
+
       for (const id of sections) {
         const el = document.getElementById(id);
         if (el) {
@@ -86,11 +83,6 @@ export const Navbar: React.FC = () => {
             break;
           }
         }
-      }
-
-      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalScroll > 0) {
-        setScrollProgress(Math.min(100, Math.max(0, (window.scrollY / totalScroll) * 100)));
       }
     };
 
@@ -108,9 +100,6 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <header className="nav-header">
-        {/* Ambient Top Reading Progress Bar */}
-        <div className="nav-progress-bar" style={{ width: `${scrollProgress}%` }} />
-
         <div className="nav-container">
           {/* Brand Logo & Technical Monospace Tag */}
           <div className="nav-brand-group">

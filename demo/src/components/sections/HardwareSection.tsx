@@ -8,11 +8,11 @@ export const HardwareSection: React.FC = () => {
         <div data-reveal>
           <div className="eyebrow">
             <span className="eb-dot" />
-            PERIPHERAL INTEGRATION
+            HARDWARE
           </div>
-          <h2 className="h2">Plug &amp; Play Hardware. Zero Driver Hassle.</h2>
+          <h2 className="h2">Plug &amp; play hardware.</h2>
           <p className="lead">
-            Direct ESC/POS communication bypasses Windows print spooler queues. Receipts print instantly the second payment clears.
+            Direct ESC/POS communication. Instant receipt printing and drawer kicks with zero driver queues.
           </p>
 
           {/* Keynote Hardware Spec Badges */}
@@ -22,8 +22,8 @@ export const HardwareSection: React.FC = () => {
                 <Printer size={18} />
               </div>
               <div>
-                <h4 className="hw-title">58mm &amp; 80mm ESC/POS Thermal</h4>
-                <p className="hw-desc">Sub-millisecond raw printer output with crisp logos and QR codes</p>
+                <h4 className="hw-title">Thermal Printers</h4>
+                <p className="hw-desc">58mm &amp; 80mm ESC/POS via USB, LAN, or Bluetooth</p>
               </div>
             </div>
 
@@ -32,8 +32,8 @@ export const HardwareSection: React.FC = () => {
                 <ReceiptIcon size={18} />
               </div>
               <div>
-                <h4 className="hw-title">24V Auto Cash Drawer Kick</h4>
-                <p className="hw-desc">Automatic RJ-11 drawer release trigger on tender completion</p>
+                <h4 className="hw-title">Cash Drawers</h4>
+                <p className="hw-desc">24V RJ-11 auto-kick on payment completion</p>
               </div>
             </div>
 
@@ -42,8 +42,8 @@ export const HardwareSection: React.FC = () => {
                 <ScanBarcode size={18} />
               </div>
               <div>
-                <h4 className="hw-title">Barcode &amp; 2D QR Scanners</h4>
-                <p className="hw-desc">Instant HID keyboard wedge &amp; COM virtual serial compatibility</p>
+                <h4 className="hw-title">Barcode Scanners</h4>
+                <p className="hw-desc">Instant USB HID wedge and 2D QR codes</p>
               </div>
             </div>
 
@@ -52,8 +52,8 @@ export const HardwareSection: React.FC = () => {
                 <Cable size={18} />
               </div>
               <div>
-                <h4 className="hw-title">Universal Interface Protocol</h4>
-                <p className="hw-desc">Seamless communication across USB, Network LAN/Wi-Fi &amp; Bluetooth</p>
+                <h4 className="hw-title">Connectivity</h4>
+                <p className="hw-desc">USB, local Ethernet, and Bluetooth interfaces</p>
               </div>
             </div>
           </div>

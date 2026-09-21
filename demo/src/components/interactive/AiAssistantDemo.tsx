@@ -121,11 +121,11 @@ export const AiAssistantDemo: React.FC = () => {
         <div className="sec-head center" data-reveal>
           <div className="eyebrow ep">
             <span className="eb-dot" />
-            <span>KIVO AI COPILOT</span>
+            <span>AI COPILOT</span>
           </div>
-          <h2 className="h2">Ask Anything. Answers Backed by Your Real Ledger.</h2>
+          <h2 className="h2">Ask your ledger anything.</h2>
           <p className="lead">
-            Natural language business intelligence querying your local SQLite database directly — zero external data scraping.
+            Natural language queries over your local database. Zero external data sharing.
           </p>
         </div>
 
@@ -204,7 +204,7 @@ export const AiAssistantDemo: React.FC = () => {
                 onClick={() => handleAsk('q1')}
                 disabled={isTyping}
               >
-                💰 Today's revenue breakdown?
+                Today's revenue
               </button>
               <button
                 type="button"
@@ -212,7 +212,7 @@ export const AiAssistantDemo: React.FC = () => {
                 onClick={() => handleAsk('q2')}
                 disabled={isTyping}
               >
-                📦 Check depleted stock
+                Low stock alerts
               </button>
               <button
                 type="button"
@@ -220,7 +220,7 @@ export const AiAssistantDemo: React.FC = () => {
                 onClick={() => handleAsk('q3')}
                 disabled={isTyping}
               >
-                ⭐ Top 3 VIP loyalty members
+                Top VIP members
               </button>
               <button
                 type="button"
@@ -228,7 +228,7 @@ export const AiAssistantDemo: React.FC = () => {
                 onClick={() => handleAsk('q4')}
                 disabled={isTyping}
               >
-                ⏳ Expiring batch lots
+                Expiring lots
               </button>
             </div>
 
