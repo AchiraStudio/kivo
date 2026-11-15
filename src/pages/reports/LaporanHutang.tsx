@@ -43,15 +43,15 @@ export default function LaporanHutang({ onBack }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-card rounded-xl border border-line p-5">
           <p className="text-xs font-semibold text-dim uppercase tracking-wide mb-1">Total Hutang</p>
-          <p className="text-2xl font-extrabold text-danger dark:text-danger">Rp {totalBalance.toLocaleString('id-ID')}</p>
+          <p className="text-2xl font-extrabold text-danger ">Rp {totalBalance.toLocaleString('id-ID')}</p>
         </div>
         <div className="bg-card rounded-xl border border-line p-5">
           <p className="text-xs font-semibold text-dim uppercase tracking-wide mb-1">Jumlah Invoice</p>
           <p className="text-2xl font-extrabold text-heading">{data.length}</p>
         </div>
-        <div className={`rounded-xl border p-5 ${overdue > 0 ? 'bg-warning-soft dark:bg-warning/10 border-warning/30 dark:border-warning/40' : 'bg-card border-line'}`}>
+        <div className={`rounded-xl border p-5 ${overdue > 0 ? 'bg-warning-soft border-warning/30 ' : 'bg-card border-line'}`}>
           <p className="text-xs font-semibold text-dim uppercase tracking-wide mb-1">Lewat 30 Hari</p>
-          <p className={`text-2xl font-extrabold ${overdue > 0 ? 'text-warning dark:text-warning' : 'text-heading'}`}>{overdue}</p>
+          <p className={`text-2xl font-extrabold ${overdue > 0 ? 'text-warning ' : 'text-heading'}`}>{overdue}</p>
         </div>
       </div>
 
@@ -77,16 +77,16 @@ export default function LaporanHutang({ onBack }: Props) {
                 const daysOld = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 60 * 60 * 24));
                 const isOld = daysOld > 30;
                 return (
-                  <tr key={r.purchase_id} className={`hover:bg-muted/30 ${isOld ? 'bg-warning-soft/50 dark:bg-warning/5' : ''}`}>
+                  <tr key={r.purchase_id} className={`hover:bg-muted/30 ${isOld ? 'bg-warning-soft/50 ' : ''}`}>
                     <td className="py-3 px-6 font-bold text-heading">{r.supplier_name}</td>
                     <td className="py-3 px-6 font-mono text-xs text-dim">{r.invoice_no || 'N/A'}</td>
                     <td className="py-3 px-6 text-right font-mono text-heading">Rp {r.total_amount.toLocaleString('id-ID')}</td>
                     <td className="py-3 px-6 text-right font-mono text-success">Rp {r.paid_amount.toLocaleString('id-ID')}</td>
-                    <td className="py-3 px-6 text-right font-mono font-bold text-danger dark:text-danger">Rp {r.balance.toLocaleString('id-ID')}</td>
+                    <td className="py-3 px-6 text-right font-mono font-bold text-danger ">Rp {r.balance.toLocaleString('id-ID')}</td>
                     <td className="py-3 px-6">
                       <div className="flex items-center gap-1">
                         {isOld && <AlertTriangle size={12} className="text-warning" />}
-                        <span className={`text-xs ${isOld ? 'text-warning dark:text-warning font-semibold' : 'text-dim'}`}>
+                        <span className={`text-xs ${isOld ? 'text-warning font-semibold' : 'text-dim'}`}>
                           {new Date(r.created_at).toLocaleDateString('id-ID')}
                         </span>
                       </div>
@@ -99,7 +99,7 @@ export default function LaporanHutang({ onBack }: Props) {
               <tfoot className="bg-muted/50 border-t-2 border-line text-sm font-bold">
                 <tr>
                   <td className="py-4 px-6 text-heading" colSpan={4}>TOTAL HUTANG</td>
-                  <td className="py-4 px-6 text-right text-danger dark:text-danger">Rp {totalBalance.toLocaleString('id-ID')}</td>
+                  <td className="py-4 px-6 text-right text-danger ">Rp {totalBalance.toLocaleString('id-ID')}</td>
                   <td />
                 </tr>
               </tfoot>

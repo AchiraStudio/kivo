@@ -30,7 +30,7 @@ The headline feature of v1.4.0 empowers store owners and cashiers to open additi
 * **Bidirectional LAN RPC Gateway (`api.ts` & `lan.rs`):**
   * Web runtime transparently routes native Tauri commands (`get_items`, `checkout_sale`, `get_sync_status`, `get_categories`, `assign_user_workspace`, etc.) over HTTP POST RPC to the host terminal.
 * **Real-Time Cross-Device Payment Broadcasts (`useRealtimeSync.ts`):**
-  * Sales recorded on a mobile web client instantly emit `chirasys:payment_success` to the host and all connected terminals via Server-Sent Events / LAN polling.
+  * Sales recorded on a mobile web client instantly emit `kivo:payment_success` to the host and all connected terminals via Server-Sent Events / LAN polling.
   * Product inventory counters update instantaneously across all screens with zero manual refresh.
 
 ---
@@ -141,5 +141,5 @@ The marketing showcase at `/demo` was synchronized with all v1.4.0 capabilities:
 
 * **Core Application Build (`npm run build`):** **PASSED** (1932 modules compiled in 8.81s, 0 errors).
 * **Demo Application Build (`demo/npm run build`):** **PASSED** (1890 modules compiled in 1.42s, 0 errors).
-* **Rust Backend Compilation (`cargo check`):** **PASSED** (Checked `chirasys v1.4.0` in `src-tauri`, 0 errors).
+* **Rust Backend Compilation (`cargo check`):** **PASSED** (Checked `kivo v1.4.0` in `src-tauri`, 0 errors).
 

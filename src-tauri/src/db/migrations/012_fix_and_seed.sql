@@ -34,7 +34,7 @@ INSERT OR IGNORE INTO banks (id, name, code) VALUES
 -- Seed default global settings
 INSERT OR IGNORE INTO global_settings (key, value, description) VALUES
 ('language',         'id',                'UI language: id or en'),
-('company_name',     'ChiraSys Apotek',   'Nama apotek untuk struk'),
+('company_name',     'Kivo Apotek',   'Nama apotek untuk struk'),
 ('company_address',  '',                  'Alamat apotek'),
 ('company_phone',    '',                  'Telepon apotek'),
 ('tax_rate',         '0',                 'PPN rate in percent (0 = no tax)'),

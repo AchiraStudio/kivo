@@ -81,12 +81,12 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
 
   const renderSortIcon = (column: 'name' | 'sku' | 'category' | 'price') => {
     if (sortBy !== column) {
-      return <ArrowUpDown size={14} className="text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity" />;
+      return <ArrowUpDown size={14} className="text-dim opacity-60 group-hover:opacity-100 transition-opacity" />;
     }
     return sortOrder === 'asc' ? (
-      <ArrowUp size={14} className="text-brand font-bold" />
+      <ArrowUp size={14} className="text-primary font-bold" />
     ) : (
-      <ArrowDown size={14} className="text-brand font-bold" />
+      <ArrowDown size={14} className="text-primary font-bold" />
     );
   };
 
@@ -148,18 +148,18 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Katalog Produk</h1>
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-mono font-bold border border-slate-200 dark:border-slate-700">
+            <h1 className="text-lg font-bold text-heading tracking-tight">Katalog Produk</h1>
+            <span className="px-2 py-0.5 rounded-full bg-muted text-body text-[11px] font-mono font-bold border border-line">
               {total} produk
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kelola data obat, barang, harga jual, dan stok.</p>
+          <p className="text-xs text-dim mt-0.5">Kelola data obat, barang, harga jual, dan stok.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {can('reports.export') && (
             <button 
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded-lg transition-all font-semibold text-xs border border-emerald-200 dark:border-emerald-500/20 active:scale-[0.98] cursor-pointer">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-success-soft text-success hover:bg-success/20 rounded-lg transition-all font-semibold text-xs border border-success/30 active:scale-[0.98] cursor-pointer">
               <Download size={14} /> Ekspor
             </button>
           )}
@@ -167,38 +167,38 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
             <button 
               onClick={handleImport}
               disabled={isImporting}
-              className="tour-inv-import flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-all font-semibold text-xs disabled:opacity-50 border border-indigo-200 dark:border-indigo-500/20 active:scale-[0.98] cursor-pointer">
+              className="tour-inv-import flex items-center gap-1.5 px-3 py-1.5 bg-primary-soft text-primary hover:bg-primary/20 rounded-lg transition-all font-semibold text-xs disabled:opacity-50 border border-primary/30 active:scale-[0.98] cursor-pointer">
               {isImporting ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
               {isImporting ? 'Mengimpor...' : 'Impor'}
             </button>
           )}
           {can('items.create') && (
-            <button onClick={onAddItem} className="tour-inv-add flex items-center gap-1.5 bg-brand hover:bg-blue-600 text-white px-3.5 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-xs active:scale-[0.98] cursor-pointer">
+            <button onClick={onAddItem} className="tour-inv-add flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white px-3.5 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-xs active:scale-[0.98] cursor-pointer">
               <Plus size={15} /> Tambah Item
             </button>
           )}
-          <button onClick={() => setRunTour(true)} className="p-1.5 text-slate-500 hover:text-brand hover:bg-brand/10 rounded-lg transition-colors cursor-pointer" title="Bantuan & Panduan">
+          <button onClick={() => setRunTour(true)} className="p-1.5 text-dim hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer" title="Bantuan & Panduan">
             <HelpCircle size={16} />
           </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#0B0F19] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col flex-1 overflow-hidden tour-inv-table">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row gap-4 bg-slate-50/50 dark:bg-slate-900/30">
-          <div className="tour-inv-search flex-1 flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all">
-            <Search size={16} className="text-slate-500 mr-2" />
+      <div className="bg-card rounded-2xl border border-line shadow-sm flex flex-col flex-1 overflow-hidden tour-inv-table">
+        <div className="p-4 border-b border-line flex flex-col sm:flex-row gap-4 bg-muted">
+          <div className="tour-inv-search flex-1 flex items-center bg-card border border-line rounded-lg px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+            <Search size={16} className="text-dim mr-2" />
             <input 
               type="text" 
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Cari berdasarkan nama, SKU, atau barcode..." 
-              className="bg-transparent border-none outline-none text-sm w-full text-slate-900 dark:text-white placeholder-slate-400" 
+              className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim" 
             />
           </div>
           <select
             value={selectedCategory}
             onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-lg px-3.5 py-2 outline-none focus:ring-2 focus:ring-brand/20"
+            className="bg-card border border-line text-body text-sm font-semibold rounded-lg px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="">Semua Kategori</option>
             {Array.from(new Map(categories.map(c => [c.name.trim().toUpperCase(), c])).values()).map((c) => (
@@ -209,7 +209,7 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
 
         <div className="flex-1 overflow-y-auto custom-scrollbar relative">
           <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-muted/90 backdrop-blur z-10">
+            <thead className="sticky top-0 bg-muted/90 z-10">
               <tr className="text-dim text-xs uppercase tracking-wider font-semibold border-b border-line select-none">
                 <th 
                   onClick={() => handleSort('name')}

@@ -1,19 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Customer, getSales, Sale } from '../../lib/api';
-import { UserCircle, Crown, Loader2, History, Award, ShoppingCart } from 'lucide-react';
+import { UserCircle, Crown, Loader2, History, Award, ShoppingCart, HeartPulse } from 'lucide-react';
 import ReceiptModal from '../pos/ReceiptModal';
 import Modal from '../../components/ui/Modal';
+import TabBar, { TabItem } from '../../components/ui/TabBar';
+import HealthRecordsPanel from './health/HealthRecordsPanel';
+
+export type ProfileTab = 'purchases' | 'health';
+
+const PROFILE_TABS: TabItem<ProfileTab>[] = [
+  { id: 'purchases', label: 'Riwayat Belanja', icon: History },
+  { id: 'health', label: 'Kesehatan', icon: HeartPulse },
+];
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   customer: Customer | null;
+  initialTab?: ProfileTab;
 }
 
-export default function CustomerProfileDrawer({ isOpen, onClose, customer }: Props) {
+export default function CustomerProfileDrawer({ isOpen, onClose, customer, initialTab = 'purchases' }: Props) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(false);
   const [receiptSaleId, setReceiptSaleId] = useState<string | null>(null);
+  const [tab, setTab] = useState<ProfileTab>('purchases');
+
+  useEffect(() => { if (isOpen) setTab(initialTab); }, [isOpen, customer?.id, initialTab]);
 
   useEffect(() => {
     if (isOpen && customer && customer.id !== 'customer_umum') {
@@ -48,7 +61,7 @@ export default function CustomerProfileDrawer({ isOpen, onClose, customer }: Pro
               <h3 className="font-bold text-lg text-heading">{customer.name}</h3>
               <p className="text-sm text-dim">{customer.phone || 'Tidak ada nomor telepon'}</p>
               <div className="mt-1 flex gap-2">
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border flex items-center gap-1 ${customer.customer_tier === 'vip' ? 'bg-warning-soft text-warning border-warning/30 dark:bg-warning/30 dark:text-warning dark:border-warning' : customer.customer_tier === 'member' ? 'bg-accent-soft text-accent border-accent/30 dark:bg-accent/30 dark:text-accent dark:border-accent' : 'bg-muted text-body border-line dark:bg-muted dark:text-body dark:border-line-strong'}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border flex items-center gap-1 ${customer.customer_tier === 'vip' ? 'bg-warning-soft text-warning border-warning/30' : customer.customer_tier === 'member' ? 'bg-accent-soft text-accent border-accent/30' : 'bg-muted text-body border-line'}`}>
                   {customer.customer_tier === 'vip' && <Crown size={10} />}
                   {customer.customer_tier}
                 </span>
@@ -59,7 +72,11 @@ export default function CustomerProfileDrawer({ isOpen, onClose, customer }: Pro
             </div>
           </div>
 
-          <div>
+          <TabBar tabs={PROFILE_TABS} activeTab={tab} onTabChange={setTab} />
+
+          {tab === 'health' && <HealthRecordsPanel customer={customer} />}
+
+          {tab === 'purchases' && <div>
             <h4 className="font-bold text-heading text-sm flex items-center gap-2 mb-3">
               <History size={16} className="text-primary"/> Riwayat Pembelian
             </h4>
@@ -67,7 +84,7 @@ export default function CustomerProfileDrawer({ isOpen, onClose, customer }: Pro
               <div className="py-10 text-center"><Loader2 className="animate-spin text-primary mx-auto" size={24} /></div>
             ) : sales.length === 0 ? (
               <div className="py-10 text-center bg-muted/30 rounded-xl border border-line">
-                <ShoppingCart size={32} className="mx-auto text-dim dark:text-body mb-2" />
+                <ShoppingCart size={32} className="mx-auto text-dim mb-2" />
                 <p className="text-xs text-dim font-medium">Belum ada riwayat transaksi.</p>
               </div>
             ) : (
@@ -79,7 +96,7 @@ export default function CustomerProfileDrawer({ isOpen, onClose, customer }: Pro
                       <p className="font-mono text-sm font-semibold text-heading">{s.transaction_no}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-success dark:text-success text-sm">Rp {s.grand_total.toLocaleString('id-ID')}</p>
+                      <p className="font-bold text-success text-sm">Rp {s.grand_total.toLocaleString('id-ID')}</p>
                       <button
                         type="button"
                         onClick={() => setReceiptSaleId(s.id)}
@@ -92,7 +109,7 @@ export default function CustomerProfileDrawer({ isOpen, onClose, customer }: Pro
                 ))}
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </Modal>
 

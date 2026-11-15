@@ -187,7 +187,7 @@ export default function StockOpname() {
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary-soft text-primary border border-primary/20 flex items-center gap-1.5">
               <ClipboardList size={13} /> Modul Audit Inventory
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-success/10 text-success dark:text-success border border-success/20 flex items-center gap-1.5">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-success/10 text-success border border-success/20 flex items-center gap-1.5">
               <Package size={13} /> {items.length} Barang Terdaftar
             </span>
           </div>
@@ -230,7 +230,7 @@ export default function StockOpname() {
           <button 
             onClick={handleSubmit} 
             disabled={submitting || countedItems.length === 0} 
-            className="tour-so-process bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 transition-all shadow-md shadow-primary/20 disabled:opacity-50 cursor-pointer"
+            className="tour-so-process bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
           >
             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             Proses Penyesuaian ({countedItems.length})
@@ -255,27 +255,27 @@ export default function StockOpname() {
             <span className="text-[11px] font-bold uppercase tracking-wider">Stok Sesuai</span>
             <CheckCircle2 size={16} className="text-success" />
           </div>
-          <p className="text-2xl font-black text-success dark:text-success font-mono">
+          <p className="text-2xl font-black text-success font-mono">
             {matchCount} <span className="text-xs font-semibold text-dim">item</span>
           </p>
         </div>
 
-        <div className="bg-card rounded-xl border border-success/30/60 dark:border-success/40 p-4 shadow-sm space-y-1">
+        <div className="bg-card rounded-xl border border-success/30/60 p-4 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-dim">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-success dark:text-success">Surplus (+Stok)</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-success ">Surplus (+Stok)</span>
             <TrendingUp size={16} className="text-success" />
           </div>
-          <p className="text-2xl font-black text-success dark:text-success font-mono">
+          <p className="text-2xl font-black text-success font-mono">
             +{totalSurplusQty} <span className="text-xs font-semibold text-dim">({surplusItems.length} item)</span>
           </p>
         </div>
 
-        <div className="bg-card rounded-xl border border-danger/30/60 dark:border-danger/40 p-4 shadow-sm space-y-1">
+        <div className="bg-card rounded-xl border border-danger/30/60 p-4 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-dim">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-danger dark:text-danger">Defisit (-Stok)</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-danger ">Defisit (-Stok)</span>
             <TrendingDown size={16} className="text-danger" />
           </div>
-          <p className="text-2xl font-black text-danger dark:text-danger font-mono">
+          <p className="text-2xl font-black text-danger font-mono">
             -{totalDeficitQty} <span className="text-xs font-semibold text-dim">({deficitItems.length} item)</span>
           </p>
         </div>
@@ -305,7 +305,7 @@ export default function StockOpname() {
               onClick={() => setOnlyDiffFilter(!onlyDiffFilter)}
               className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 onlyDiffFilter
-                  ? 'bg-warning text-white shadow-md shadow-warning/20'
+                  ? 'bg-warning text-white'
                   : 'bg-card border border-line text-heading hover:bg-muted'
               }`}
             >
@@ -369,11 +369,11 @@ export default function StockOpname() {
                     <tr 
                       key={item.item_id} 
                       className={`transition-colors fast-render-row ${
-                        isSurplus ? 'bg-success-soft/40 dark:bg-success/20' :
-                        isDeficit ? 'bg-danger-soft/40 dark:bg-danger/20' :
-                        isMatch ? 'bg-muted/40 dark:bg-card/20' :
-                        'hover:bg-muted/40'
-                      }`}
+ isSurplus ? 'bg-success-soft/40 ' :
+ isDeficit ? 'bg-danger-soft/40 ' :
+ isMatch ? 'bg-muted/40 dark:bg-card/20' :
+ 'hover:bg-muted/40'
+ }`}
                     >
                       {/* Checkbox */}
                       <td className="py-3 px-4 text-center">
@@ -464,10 +464,10 @@ export default function StockOpname() {
                           <span className="text-[11px] text-dim italic">Belum dihitung</span>
                         ) : (
                           <span className={`inline-flex items-center gap-1 font-mono font-extrabold text-xs px-2.5 py-1 rounded-full ${
-                            diff > 0 ? 'bg-success/10 text-success dark:text-success' :
-                            diff < 0 ? 'bg-danger/10 text-danger dark:text-danger' :
-                            'bg-muted text-dim'
-                          }`}>
+ diff > 0 ? 'bg-success/10 text-success ' :
+ diff < 0 ? 'bg-danger/10 text-danger ' :
+ 'bg-muted text-dim'
+ }`}>
                             {diff > 0 ? `+${diff}` : diff}
                           </span>
                         )}

@@ -3,8 +3,8 @@
 
 use axum::{
     extract::{Query, State as AxumState},
-    http::StatusCode,
-    response::Json,
+    http::{header, StatusCode, Uri},
+    response::{IntoResponse, Json, Response},
     routing::{get, post},
     Router,
 };
@@ -180,7 +180,7 @@ pub fn notify_mutation(table: &str) {
     tauri::async_runtime::spawn(async move {
         let guard = GLOBAL_APP_HANDLE.read().await;
         if let Some(handle) = guard.as_ref() {
-            let _ = handle.emit("chirasys:sync", serde_json::json!({
+            let _ = handle.emit("kivo:sync", serde_json::json!({
                 "source": "lan_mutation",
                 "table": table_owned,
                 "version": new_v
@@ -211,7 +211,7 @@ pub fn get_local_ip() -> String {
 pub fn get_device_unique_id() -> String {
     let hostname = std::env::var("COMPUTERNAME")
         .or_else(|_| std::env::var("HOSTNAME"))
-        .unwrap_or_else(|_| "chirasys_node".to_string());
+        .unwrap_or_else(|_| "kivo_node".to_string());
     format!("dev_{}", hostname.to_lowercase().replace(' ', "_"))
 }
 
@@ -322,6 +322,7 @@ pub async fn start_lan_http_server(pool: SqlitePool, app_handle: AppHandle, port
 
         .route("/api/lan/remote/print_receipt", post(handle_remote_print_receipt))
         .route("/api/lan/pair_with_parent", post(handle_pair_with_parent))
+        .fallback(handle_web_asset)
         .layer(CorsLayer::permissive())
         .with_state(ctx);
 
@@ -340,6 +341,46 @@ pub async fn start_lan_http_server(pool: SqlitePool, app_handle: AppHandle, port
             }
         }
     });
+}
+
+/// Serves the bundled web app so phones and tablets on the same Wi-Fi can open the
+/// POS in a browser. Unknown paths fall back to index.html (single-page app routing).
+async fn handle_web_asset(AxumState(ctx): AxumState<ServerContext>, uri: Uri) -> Response {
+    let path = uri.path();
+    if path.starts_with("/api/") {
+        return (StatusCode::NOT_FOUND, "Endpoint tidak ditemukan").into_response();
+    }
+
+    let resolver = ctx.app_handle.asset_resolver();
+    let requested = if path == "/" { "/index.html" } else { path };
+    let has_extension = requested.rsplit('/').next().map(|f| f.contains('.')).unwrap_or(false);
+    // Client-side routes have no file extension and resolve to the SPA shell.
+    let found = resolver
+        .get(requested.to_string())
+        .or_else(|| if has_extension { None } else { resolver.get("/index.html".to_string()) });
+
+    match found {
+        Some(asset) => {
+            let cache = if requested.starts_with("/assets/") {
+                "public, max-age=31536000, immutable"
+            } else {
+                "no-cache"
+            };
+            (
+                [
+                    (header::CONTENT_TYPE, asset.mime_type),
+                    (header::CACHE_CONTROL, cache.to_string()),
+                ],
+                asset.bytes,
+            )
+                .into_response()
+        }
+        None => (
+            StatusCode::NOT_FOUND,
+            "Aplikasi web belum tersedia di Server Induk ini. Jalankan build produksi Kivo.",
+        )
+            .into_response(),
+    }
 }
 
 async fn handle_lan_info(AxumState(ctx): AxumState<ServerContext>) -> Json<serde_json::Value> {
@@ -372,8 +413,8 @@ async fn handle_lan_info(AxumState(ctx): AxumState<ServerContext>) -> Json<serde
         .unwrap_or(0);
 
     Json(serde_json::json!({
-        "app": "chirasys",
-        "version": "1.4.0",
+        "app": "kivo",
+        "version": "1.5.0",
         "device_id": get_device_unique_id(),
         "device_name": device_name,
         "role": role,
@@ -1082,8 +1123,8 @@ async fn handle_lan_rpc(
             crate::commands::maintenance::list_printers().await.map(|d| serde_json::to_value(d).unwrap_or_default())
         }
         "kick_cash_drawer" | "lan_remote_kick_drawer" => {
-            let printer_name: String = p.get("printerName").or_else(|| p.get("printer_name")).and_then(|v| v.as_str()).unwrap_or_default().to_string();
-            crate::commands::maintenance::kick_cash_drawer(printer_name).await.map(|d| serde_json::to_value(d).unwrap_or_default())
+            let printer_name: Option<String> = p.get("printerName").or_else(|| p.get("printer_name")).and_then(|v| v.as_str()).map(|s| s.to_string());
+            crate::commands::maintenance::kick_cash_drawer_with_pool(Some(&state.db_pool), printer_name).await.map(|d| serde_json::to_value(d).unwrap_or_default())
         }
         "print_raw_receipt" | "lan_remote_print_receipt" => {
             let printer_name: String = p.get("printerName").or_else(|| p.get("printer_name")).and_then(|v| v.as_str()).unwrap_or_default().to_string();
@@ -1125,6 +1166,52 @@ async fn handle_lan_rpc(
             crate::commands::sync::leave_workspace(state).await.map(|_| serde_json::json!({ "success": true }))
         }
 
+        // --- PURCHASING / STOCK OPERATIONS AVAILABLE TO LAN CLIENTS ---
+        "cancel_purchase_order" => {
+            let id: String = p.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+            crate::commands::purchasing::cancel_purchase_order(id, state).await.map(|_| serde_json::json!({ "success": true }))
+        }
+        "bulk_add_stock" => {
+            let branch_id: String = p.get("branchId").or_else(|| p.get("branch_id")).and_then(|v| v.as_str()).unwrap_or_default().to_string();
+            match serde_json::from_value::<Vec<crate::commands::inventory::BulkStockInput>>(p.get("items").cloned().unwrap_or_default()) {
+                Ok(items) => crate::commands::inventory::bulk_add_stock(branch_id, items, state).await.map(|d| serde_json::to_value(d).unwrap_or_default()),
+                Err(e) => Err(format!("Data stok massal tidak valid: {}", e)),
+            }
+        }
+        "apply_hpp_retroactive" => {
+            let method: String = p.get("method").and_then(|v| v.as_str()).unwrap_or("avg").to_string();
+            crate::commands::inventory::apply_hpp_retroactive(method, state).await.map(|d| serde_json::to_value(d).unwrap_or_default())
+        }
+
+        // --- MEMBER HEALTH RECORDS & MEDICINE PRESETS ---
+        "get_health_records" => {
+            let customer_id: String = p.get("customerId").or_else(|| p.get("customer_id")).and_then(|v| v.as_str()).unwrap_or_default().to_string();
+            crate::commands::health::get_health_records(customer_id, state).await.map(|d| serde_json::to_value(d).unwrap_or_default())
+        }
+        "save_health_record" => {
+            match serde_json::from_value::<crate::commands::health::HealthRecordInput>(p.get("input").cloned().unwrap_or_default()) {
+                Ok(input) => crate::commands::health::save_health_record(input, state).await.map(|d| serde_json::to_value(d).unwrap_or_default()),
+                Err(e) => Err(format!("Data catatan kesehatan tidak valid: {}", e)),
+            }
+        }
+        "delete_health_record" => {
+            let id: String = p.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+            crate::commands::health::delete_health_record(id, state).await.map(|_| serde_json::json!({ "success": true }))
+        }
+        "get_medicine_presets" => {
+            crate::commands::health::get_medicine_presets(state).await.map(|d| serde_json::to_value(d).unwrap_or_default())
+        }
+        "save_medicine_preset" => {
+            match serde_json::from_value::<crate::commands::health::MedicinePresetInput>(p.get("input").cloned().unwrap_or_default()) {
+                Ok(input) => crate::commands::health::save_medicine_preset(input, state).await.map(|d| serde_json::to_value(d).unwrap_or_default()),
+                Err(e) => Err(format!("Data preset obat tidak valid: {}", e)),
+            }
+        }
+        "delete_medicine_preset" => {
+            let id: String = p.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+            crate::commands::health::delete_medicine_preset(id, state).await.map(|_| serde_json::json!({ "success": true }))
+        }
+
         unknown => Err(format!("Perintah RPC '{}' tidak didukung oleh Server Induk", unknown)),
     };
 
@@ -1132,7 +1219,7 @@ async fn handle_lan_rpc(
     let is_mutation = !matches!(cmd,
         "get_items_filtered" | "get_item" | "get_categories" | "get_brands" | "get_banks" | "get_settings" |
         "get_units_for_item" | "get_prices_for_item" | "get_price_tiers_for_item" |
-        "get_customers" | "get_customer_tiers" | "get_suppliers" | "get_purchases" | "get_purchase_orders" |
+        "get_customers" | "get_customer_tiers" | "get_health_records" | "get_medicine_presets" | "get_suppliers" | "get_purchases" | "get_purchase_orders" |
         "get_sales" | "get_sale_detail" | "get_sales_summary" | "get_top_selling_items" | "get_sales_by_payment_method" |
         "get_low_stock_alerts" | "get_expiring_items" | "get_stock_valuation" | "get_stock_opnames" | "get_stock_opname_detail" |
         "get_accounts" | "get_journal_entries" | "get_general_ledger" | "get_income_statement" | "get_balance_sheet" |
@@ -1223,7 +1310,7 @@ async fn handle_queue_push(
     }
 
     if applied_count > 0 {
-        let _ = ctx.app_handle.emit("chirasys:sync", ());
+        let _ = ctx.app_handle.emit("kivo:sync", ());
     }
 
     Ok(Json(serde_json::json!({
@@ -1306,7 +1393,7 @@ async fn handle_remote_kick_drawer(
             printer = saved_p;
         }
     }
-    match crate::commands::maintenance::kick_cash_drawer(printer).await {
+    match crate::commands::maintenance::kick_cash_drawer_with_pool(Some(&ctx.pool), Some(printer)).await {
         Ok(msg) => Ok(Json(serde_json::json!({ "success": true, "message": msg }))),
         Err(err) => Err((StatusCode::INTERNAL_SERVER_ERROR, err)),
     }
@@ -1368,7 +1455,7 @@ async fn handle_pair_with_parent(
         }
     }
 
-    let _ = ctx.app_handle.emit("chirasys:lan_status_updated", ());
+    let _ = ctx.app_handle.emit("kivo:lan_status_updated", ());
 
     // Auto-hydrate from parent if child DB is empty
     let pool_clone = ctx.pool.clone();
@@ -1424,8 +1511,8 @@ pub async fn spawn_lan_discovery_service(pool: SqlitePool, app_handle: AppHandle
                 .unwrap_or_default();
 
             let packet = LanBeaconPacket {
-                app: "chirasys".to_string(),
-                version: "1.4.0".to_string(),
+                app: "kivo".to_string(),
+                version: "1.5.0".to_string(),
                 workspace_id,
                 device_id: device_id.clone(),
                 device_name,
@@ -1473,7 +1560,7 @@ pub async fn spawn_lan_discovery_service(pool: SqlitePool, app_handle: AppHandle
 
             while let Ok((amt, src)) = socket.recv_from(&mut buf) {
                 if let Ok(packet) = serde_json::from_slice::<LanBeaconPacket>(&buf[..amt]) {
-                    if packet.app == "chirasys" {
+                    if packet.app == "kivo" {
                         let is_self = packet.device_id == self_id;
                         let peer_ip = match src.ip() {
                             IpAddr::V4(ipv4) => ipv4.to_string(),
@@ -1517,7 +1604,7 @@ pub async fn spawn_lan_discovery_service(pool: SqlitePool, app_handle: AppHandle
                     let peers = PEER_REGISTRY.read().await;
                     peers.values().cloned().collect::<Vec<_>>()
                 };
-                let _ = app_handle_listener.emit("chirasys:lan_peers_updated", peers_list);
+                let _ = app_handle_listener.emit("kivo:lan_peers_updated", peers_list);
             }
         }
     });
@@ -1665,7 +1752,7 @@ pub async fn spawn_lan_discovery_service(pool: SqlitePool, app_handle: AppHandle
                             }
 
                             if pulled_any {
-                                let _ = app_handle_sync.emit("chirasys:sync", ());
+                                let _ = app_handle_sync.emit("kivo:sync", ());
                             }
                         }
                     }
@@ -1875,7 +1962,7 @@ pub async fn scan_lan_subnet(
             if let Ok(res) = client_clone.get(&url).send().await {
                 if res.status().is_success() {
                     if let Ok(info) = res.json::<serde_json::Value>().await {
-                        if info.get("app").and_then(|v| v.as_str()) == Some("chirasys") {
+                        if info.get("app").and_then(|v| v.as_str()) == Some("kivo") {
                             let dev_id = info.get("device_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
                             let dev_name = info.get("device_name").and_then(|v| v.as_str()).unwrap_or("Server").to_string();
                             let role = info.get("role").and_then(|v| v.as_str()).unwrap_or("parent").to_string();
@@ -1912,7 +1999,7 @@ pub async fn scan_lan_subnet(
         let peers = PEER_REGISTRY.read().await;
         peers.values().cloned().collect::<Vec<_>>()
     };
-    let _ = app_handle.emit("chirasys:lan_peers_updated", &peers_list);
+    let _ = app_handle.emit("kivo:lan_peers_updated", &peers_list);
 
     get_lan_peers(state).await
 }
@@ -1986,7 +2073,7 @@ pub async fn test_lan_connection(
                     role: info.get("role").and_then(|v| v.as_str()).unwrap_or("parent").to_string(),
                     workspace_id: info.get("workspace_id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
                     items_count: info.get("items_count").and_then(|v| v.as_i64()).unwrap_or(0),
-                    version: info.get("version").and_then(|v| v.as_str()).unwrap_or("1.4.0").to_string(),
+                    version: info.get("version").and_then(|v| v.as_str()).unwrap_or("1.5.0").to_string(),
                     server_time: info.get("timestamp").and_then(|v| v.as_str()).unwrap_or("").to_string(),
                     error: None,
                 })
@@ -2089,8 +2176,8 @@ pub async fn connect_lan_parent(
     // AUTOMATIC INITIAL HYDRATION:
     println!("🔗 [LAN Connect] Successfully connected to Parent Host at {}:{} (Model B: Live Direct Query Active)", trimmed_ip, port);
 
-    let _ = app_handle.emit("chirasys:lan_status_updated", ());
-    let _ = app_handle.emit("chirasys:sync", ());
+    let _ = app_handle.emit("kivo:lan_status_updated", ());
+    let _ = app_handle.emit("kivo:sync", ());
     Ok(test_res)
 }
 
@@ -2111,7 +2198,7 @@ pub async fn disconnect_lan_parent(
         .execute(&state.db_pool)
         .await;
 
-    let _ = app_handle.emit("chirasys:lan_status_updated", ());
+    let _ = app_handle.emit("kivo:lan_status_updated", ());
     Ok(())
 }
 
@@ -2304,8 +2391,8 @@ pub async fn clone_from_parent_internal(
     println!("✅ [LAN Sync/Clone] Successfully imported {} records from Parent ({}).", total_records_imported, trimmed_ip);
 
     // Notify UI to refresh all states
-    let _ = app_handle.emit("chirasys:sync", ());
-    let _ = app_handle.emit("chirasys:lan_status_updated", ());
+    let _ = app_handle.emit("kivo:sync", ());
+    let _ = app_handle.emit("kivo:lan_status_updated", ());
 
     Ok(total_records_imported)
 }
@@ -2464,7 +2551,7 @@ pub async fn trigger_lan_sync_now(
         .await;
 
     if pushed_count > 0 || pulled_count > 0 {
-        let _ = app_handle.emit("chirasys:sync", ());
+        let _ = app_handle.emit("kivo:sync", ());
     }
 
     Ok(LanSyncResult {
@@ -2523,7 +2610,7 @@ pub async fn lan_remote_kick_drawer(
     }
 
     // Fallback to local
-    crate::commands::maintenance::kick_cash_drawer(printer_name.unwrap_or_default()).await
+    crate::commands::maintenance::kick_cash_drawer_with_pool(Some(&state.db_pool), printer_name).await
 }
 
 #[tauri::command]

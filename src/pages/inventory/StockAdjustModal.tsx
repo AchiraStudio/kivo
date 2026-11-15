@@ -60,7 +60,7 @@ export default function StockAdjustModal({ isOpen, onClose, item, branchId, onSu
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || qty === ''}
-            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-primary/20 disabled:opacity-50"
+            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
           >
             {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             Simpan Penyesuaian
@@ -74,8 +74,8 @@ export default function StockAdjustModal({ isOpen, onClose, item, branchId, onSu
             type="button"
             onClick={() => setDirection('in')}
             className={`flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-2 rounded-xl transition-all ${
-              direction === 'in' ? 'bg-card dark:bg-muted text-success shadow-sm' : 'text-body'
-            }`}
+ direction === 'in' ? 'bg-card dark:bg-muted text-success shadow-sm' : 'text-body'
+ }`}
           >
             <ArrowUpRight size={16} /> Tambah Stok (Masuk)
           </button>
@@ -83,8 +83,8 @@ export default function StockAdjustModal({ isOpen, onClose, item, branchId, onSu
             type="button"
             onClick={() => setDirection('out')}
             className={`flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-2 rounded-xl transition-all ${
-              direction === 'out' ? 'bg-card dark:bg-muted text-danger shadow-sm' : 'text-body'
-            }`}
+ direction === 'out' ? 'bg-card dark:bg-muted text-danger shadow-sm' : 'text-body'
+ }`}
           >
             <ArrowDownRight size={16} /> Kurangi Stok (Keluar)
           </button>

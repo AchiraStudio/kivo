@@ -124,7 +124,7 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
           >
             {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             Simpan Pelanggan
@@ -156,8 +156,8 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
                     type="button"
                     onClick={() => handleTierChange(tier)}
                     className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                      formData.customer_tier === tier ? 'bg-card dark:bg-muted shadow-sm text-primary' : 'text-dim hover:text-body dark:hover:text-dim'
-                    }`}
+ formData.customer_tier === tier ? 'bg-card dark:bg-muted shadow-sm text-primary' : 'text-dim hover:text-body dark:hover:text-dim'
+ }`}
                   >
                     {tier}
                   </button>
@@ -166,9 +166,9 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
             </div>
 
             {formData.customer_tier !== 'regular' && (
-              <div className="p-4 bg-primary-soft dark:bg-primary-soft border border-primary-soft dark:border-primary/50 rounded-xl space-y-3">
+              <div className="p-4 bg-primary-soft border border-primary-soft rounded-xl space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-primary dark:text-primary uppercase mb-1.5">Masa Berlaku Member</label>
+                  <label className="block text-xs font-bold text-primary uppercase mb-1.5">Masa Berlaku Member</label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <CalendarClock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
@@ -176,7 +176,7 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
                         type="date" 
                         value={formData.membership_expiry} 
                         onChange={e => setFormData({...formData, membership_expiry: e.target.value})}
-                        className="w-full pl-9 pr-3 py-2 bg-card border border-primary/30 dark:border-primary rounded-xl text-sm text-heading outline-none focus:border-primary"
+                        className="w-full pl-9 pr-3 py-2 bg-card border border-primary/30 rounded-xl text-sm text-heading outline-none focus:border-primary"
                       />
                     </div>
                     <button 

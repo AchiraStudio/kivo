@@ -560,7 +560,7 @@ async fn process_sync_queue(
     }
 
     if all_network_failed && !pending_items.is_empty() {
-        return Err("Network unreachable — all requests failed.".to_string());
+        return Err("Network unreachable: all requests failed.".to_string());
     }
 
     Ok(success_count)

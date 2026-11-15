@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Percent, Coins, Gift, Layers, Package, Calendar, Search, Sparkles, Tag, AlertCircle, ShoppingBag, Check } from 'lucide-react';
+import { Save, Plus, Trash2, Percent, Coins, Gift, Layers, Package, Calendar, Search, Tag, AlertCircle, ShoppingBag, Check } from 'lucide-react';
 import { CreatePromoInput, getPromoDetail, createPromo, updatePromo, getItemsFiltered, getCategories, Category, Item, getItem } from '../../lib/api';
 import { useDebounce } from '../../lib/hooks/useDebounce';
 import Modal from '../../components/ui/Modal';
@@ -279,11 +279,11 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
   };
 
   const PROMO_TYPES = [
-    { id: 'percentage', label: 'Diskon Persen', sub: 'Contoh: Diskon 20%', icon: Percent, color: 'text-success bg-success-soft dark:bg-success/30 border-success/30 dark:border-success' },
-    { id: 'fixed_amount', label: 'Potongan Nominal', sub: 'Contoh: Potongan Rp 10.000', icon: Coins, color: 'text-accent bg-accent-soft dark:bg-blue-950/30 border-accent/30 dark:border-accent' },
-    { id: 'bogo', label: 'Beli X Gratis Y', sub: 'Contoh: Beli 2 Gratis 1', icon: Gift, color: 'text-warning bg-warning-soft dark:bg-amber-950/30 border-warning/30 dark:border-warning' },
-    { id: 'tiered', label: 'Diskon Bertingkat', sub: 'Contoh: Beli 5 diskon 10%, beli 10 diskon 20%', icon: Layers, color: 'text-primary bg-primary-soft dark:bg-purple-950/30 border-purple-200 dark:border-purple-800' },
-    { id: 'bundle', label: 'Paket Bundle', sub: 'Contoh: Paket Hemat 3 Produk', icon: Package, color: 'text-primary bg-primary-soft dark:bg-primary/30 border-primary/30 dark:border-primary' },
+    { id: 'percentage', label: 'Diskon Persen', sub: 'Contoh: Diskon 20%', icon: Percent, color: 'text-success bg-success-soft border-success/30 ' },
+    { id: 'fixed_amount', label: 'Potongan Nominal', sub: 'Contoh: Potongan Rp 10.000', icon: Coins, color: 'text-accent bg-accent-soft border-accent/30 ' },
+    { id: 'bogo', label: 'Beli X Gratis Y', sub: 'Contoh: Beli 2 Gratis 1', icon: Gift, color: 'text-warning bg-warning-soft border-warning/30 ' },
+    { id: 'tiered', label: 'Diskon Bertingkat', sub: 'Contoh: Beli 5 diskon 10%, beli 10 diskon 20%', icon: Layers, color: 'text-primary bg-primary-soft border-primary/30' },
+    { id: 'bundle', label: 'Paket Bundle', sub: 'Contoh: Paket Hemat 3 Produk', icon: Package, color: 'text-primary bg-primary-soft border-primary/30 ' },
   ];
 
   const APPLIES_TO_OPTIONS = [
@@ -299,7 +299,7 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
       size="3xl"
       title={editPromoId ? 'Edit Promosi & Diskon' : 'Buat Promosi Baru'}
       subtitle="Atur strategi potongan harga, bundle, program BOGO, dan diskon kuantitas"
-      icon={Sparkles}
+      icon={Tag}
       footer={
         <div className="flex items-center justify-between w-full">
           <div className="text-xs text-dim font-medium">
@@ -317,7 +317,7 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
               type="submit"
               form="promo-form"
               disabled={loading}
-              className="px-6 py-2.5 bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl font-bold text-xs shadow-lg shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2.5 bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl font-bold text-xs transition-all flex items-center gap-2 disabled:opacity-50"
             >
               <Save size={15} />
               {loading ? 'Menyimpan...' : editPromoId ? 'Simpan Perubahan' : 'Buat Promo'}
@@ -329,7 +329,7 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
       <form id="promo-form" onSubmit={handleSubmit} className="space-y-6">
         {/* Error Alert */}
         {errorMessage && (
-          <div className="p-4 bg-danger-soft dark:bg-danger/40 border border-danger/30 dark:border-danger rounded-xl flex items-start gap-3 text-danger dark:text-danger animate-fade-in">
+          <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex items-start gap-3 text-danger animate-fade-in">
             <AlertCircle size={18} className="shrink-0 mt-0.5" />
             <div className="flex-1 text-xs font-semibold leading-relaxed">
               <span className="font-bold block">Gagal Menyimpan:</span>
@@ -392,10 +392,10 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
                     });
                   }}
                   className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
-                    isSelected 
-                      ? 'border-primary bg-primary-soft dark:bg-primary-soft ring-2 ring-primary/30 shadow-sm' 
-                      : 'border-line hover:bg-muted/50'
-                  }`}
+ isSelected 
+ ? 'border-primary bg-primary-soft ring-2 ring-primary/30 shadow-sm' 
+ : 'border-line hover:bg-muted/50'
+ }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className={`p-2 rounded-xl border ${type.color}`}>
@@ -427,10 +427,10 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
                     type="button"
                     onClick={() => setFormData({ ...formData, applies_to: opt.id as any })}
                     className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
-                      isSelected 
-                        ? 'border-primary bg-primary-soft dark:bg-primary-soft ring-2 ring-primary/30' 
-                        : 'border-line hover:bg-muted/50'
-                    }`}
+ isSelected 
+ ? 'border-primary bg-primary-soft ring-2 ring-primary/30' 
+ : 'border-line hover:bg-muted/50'
+ }`}
                   >
                     <div className={`p-2 rounded-xl ${isSelected ? 'bg-primary text-white' : 'bg-muted text-body'}`}>
                       <Icon size={16} />
@@ -454,9 +454,9 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
             </label>
 
             {selectedItem ? (
-              <div className="flex items-center justify-between p-3.5 bg-card rounded-xl border border-success/30 dark:border-success/60 shadow-sm">
+              <div className="flex items-center justify-between p-3.5 bg-card rounded-xl border border-success/30 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-success-soft dark:bg-success/40 text-success flex items-center justify-center font-bold text-xs">
+                  <div className="w-9 h-9 rounded-xl bg-success-soft text-success flex items-center justify-center font-bold text-xs">
                     <Check size={16} />
                   </div>
                   <div>
@@ -546,13 +546,13 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
 
         {/* Bundle Items Builder (if promo_type == 'bundle') */}
         {formData.promo_type === 'bundle' && (
-          <div className="p-5 bg-primary-soft/40 dark:bg-primary-soft rounded-xl border border-primary-soft dark:border-primary/50 space-y-4">
+          <div className="p-5 bg-primary-soft/40 rounded-xl border border-primary-soft space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-primary dark:text-primary">
+              <div className="flex items-center gap-2 text-primary ">
                 <Package size={18} />
                 <h3 className="font-extrabold text-xs uppercase tracking-wide">Komposisi Paket Bundle</h3>
               </div>
-              <span className="text-[11px] font-bold text-primary dark:text-primary bg-primary-soft/70 dark:bg-primary-soft px-2.5 py-0.5 rounded-full">
+              <span className="text-[11px] font-bold text-primary bg-primary-soft/70 px-2.5 py-0.5 rounded-full">
                 {formData.bundle_items?.length || 0} Item Terpilih
               </span>
             </div>
@@ -772,7 +772,7 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
           {/* Tiered Discount Configuration */}
           {formData.promo_type === 'tiered' && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center text-primary dark:text-purple-400">
+              <div className="flex justify-between items-center text-primary ">
                 <div className="flex items-center gap-2">
                   <Layers size={17} />
                   <h3 className="font-extrabold text-xs uppercase tracking-wide">Tingkatan Diskon Bertingkat (Tier)</h3>
@@ -780,7 +780,7 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
                 <button 
                   type="button" 
                   onClick={handleAddTier} 
-                  className="text-xs font-bold bg-primary-soft dark:bg-purple-950/40 hover:bg-primary-soft dark:hover:bg-purple-950/80 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-xl flex items-center gap-1 transition-all"
+                  className="text-xs font-bold bg-primary-soft hover:bg-primary-soft text-primary px-3 py-1.5 rounded-xl flex items-center gap-1 transition-all"
                 >
                   <Plus size={14} /> Tambah Tier
                 </button>
@@ -816,7 +816,7 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
                             newTiers[idx].discount_percent = parseFloat(e.target.value) || 0;
                             setFormData({...formData, tiers: newTiers});
                           }} 
-                          className="w-full px-3 py-2 bg-card border border-line rounded-xl text-heading text-xs font-bold text-primary dark:text-purple-400" 
+                          className="w-full px-3 py-2 bg-card border border-line rounded-xl text-heading text-xs font-bold text-primary " 
                         />
                       </div>
                     </div>
@@ -836,7 +836,7 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
           {/* BOGO Configuration */}
           {formData.promo_type === 'bogo' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-warning dark:text-warning">
+              <div className="flex items-center gap-2 text-warning ">
                 <Gift size={17} />
                 <h3 className="font-extrabold text-xs uppercase tracking-wide">Aturan Beli X Gratis Y (BOGO)</h3>
               </div>

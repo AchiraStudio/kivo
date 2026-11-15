@@ -54,7 +54,7 @@ export default function SetInitialStockModal({ isOpen, onClose, item, branchId, 
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || qty === ''}
-            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-primary/20 disabled:opacity-50"
+            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
           >
             {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             Simpan Stok Awal
@@ -63,9 +63,9 @@ export default function SetInitialStockModal({ isOpen, onClose, item, branchId, 
       }
     >
       <div className="space-y-4">
-        <div className="bg-accent-soft dark:bg-accent/20 p-4 rounded-xl border border-accent/30 dark:border-accent/50 flex gap-3">
-          <AlertCircle size={18} className="text-accent dark:text-accent shrink-0 mt-0.5" />
-          <p className="text-xs text-accent dark:text-accent leading-relaxed">
+        <div className="bg-accent-soft p-4 rounded-xl border border-accent/30 flex gap-3">
+          <AlertCircle size={18} className="text-accent shrink-0 mt-0.5" />
+          <p className="text-xs text-accent leading-relaxed">
             Stok awal hanya dapat diatur satu kali saat inisialisasi barang. Perubahan berikutnya harus melalui menu Penyesuaian Stok.
           </p>
         </div>

@@ -11,21 +11,21 @@ interface Props { onBack: () => void; }
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 0) {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/15 text-amber-500 font-bold" title="Peringkat 1">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning/15 text-warning font-bold" title="Peringkat 1">
         <Trophy size={13} />
       </span>
     );
   }
   if (rank === 1) {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-400/20 text-slate-500 dark:text-slate-300 font-bold" title="Peringkat 2">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-dim/20 text-dim font-bold" title="Peringkat 2">
         <Medal size={13} />
       </span>
     );
   }
   if (rank === 2) {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-700/15 text-amber-700 dark:text-amber-500 font-bold" title="Peringkat 3">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning/15 text-warning font-bold" title="Peringkat 3">
         <Medal size={13} />
       </span>
     );
@@ -106,9 +106,9 @@ export default function LaporanItemTerlaris({ onBack }: Props) {
               ) : filteredData.length === 0 ? (
                 <tr><td colSpan={7} className="py-16 text-center text-dim">Tidak ada data pada periode ini.</td></tr>
               ) : filteredData.map((r, i) => {
-                const marginColor = r.gross_margin >= 30 ? 'text-success dark:text-success' : r.gross_margin >= 10 ? 'text-warning dark:text-warning' : 'text-danger dark:text-danger';
+                const marginColor = r.gross_margin >= 30 ? 'text-success ' : r.gross_margin >= 10 ? 'text-warning ' : 'text-danger ';
                 return (
-                  <tr key={r.sku} className={`hover:bg-muted/30 ${i < 3 ? 'bg-warning-soft/30 dark:bg-warning/5' : ''}`}>
+                  <tr key={r.sku} className={`hover:bg-muted/30 ${i < 3 ? 'bg-warning-soft/30 ' : ''}`}>
                     <td className="py-3 px-6"><RankBadge rank={i} /></td>
                     <td className="py-3 px-6">
                       <p className="font-bold text-heading">{r.item_name}</p>

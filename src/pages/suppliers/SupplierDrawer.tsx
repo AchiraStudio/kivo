@@ -77,7 +77,7 @@ export default function SupplierDrawer({ isOpen, onClose, onSuccess, supplierToE
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md shadow-primary/20 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             {supplierToEdit ? 'Simpan Perubahan' : 'Simpan Pemasok Baru'}
@@ -150,7 +150,7 @@ export default function SupplierDrawer({ isOpen, onClose, onSuccess, supplierToE
         {/* Section 2: Kontak & Komunikasi */}
         <div className="space-y-4 pt-1">
           <div className="flex items-center gap-2 pb-2 border-b border-line">
-            <div className="p-1.5 bg-success-soft dark:bg-success/10 text-success dark:text-success rounded-lg">
+            <div className="p-1.5 bg-success-soft text-success rounded-lg">
               <Phone size={16} />
             </div>
             <h3 className="font-extrabold text-sm text-heading">2. Saluran Kontak & Komunikasi</h3>
@@ -194,7 +194,7 @@ export default function SupplierDrawer({ isOpen, onClose, onSuccess, supplierToE
         {/* Section 3: Alamat & Catatan */}
         <div className="space-y-4 pt-1">
           <div className="flex items-center gap-2 pb-2 border-b border-line">
-            <div className="p-1.5 bg-accent-soft dark:bg-accent/10 text-primary rounded-lg">
+            <div className="p-1.5 bg-accent-soft text-primary rounded-lg">
               <MapPin size={16} />
             </div>
             <h3 className="font-extrabold text-sm text-heading">3. Alamat Gudang & Catatan Tambahan</h3>

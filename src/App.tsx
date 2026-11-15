@@ -26,6 +26,8 @@ import MobileMenuDrawer from './components/layout/MobileMenuDrawer';
 import HostQrModal from './components/common/HostQrModal';
 import { logoutUser, setSetting } from './lib/api';
 import { isTauri, getHostUrl } from './lib/runtime';
+import { useUpdaterStore } from './store/UpdaterStore';
+import UpdateModal from './components/updater/UpdateModal';
 
 interface MainContentProps {
   activeMenu: string;
@@ -104,7 +106,7 @@ export default function App() {
 
   const { zoom, zoomIn, zoomOut, reset } = useZoomStore();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
-    return (localStorage.getItem('kivo_sidebar_collapsed') ?? localStorage.getItem('chirasys_sidebar_collapsed')) === 'true';
+    return localStorage.getItem('kivo_sidebar_collapsed') === 'true';
   });
 
   const toggleSidebar = useCallback(() => {
@@ -117,6 +119,15 @@ export default function App() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isHostQrOpen, setIsHostQrOpen] = useState(false);
+  const { updateInfo, isModalOpen, closeModal, checkUpdates } = useUpdaterStore();
+
+  // Non-intrusive background check for updates on startup
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkUpdates(false);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [checkUpdates]);
 
   // Auto-collapse sidebar on tablet screens (< 1024px)
   useEffect(() => {
@@ -158,8 +169,8 @@ export default function App() {
   // Bump refreshTrigger whenever the pull-worker syncs cloud data locally
   useEffect(() => {
     const handler = () => setRefreshTrigger(p => p + 1);
-    window.addEventListener('chirasys:sync', handler);
-    return () => window.removeEventListener('chirasys:sync', handler);
+    window.addEventListener('kivo:sync', handler);
+    return () => window.removeEventListener('kivo:sync', handler);
   }, []);
 
   useEffect(() => {
@@ -184,10 +195,10 @@ export default function App() {
         }
       }
 
-      // Global Shortcut for Cash Drawer (F2 or Alt + C) - Instant 0-lag kick
+      // Global Shortcut for Cash Drawer (F2 or Alt + C) - Instant 0-lag kick with auto-resolved printer
       if (e.key === 'F2' || (e.altKey && e.key.toLowerCase() === 'c')) {
         e.preventDefault();
-        kickCashDrawer('').catch(err => {
+        kickCashDrawer().catch(err => {
           console.error('[Global Shortcut F2] Failed to kick cash drawer:', err);
         });
       }
@@ -326,10 +337,10 @@ export default function App() {
       runSetup();
     };
 
-    window.addEventListener('chirasys:auto_sync_changed', handleAutoSyncChange);
+    window.addEventListener('kivo:auto_sync_changed', handleAutoSyncChange);
 
     return () => {
-      window.removeEventListener('chirasys:auto_sync_changed', handleAutoSyncChange);
+      window.removeEventListener('kivo:auto_sync_changed', handleAutoSyncChange);
       if (activeCleanup) activeCleanup();
     };
   }, [token]);
@@ -430,6 +441,13 @@ export default function App() {
           <HostQrModal
             isOpen={isHostQrOpen}
             onClose={() => setIsHostQrOpen(false)}
+          />
+
+          {/* GitHub Release In-App Updater Modal */}
+          <UpdateModal
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            updateInfo={updateInfo}
           />
         </main>
       </div>

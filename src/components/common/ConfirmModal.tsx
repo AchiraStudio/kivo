@@ -30,7 +30,7 @@ export default function ConfirmModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-card rounded-xl shadow-2xl p-6 max-w-sm w-full border border-line animate-fade-in">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-danger-soft dark:bg-danger/10 flex items-center justify-center text-danger">
+          <div className="w-10 h-10 rounded-full bg-danger-soft flex items-center justify-center text-danger">
             <AlertTriangle size={20} />
           </div>
           <div>

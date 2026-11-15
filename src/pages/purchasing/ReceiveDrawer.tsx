@@ -94,7 +94,7 @@ export default function ReceiveDrawer({ isOpen, onClose, onSuccess, poId, branch
             <div className="h-8 w-px bg-line dark:bg-muted" />
             <div>
               <p className="text-[10px] font-bold uppercase text-dim">Total Nilai Tagihan</p>
-              <p className="text-base font-extrabold text-success dark:text-success font-mono">
+              <p className="text-base font-extrabold text-success font-mono">
                 Rp {totalReceivingAmount.toLocaleString('id-ID')}
               </p>
             </div>
@@ -112,7 +112,7 @@ export default function ReceiveDrawer({ isOpen, onClose, onSuccess, poId, branch
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex items-center gap-2 bg-success hover:bg-success text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md shadow-success/20 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 bg-success hover:bg-success text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? <Loader2 className="animate-spin" size={16}/> : <CheckCircle2 size={16}/>}
               Konfirmasi Penerimaan & Update Stok
@@ -192,7 +192,7 @@ export default function ReceiveDrawer({ isOpen, onClose, onSuccess, poId, branch
                           onChange={e => updateLine(line.id, 'receiving_now', Number(e.target.value))}
                           max={line.max_qty}
                           min="0"
-                          className="w-full p-1.5 border rounded-lg bg-success-soft dark:bg-success/40 border-success dark:border-success text-center font-bold text-success dark:text-success text-xs font-mono outline-none focus:ring-1 focus:ring-success"
+                          className="w-full p-1.5 border rounded-lg bg-success-soft border-success text-center font-bold text-success text-xs font-mono outline-none focus:ring-1 focus:ring-success"
                         />
                       </td>
                       <td className="p-2.5">

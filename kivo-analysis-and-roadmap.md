@@ -1,6 +1,6 @@
 # Kivo: Analysis & Improvement Roadmap
 
-*Based on a direct read of the [AchiraStudio/chirasys](https://github.com/AchiraStudio/chirasys) repo (Rust + Tauri backend, React 19 + TS + Tailwind frontend, Supabase sync). Findings below are grounded in the actual code, not guesses.*
+*Based on a direct read of the [AchiraStudio/kivo](https://github.com/AchiraStudio/kivo) repo (Rust + Tauri backend, React 19 + TS + Tailwind frontend, Supabase sync). Findings below are grounded in the actual code, not guesses.*
 
 ---
 
@@ -10,7 +10,7 @@
 - **Frontend**: no router (despite `@tanstack/react-router` being installed but unused) — `App.tsx` is one big manual `activeMenu` string-switch rendering 13 top-level pages.
 - **Auth**: username/password only. No first-run experience — `LoginPage.tsx` assumes a workspace and users already exist.
 - **Workspace/multi-tenant system already exists in the backend** (`create_workspace`, `join_workspace`, `create_workspace_invite` in `sync.rs`, wired up in `api.ts`) **but is never called from any screen.** It's a fully-built feature with no UI entry point — this is your single highest-leverage fix.
-- **Branding**: hardcoded "ChiraSys" name/icon in ~21 places across the codebase; single Tailwind `brand` color token (`#2563eb`).
+- **Branding**: hardcoded previous name/icon in ~21 places across the codebase; single Tailwind `brand` color token (`#2563eb`).
 - **Language**: inconsistent — Indonesian strings ("Masuk", "Kembali", "Pengaturan") mixed with English labels ("Username", "System Admin", "Settings"), no centralized string/locale system despite a `language: id/en` setting already existing in the DB schema.
 - **Security note (worth fixing regardless of anything else):** `src-tauri/.env` containing a live Supabase URL + anon key is committed to git history (`git ls-files` confirms it's tracked, even though `.gitignore` now lists `.env`). It's an anon key, so the real exposure depends on your Supabase Row Level Security policies — but you should still rotate it and scrub it from history, because right now anyone who clones the repo has it.
 
@@ -85,7 +85,7 @@ The sidebar currently has 13 items. A few overlap conceptually for a store owner
 
 ## 6. New name: **Kivo**
 
-Decision made — the app becomes **Kivo**. This is a genuinely stronger direction than the options I floated last time, for a specific reason: "ChiraSys," "TokoBase," "Kelola" all *describe* the product category (a system, a shop base, a management verb). **Kivo describes nothing** — it's a clean brand syllable, which is exactly what lets it become an umbrella rather than a label. That's the difference between naming a product and naming a *platform*.
+Decision made — the app becomes **Kivo**. This is a genuinely stronger direction than the options I floated last time, for a specific reason: the old name, "TokoBase," "Kelola" all *describe* the product category (a system, a shop base, a management verb). **Kivo describes nothing** — it's a clean brand syllable, which is exactly what lets it become an umbrella rather than a label. That's the difference between naming a product and naming a *platform*.
 
 **Naming architecture** — this maps directly onto the sidebar consolidation from §4, so the rename and the IA cleanup become the same piece of work:
 
@@ -104,7 +104,7 @@ Practically: the sidebar section headers can literally read "Kivo POS," "Kivo In
 
 **Tagline direction** for the login screen / splash, replacing "Modern Inventory & Cashier System": **"Kivo — Platform Manajemen Bisnis Anda"** (Kivo — Your Business Management Platform). Keeps the platform positioning, stays in Indonesian as the base language.
 
-**Mechanical rename scope** (unchanged from before, just now pointed at "Kivo"): ~21 hardcoded string locations, `tauri.conf.json` product name, app icon set, `cs.ico` reference in `LoginPage.tsx`/`Sidebar.tsx`, the `chirasys-ui-theme` localStorage key in `ThemeProvider.tsx`, and the `chirasys-sync-${workspaceId}` Supabase channel name in `App.tsx` (harmless to rename, but good to catch in the same pass since it's easy to miss — it's a runtime string, not a UI label).
+**Mechanical rename scope** (unchanged from before, just now pointed at "Kivo"): ~21 hardcoded string locations, `tauri.conf.json` product name, app icon set, `cs.ico` reference in `LoginPage.tsx`/`Sidebar.tsx`, the `kivo-ui-theme` localStorage key in `ThemeProvider.tsx`, and the `kivo-sync-${workspaceId}` Supabase channel name in `App.tsx` (harmless to rename, but good to catch in the same pass since it's easy to miss — it's a runtime string, not a UI label).
 
 ---
 

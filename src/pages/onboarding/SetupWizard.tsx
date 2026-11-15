@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import { 
-  Building2, Cloud, ShieldCheck, CheckCircle2, 
-  ArrowRight, ArrowLeft, Store, Users, FileSpreadsheet,
-  Lock, Eye, EyeOff, Sparkles, Server, Check,
-  AlertCircle, Loader2, Upload, DollarSign, MapPin, Phone,
-  Sun, Moon, Pill, ShoppingCart, Coffee, Wrench, Briefcase,
-  KeyRound, Download, ExternalLink, Copy, CheckCheck, Zap
-} from 'lucide-react';
+import { Building2, Cloud, ShieldCheck, CheckCircle2, ArrowRight, ArrowLeft, Store, Users, FileSpreadsheet, Lock, Eye, EyeOff, Server, Check, AlertCircle, Loader2, Upload, DollarSign, MapPin, Phone, Sun, Moon, Pill, ShoppingCart, Coffee, Wrench, Briefcase, KeyRound, Download, ExternalLink, Copy, CheckCheck, MessageSquare, Plug } from 'lucide-react';
 import { 
   setSetting, 
   createWorkspace, 
@@ -82,7 +75,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
   const [copiedSchema, setCopiedSchema] = useState(false);
 
   // ─── Mode NEW: Kivo AI (OpenAI) ───
-  const [openaiApiKey, setOpenaiApiKey] = useState(() => localStorage.getItem('kivo_openai_api_key') || localStorage.getItem('chirasys_openai_api_key') || '');
+  const [openaiApiKey, setOpenaiApiKey] = useState(() => localStorage.getItem('kivo_openai_api_key') || '');
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
 
   // ─── Mode NEW: Owner Account ───
@@ -490,8 +483,8 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
             <span className="text-[11px] font-semibold uppercase tracking-wider text-dim">
               Kivo Setup
             </span>
-            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-primary-soft text-primary dark:bg-primary-soft dark:text-brand-light border border-primary/20 dark:border-primary/30">
-              v1.4
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-primary-soft text-primary border border-primary/20 ">
+              v1.5
             </span>
             <span className="text-[10px] font-mono font-bold px-2 py-0.2 rounded-full bg-muted text-dim border border-line">
               {mode === 'new' ? 'Buat Toko Baru' : mode === 'join' ? 'Gabung Workspace' : 'Pulihkan Cloud'}
@@ -515,8 +508,8 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
 
         {/* Global Error Banner */}
         {error && (
-          <div className="mb-3 p-3 rounded-xl bg-danger-soft dark:bg-danger/30 border border-danger dark:border-danger/60 text-danger dark:text-danger text-xs flex items-center gap-2.5 animate-fade-in shrink-0">
-            <AlertCircle size={15} className="text-danger dark:text-danger shrink-0" />
+          <div className="mb-3 p-3 rounded-xl bg-danger-soft border border-danger text-danger text-xs flex items-center gap-2.5 animate-fade-in shrink-0">
+            <AlertCircle size={15} className="text-danger shrink-0" />
             <p className="flex-1">{error}</p>
           </div>
         )}
@@ -531,7 +524,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
             <div className="space-y-4 animate-fade-in">
               <div className="text-center max-w-lg mx-auto space-y-1">
                 <div className="inline-flex p-2.5 bg-primary-soft border border-primary/20 rounded-xl mb-1">
-                  <Sparkles size={22} className="text-primary dark:text-brand-light" />
+                  <Store size={22} className="text-primary" />
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight text-heading">
                   Selamat Datang di Kivo
@@ -546,13 +539,13 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <div
                   onClick={() => setMode('new')}
                   className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
-                    mode === 'new'
-                      ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
-                      : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
-                  }`}
+ mode === 'new'
+ ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
+ : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
+ }`}
                 >
                   <div className="space-y-2">
-                    <div className="w-9 h-9 rounded-lg bg-primary-soft text-primary dark:text-brand-light flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
                       <Store size={20} />
                     </div>
                     <h3 className="font-bold text-heading text-sm">Buat Toko Baru</h3>
@@ -560,7 +553,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                       Instalasi baru untuk toko atau cabang ini. Data tersimpan lokal di komputer Anda dan siap offline.
                     </p>
                   </div>
-                  <div className="pt-3 flex items-center gap-1 text-[11px] font-semibold text-primary dark:text-brand-light">
+                  <div className="pt-3 flex items-center gap-1 text-[11px] font-semibold text-primary">
                     <span>Disarankan</span>
                     <ArrowRight size={13} />
                   </div>
@@ -570,10 +563,10 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <div
                   onClick={() => setMode('join')}
                   className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
-                    mode === 'join'
-                      ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
-                      : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
-                  }`}
+ mode === 'join'
+ ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
+ : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
+ }`}
                 >
                   <div className="space-y-2">
                     <div className="w-9 h-9 rounded-lg bg-primary-soft text-primary  flex items-center justify-center">
@@ -594,13 +587,13 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <div
                   onClick={() => setMode('restore')}
                   className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
-                    mode === 'restore'
-                      ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
-                      : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
-                  }`}
+ mode === 'restore'
+ ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
+ : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
+ }`}
                 >
                   <div className="space-y-2">
-                    <div className="w-9 h-9 rounded-lg bg-accent/20 text-accent dark:text-accent flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-accent/20 text-accent flex items-center justify-center">
                       <Server size={20} />
                     </div>
                     <h3 className="font-bold text-heading text-sm">Pulihkan Cloud</h3>
@@ -608,7 +601,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                       Masuk dengan akun Pemilik yang telah ada di Cloud untuk unduh otomatis seluruh data toko.
                     </p>
                   </div>
-                  <div className="pt-3 flex items-center gap-1 text-[11px] font-semibold text-accent dark:text-accent">
+                  <div className="pt-3 flex items-center gap-1 text-[11px] font-semibold text-accent ">
                     <span>Sinkronisasi</span>
                     <ArrowRight size={13} />
                   </div>
@@ -630,7 +623,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 )}
                 <button
                   onClick={() => { setError(''); setStep(1); }}
-                  className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center gap-2 text-xs sm:text-sm transition-colors"
+                  className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-2 text-xs sm:text-sm transition-colors"
                 >
                   <span>Lanjutkan</span>
                   <ArrowRight size={15} />
@@ -757,10 +750,10 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                         key={b.id}
                         onClick={() => setBusinessType(b.id)}
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all flex flex-col items-center text-center gap-1.5 ${
-                          isSelected
-                            ? 'border-primary bg-primary-soft ring-1 ring-primary'
-                            : 'border-line/80 bg-muted/70 dark:bg-card/60 hover:border-line-strong dark:hover:border-line-strong'
-                        }`}
+ isSelected
+ ? 'border-primary bg-primary-soft ring-1 ring-primary'
+ : 'border-line/80 bg-muted/70 dark:bg-card/60 hover:border-line-strong dark:hover:border-line-strong'
+ }`}
                       >
                         <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-primary-soft text-primary' : 'bg-line/60 dark:bg-muted text-body'}`}>
                           <IconComp size={18} />
@@ -791,7 +784,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                     setError('');
                     setStep(2);
                   }}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center gap-1.5 text-xs sm:text-sm transition-all"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all"
                 >
                   <span>Lanjutkan</span>
                   <ArrowRight size={14} />
@@ -815,10 +808,10 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <div 
                   onClick={() => setEnableCloud(!enableCloud)}
                   className={`p-4 rounded-xl border cursor-pointer transition-all flex items-start gap-3.5 ${
-                    enableCloud 
-                      ? 'border-primary bg-primary-soft ring-1 ring-primary' 
-                      : 'border-line bg-muted/70 dark:bg-card/50 hover:border-line-strong'
-                  }`}
+ enableCloud 
+ ? 'border-primary bg-primary-soft ring-1 ring-primary' 
+ : 'border-line bg-muted/70 dark:bg-card/50 hover:border-line-strong'
+ }`}
                 >
                   <div className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
                     enableCloud ? 'bg-primary text-white' : 'border border-line-strong'
@@ -955,7 +948,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                             </>
                           ) : (
                             <>
-                              <Zap size={13} className="text-primary" />
+                              <Plug size={13} className="text-primary" />
                               <span>Tes Koneksi Cloud</span>
                             </>
                           )}
@@ -1029,7 +1022,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                   <div className="flex items-start justify-between gap-3 border-b border-line pb-3">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
-                        <Sparkles size={18} />
+                        <MessageSquare size={18} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -1092,7 +1085,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <button
                   onClick={handleNewStep2Next}
                   disabled={loading}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -1211,7 +1204,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 </button>
                 <button
                   onClick={handleNewStep3Next}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center gap-1.5 text-xs sm:text-sm transition-all"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all"
                 >
                   <span>Lanjutkan</span>
                   <ArrowRight size={14} />
@@ -1246,10 +1239,10 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                         key={m.id}
                         onClick={() => setHppMethod(m.id as any)}
                         className={`p-2.5 rounded-xl border cursor-pointer flex items-start gap-2.5 transition-all ${
-                          hppMethod === m.id
-                            ? 'border-primary bg-primary-soft ring-1 ring-primary'
-                            : 'border-line bg-muted/70 dark:bg-card/50 hover:border-line-strong dark:hover:border-line-strong'
-                        }`}
+ hppMethod === m.id
+ ? 'border-primary bg-primary-soft ring-1 ring-primary'
+ : 'border-line bg-muted/70 dark:bg-card/50 hover:border-line-strong dark:hover:border-line-strong'
+ }`}
                       >
                         <input
                           type="radio"
@@ -1280,10 +1273,10 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                           type="button"
                           onClick={() => setTaxRate(val)}
                           className={`py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                            taxRate === val
-                              ? 'border-primary bg-primary text-white shadow-xs'
-                              : 'border-line bg-muted text-heading hover:border-line-strong dark:hover:border-line-strong'
-                          }`}
+ taxRate === val
+ ? 'border-primary bg-primary text-white shadow-xs'
+ : 'border-line bg-muted text-heading hover:border-line-strong dark:hover:border-line-strong'
+ }`}
                         >
                           {val === '0' ? 'Bebas (0%)' : `${val}% PPN`}
                         </button>
@@ -1326,7 +1319,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
               <div className="pt-2 border-t border-line/80">
                 <div className="p-3 rounded-xl bg-muted/60 border border-line flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-success/20 text-success dark:text-success flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-success/20 text-success flex items-center justify-center shrink-0">
                       <FileSpreadsheet size={16} />
                     </div>
                     <div className="min-w-0">
@@ -1364,7 +1357,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 </button>
                 <button
                   onClick={() => setStep(5)}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center gap-1.5 text-xs sm:text-sm transition-all"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all"
                 >
                   <span>Lanjutkan</span>
                   <ArrowRight size={14} />
@@ -1401,7 +1394,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 </div>
                 <div className="p-2.5 rounded-xl bg-muted border border-line/80">
                   <span className="text-[9px] uppercase font-bold text-dim">Cloud / Sync</span>
-                  <p className="font-bold text-xs text-success dark:text-success truncate mt-0.5">
+                  <p className="font-bold text-xs text-success truncate mt-0.5">
                     {createdWorkspace ? createdWorkspace.code : enableCloud ? workspaceCode : 'Lokal (Offline)'}
                   </p>
                   <p className="text-[10px] text-dim">SQLite Ready</p>
@@ -1427,7 +1420,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <button
                   onClick={handleNewFinish}
                   disabled={loading}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98] disabled:opacity-50"
+                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98] disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -1510,7 +1503,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <button
                   onClick={handleJoinStep1Next}
                   disabled={loading}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -1532,7 +1525,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
           {mode === 'join' && step === 2 && (
             <div className="space-y-4 animate-fade-in">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-success-soft dark:bg-success/10 text-success dark:text-success text-[11px] font-semibold mb-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-success-soft text-success text-[11px] font-semibold mb-1">
                   <Check size={12} strokeWidth={3} />
                   <span>Terhubung ke: {createdWorkspace?.name} ({createdWorkspace?.code})</span>
                 </div>
@@ -1666,7 +1659,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <button
                   onClick={handleJoinStep2Next}
                   disabled={loading}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -1711,7 +1704,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 </div>
                 <div className="p-3 rounded-xl bg-muted border border-line/80">
                   <span className="text-[9px] uppercase font-bold text-dim">Mode Sinkronisasi</span>
-                  <p className="font-bold text-xs text-success dark:text-success truncate mt-0.5">Real-Time Cloud</p>
+                  <p className="font-bold text-xs text-success truncate mt-0.5">Real-Time Cloud</p>
                   <p className="text-[10px] text-dim">LAN Mesh Aktif</p>
                 </div>
               </div>
@@ -1720,7 +1713,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <button
                   onClick={handleJoinFinish}
                   disabled={loading}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98] disabled:opacity-50"
+                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98] disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -1829,7 +1822,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <button
                   onClick={handleRestoreStep1Next}
                   disabled={loading}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -1850,7 +1843,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
           {/* Step 2: Konfirmasi Pemulihan & Unduh Data */}
           {mode === 'restore' && step === 2 && (
             <div className="space-y-4 text-center animate-fade-in">
-              <div className="w-12 h-12 rounded-xl bg-accent/10 text-accent dark:text-accent flex items-center justify-center mx-auto">
+              <div className="w-12 h-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center mx-auto">
                 <Server size={26} />
               </div>
 
@@ -1868,7 +1861,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-dim">Kode Workspace</span>
-                  <span className="font-mono font-bold text-primary dark:text-brand-light">{createdWorkspace?.code}</span>
+                  <span className="font-mono font-bold text-primary">{createdWorkspace?.code}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-dim">Akun Pemilik</span>
@@ -1876,7 +1869,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-dim">Data Yang Dipulihkan</span>
-                  <span className="text-success dark:text-success font-semibold">Produk, Harga, Pelanggan & Laporan</span>
+                  <span className="text-success font-semibold">Produk, Harga, Pelanggan & Laporan</span>
                 </div>
               </div>
 
@@ -1891,7 +1884,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                 <button
                   onClick={handleRestoreDownload}
                   disabled={loading}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all disabled:opacity-50"
+                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm transition-all disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -1924,15 +1917,15 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
               </div>
 
               <div className="p-4 rounded-xl bg-muted border border-line/80 text-left max-w-sm mx-auto text-xs space-y-1.5">
-                <div className="flex items-center gap-2 text-success dark:text-success font-semibold">
+                <div className="flex items-center gap-2 text-success font-semibold">
                   <Check size={15} strokeWidth={3} />
                   <span>Katalog Produk & Satuan Harga Pulih</span>
                 </div>
-                <div className="flex items-center gap-2 text-success dark:text-success font-semibold">
+                <div className="flex items-center gap-2 text-success font-semibold">
                   <Check size={15} strokeWidth={3} />
                   <span>Daftar Pelanggan, Pemasok & Promosi Pulih</span>
                 </div>
-                <div className="flex items-center gap-2 text-success dark:text-success font-semibold">
+                <div className="flex items-center gap-2 text-success font-semibold">
                   <Check size={15} strokeWidth={3} />
                   <span>Hak Akses Pengguna & Cloud Sync Aktif</span>
                 </div>
@@ -1941,7 +1934,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
               <div className="flex items-center justify-center pt-2">
                 <button
                   onClick={onComplete}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm shadow-primary/25 flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98]"
+                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98]"
                 >
                   <span>Buka Dashboard Kivo</span>
                   <ArrowRight size={15} />
@@ -1955,7 +1948,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
 
       {/* Footer Branding - Compact */}
       <footer className="relative z-10 py-1.5 text-center text-[10px] text-dim border-t border-line/60 shrink-0">
-        <span>Kivo Platform &copy; {new Date().getFullYear()} — Solusi Cerdas Manajemen Bisnis &amp; Kasir Multi-Perangkat</span>
+        <span>Kivo Platform &copy; {new Date().getFullYear()} | Solusi Cerdas Manajemen Bisnis &amp; Kasir Multi-Perangkat</span>
       </footer>
     </div>
   );

@@ -43,6 +43,7 @@ const SIZE_CLASSES: Record<ModalSize, string> = {
 
 // Global counter for active open modals to safely lock/unlock body scroll
 let activeModalCount = 0;
+const modalStack: string[] = [];
 
 export default function Modal({
   isOpen = true,
@@ -77,8 +78,12 @@ export default function Modal({
       document.body.style.overflow = 'hidden';
     }
 
+    // Only the topmost modal reacts to Escape, so a modal opened from another one
+    // closes alone instead of taking its parent down with it.
+    modalStack.push(titleId);
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closeOnEsc && onClose) {
+      if (e.key === 'Escape' && closeOnEsc && onClose && modalStack[modalStack.length - 1] === titleId) {
         e.stopPropagation();
         onClose();
       }
@@ -87,12 +92,14 @@ export default function Modal({
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      const at = modalStack.lastIndexOf(titleId);
+      if (at !== -1) modalStack.splice(at, 1);
       activeModalCount = Math.max(0, activeModalCount - 1);
       if (activeModalCount === 0) {
         document.body.style.overflow = '';
       }
     };
-  }, [isOpen, closeOnEsc, onClose]);
+  }, [isOpen, closeOnEsc, onClose, titleId]);
 
   if (!isOpen) return null;
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Printer, RefreshCw, CheckCircle2, Cpu, Barcode, Zap, Sliders, Play, X, Check, Monitor, WifiOff, AlertTriangle, Network, Server, ChevronRight } from 'lucide-react';
-import { getSettings, setSetting, listPrinters, kickCashDrawer, printRawReceipt, DetectedPrinterInfo, getLanStatus, LanStatus } from '../../lib/api';
+import { Printer, RefreshCw, CheckCircle2, Cpu, Barcode, Sliders, Play, X, Check, Monitor, WifiOff, AlertTriangle, Network, Server, ChevronRight, Banknote, Plug } from 'lucide-react';
+import { getSettings, setSetting, listPrinters, kickCashDrawer, printRawReceipt, DetectedPrinterInfo, getLanStatus, LanStatus, setCachedPrinterName } from '../../lib/api';
 import { EscPosBuilder } from '../../lib/escpos';
 
 import Select from '../../components/ui/Select';
@@ -54,7 +54,10 @@ export default function HardwareSettings() {
       const rAddress = data.find(s => s.key === 'receipt_address')?.value;
       const rFooter = data.find(s => s.key === 'receipt_footer')?.value;
 
-      if (pName) setSelectedPrinter(pName);
+      if (pName) {
+        setSelectedPrinter(pName);
+        setCachedPrinterName(pName);
+      }
       if (pPort) setSelectedPrinterPort(pPort);
       if (pWidth === '58mm' || pWidth === '80mm') {
         setPaperWidth(pWidth);
@@ -131,6 +134,7 @@ export default function HardwareSettings() {
     setErrorMsg('');
     try {
       await setSetting('printer_name', selectedPrinter);
+      setCachedPrinterName(selectedPrinter);
       await setSetting('printer_port', selectedPrinterPort);
       await setSetting('printer_width', paperWidth);
       await setSetting('printer_chars_per_line', String(printerCharsPerLine));
@@ -236,7 +240,7 @@ export default function HardwareSettings() {
       
       {/* Success / Error Banners */}
       {successMsg && (
-        <div className="p-4 bg-success-soft border border-success/30 text-success rounded-xl dark:bg-success/20 dark:border-success dark:text-success flex items-center justify-between animate-fade-in slide-in-from-top-2">
+        <div className="p-4 bg-success-soft border border-success/30 text-success rounded-xl flex items-center justify-between animate-fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
             <CheckCircle2 size={18} />
             <span className="text-sm font-semibold">{successMsg}</span>
@@ -245,7 +249,7 @@ export default function HardwareSettings() {
         </div>
       )}
       {errorMsg && (
-        <div className="p-4 bg-danger-soft border border-danger/30 text-danger rounded-xl dark:bg-danger/20 dark:border-danger dark:text-danger flex items-center justify-between animate-fade-in slide-in-from-top-2">
+        <div className="p-4 bg-danger-soft border border-danger/30 text-danger rounded-xl flex items-center justify-between animate-fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
             <AlertTriangle size={18} />
             <span className="text-sm font-semibold">{errorMsg}</span>
@@ -281,13 +285,13 @@ export default function HardwareSettings() {
               </button>
             </div>
 
-            {/* Printer Selection — Live from Windows OS */}
+            {/* Printer selection, live from the Windows OS */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-dim">
                 Printer Utama (Spooler Windows Terdeteksi)
               </label>
               {printersError ? (
-                <div className="p-3 bg-danger-soft dark:bg-danger/20 border border-danger/30 dark:border-danger rounded-xl text-xs text-danger flex items-center gap-2">
+                <div className="p-3 bg-danger-soft border border-danger/30 rounded-xl text-xs text-danger flex items-center gap-2">
                   <AlertTriangle size={14} /> {printersError}
                 </div>
               ) : detectedPrinters.length === 0 && !printersLoading ? (
@@ -303,7 +307,7 @@ export default function HardwareSettings() {
                 >
                   {detectedPrinters.map((p, idx) => (
                     <option key={idx} value={p.Name}>
-                      {p.Name}{p.Default ? ' [Default]' : ''} — Port: {p.PortName}
+                      {p.Name}{p.Default ? ' [Default]' : ''} | Port: {p.PortName}
                     </option>
                   ))}
                 </Select>
@@ -408,7 +412,7 @@ export default function HardwareSettings() {
                 type="button"
                 onClick={handleSaveSettings}
                 disabled={saving}
-                className="flex-1 py-3 px-4 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 px-4 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Check size={16} /> {saving ? 'Menyimpan...' : 'Simpan Konfigurasi'}
               </button>
@@ -461,10 +465,10 @@ export default function HardwareSettings() {
                       type="button"
                       onClick={() => handlePrinterChange(printer.Name)}
                       className={`w-full p-3 rounded-xl border flex items-center justify-between transition-all text-left cursor-pointer ${
-                        isSelected
-                          ? 'bg-primary-soft border-primary/40 dark:border-primary/30'
-                          : 'bg-muted/60 border-line hover:border-line-strong'
-                      }`}
+ isSelected
+ ? 'bg-primary-soft border-primary/40 '
+ : 'bg-muted/60 border-line hover:border-line-strong'
+ }`}
                     >
                       <div className="min-w-0 flex-1 pr-2">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -512,9 +516,9 @@ export default function HardwareSettings() {
 
             {lanStatus?.paired_parent_ip ? (
               <div className="space-y-3">
-                <div className="p-3.5 bg-success-soft/50 dark:bg-success/20 rounded-xl border border-success/30 dark:border-success/60 flex items-center justify-between">
+                <div className="p-3.5 bg-success-soft/50 rounded-xl border border-success/30 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-success/10 text-success dark:text-success rounded-xl">
+                    <div className="p-2 bg-success/10 text-success rounded-xl">
                       <Server size={18} />
                     </div>
                     <div>
@@ -526,7 +530,7 @@ export default function HardwareSettings() {
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-extrabold text-success dark:text-success bg-success-soft dark:bg-success/50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="text-[10px] font-extrabold text-success bg-success-soft px-2 py-0.5 rounded-full flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> Terhubung
                   </span>
                 </div>
@@ -547,9 +551,9 @@ export default function HardwareSettings() {
                       }
                     }}
                     disabled={isTestingLan}
-                    className="flex-1 py-2.5 px-3 bg-primary-soft dark:bg-primary/40 hover:bg-primary-soft text-primary-hover dark:text-primary font-bold text-xs rounded-xl border border-primary/30 dark:border-primary flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    className="flex-1 py-2.5 px-3 bg-primary-soft hover:bg-primary-soft text-primary-hover dark:text-primary font-bold text-xs rounded-xl border border-primary/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                   >
-                    <Zap size={13} /> Uji Buka Laci via LAN
+                    <Plug size={13} /> Uji Buka Laci via LAN
                   </button>
 
                   <button
@@ -606,7 +610,7 @@ export default function HardwareSettings() {
             </div>
 
             <div className="space-y-3">
-              {/* Barcode Scanner — always HID, no config needed */}
+              {/* Barcode scanner: always HID, no config needed */}
               <div className="p-3.5 bg-muted/60 rounded-xl border border-line flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-accent/10 text-accent rounded-xl">
@@ -614,7 +618,7 @@ export default function HardwareSettings() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-heading">Barcode Scanner</p>
-                    <p className="text-[10px] text-dim">USB HID / Bluetooth — Auto-read keyboard stream</p>
+                    <p className="text-[10px] text-dim">USB HID / Bluetooth: dibaca otomatis sebagai input keyboard</p>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-success bg-success/10 px-2.5 py-1 rounded-full">
@@ -626,7 +630,7 @@ export default function HardwareSettings() {
               <div className="p-3.5 bg-muted/60 rounded-xl border border-line flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-success/10 text-success rounded-xl">
-                    <Zap size={18} />
+                    <Banknote size={18} />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-heading">Laci Uang (Cash Drawer)</p>

@@ -1,10 +1,6 @@
 // src/components/Dashboard.tsx
 import { useState, useEffect, useMemo } from 'react';
-import {
-  TrendingUp, ShoppingCart, Sparkles, PackageCheck,
-  ArrowRight, RefreshCw, Plus, Store, CheckCircle2, ChevronRight,
-  CreditCard, Banknote, Smartphone, ArrowRightLeft, FileSpreadsheet, Eye, BarChart3
-} from 'lucide-react';
+import { TrendingUp, ShoppingCart, PackageCheck, ArrowRight, RefreshCw, Plus, Store, CheckCircle2, ChevronRight, CreditCard, Banknote, Smartphone, ArrowRightLeft, FileSpreadsheet, Eye, BarChart3 } from 'lucide-react';
 import {
   getLowStockAlerts, LowStockAlert, getSalesSummary, SalesSummaryRow,
   getSales, Sale, getTopSellingItems, TopItemRow, getSalesByPaymentMethod,
@@ -158,8 +154,8 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
     const handleSync = () => {
       fetchDashboardData(true);
     };
-    window.addEventListener('chirasys:sync', handleSync);
-    return () => window.removeEventListener('chirasys:sync', handleSync);
+    window.addEventListener('kivo:sync', handleSync);
+    return () => window.removeEventListener('kivo:sync', handleSync);
   }, [period, branchId]);
 
   // Derived KPI Metrics
@@ -248,10 +244,10 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Total Revenue */}
-        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-success/20 dark:border-success/20 shadow-sm flex flex-col justify-between group hover:border-success/40 transition-all">
+        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-success/20 shadow-sm flex flex-col justify-between group hover:border-success/40 transition-all">
           <div className="flex justify-between items-start mb-2 sm:mb-3">
             <span className="text-[11px] sm:text-xs font-bold text-dim uppercase tracking-wider">Total Pendapatan</span>
-            <div className="p-2 sm:p-2.5 rounded-xl bg-success/10 text-success dark:text-success">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-success/10 text-success ">
               <TrendingUp size={18} />
             </div>
           </div>
@@ -259,17 +255,17 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
             <h3 className="text-xl sm:text-2xl font-black text-heading tracking-tight font-mono">
               Rp {totalRevenue.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] sm:text-[11px] text-success dark:text-success font-semibold mt-1 flex items-center gap-1">
+            <p className="text-[10px] sm:text-[11px] text-success font-semibold mt-1 flex items-center gap-1">
               <CheckCircle2 size={12} /> Penjualan lunas tercatat
             </p>
           </div>
         </div>
 
         {/* Transaction Count & Basket */}
-        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-accent/20 dark:border-accent/20 shadow-sm flex flex-col justify-between group hover:border-accent/40 transition-all">
+        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-accent/20 shadow-sm flex flex-col justify-between group hover:border-accent/40 transition-all">
           <div className="flex justify-between items-start mb-2 sm:mb-3">
             <span className="text-[11px] sm:text-xs font-bold text-dim uppercase tracking-wider">Transaksi Kasir</span>
-            <div className="p-2 sm:p-2.5 rounded-xl bg-accent/10 text-accent dark:text-accent">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-accent/10 text-accent ">
               <ShoppingCart size={18} />
             </div>
           </div>
@@ -277,18 +273,18 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
             <h3 className="text-xl sm:text-2xl font-black text-heading tracking-tight font-mono">
               {transactionCount} <span className="text-xs sm:text-sm font-semibold text-dim font-sans">Struk</span>
             </h3>
-            <p className="text-[10px] sm:text-[11px] text-accent dark:text-accent font-semibold mt-1">
+            <p className="text-[10px] sm:text-[11px] text-accent font-semibold mt-1">
               Rata-rata: Rp {avgBasket.toLocaleString('id-ID')} / trx
             </p>
           </div>
         </div>
 
         {/* Gross Profit & Margin */}
-        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-primary/20 dark:border-primary/20 shadow-sm flex flex-col justify-between group hover:border-primary/40 transition-all">
+        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-primary/20 shadow-sm flex flex-col justify-between group hover:border-primary/40 transition-all">
           <div className="flex justify-between items-start mb-2 sm:mb-3">
             <span className="text-[11px] sm:text-xs font-bold text-dim uppercase tracking-wider">Estimasi Laba Kotor</span>
             <div className="p-2 sm:p-2.5 rounded-xl bg-primary-soft text-primary">
-              <Sparkles size={18} />
+              <TrendingUp size={18} />
             </div>
           </div>
           <div>
@@ -302,10 +298,10 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
         </div>
 
         {/* Stock Valuation */}
-        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-warning/20 dark:border-warning/20 shadow-sm flex flex-col justify-between group hover:border-warning/40 transition-all">
+        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-warning/20 shadow-sm flex flex-col justify-between group hover:border-warning/40 transition-all">
           <div className="flex justify-between items-start mb-2 sm:mb-3">
             <span className="text-[11px] sm:text-xs font-bold text-dim uppercase tracking-wider">Valuasi Persediaan</span>
-            <div className="p-2 sm:p-2.5 rounded-xl bg-warning/10 text-warning dark:text-warning">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-warning/10 text-warning ">
               <PackageCheck size={18} />
             </div>
           </div>
@@ -313,7 +309,7 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
             <h3 className="text-xl sm:text-2xl font-black text-heading tracking-tight font-mono">
               Rp {totalStockValuation.toLocaleString('id-ID')}
             </h3>
-            <p className="text-[10px] sm:text-[11px] text-warning dark:text-warning font-semibold mt-1">
+            <p className="text-[10px] sm:text-[11px] text-warning font-semibold mt-1">
               Total modal persediaan aktif
             </p>
           </div>
@@ -330,7 +326,7 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setActiveMenu('pos')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm shadow-primary/20 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all cursor-pointer"
           >
             <ShoppingCart size={14} /> Kasir POS <span className="bg-card/20 px-1.5 py-0.5 rounded text-[10px]">F1</span>
           </button>
@@ -490,7 +486,7 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
                           <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-heading">
                             {(s as any).customer_name || (s.customer_id ? 'Pelanggan Terdaftar' : 'Pelanggan Umum')}
                           </td>
-                          <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-right font-extrabold text-success dark:text-success font-mono">
+                          <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-right font-extrabold text-success font-mono">
                             Rp {s.grand_total.toLocaleString('id-ID')}
                           </td>
                           <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-center">
@@ -583,20 +579,20 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
                 <button
                   onClick={() => setAlertTab('lowStock')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    alertTab === 'lowStock'
-                      ? 'bg-card dark:bg-muted text-danger shadow-sm'
-                      : 'text-dim hover:text-heading dark:hover:text-white'
-                  }`}
+ alertTab === 'lowStock'
+ ? 'bg-card dark:bg-muted text-danger shadow-sm'
+ : 'text-dim hover:text-heading dark:hover:text-white'
+ }`}
                 >
                   Menipis ({lowStockAlerts.length})
                 </button>
                 <button
                   onClick={() => setAlertTab('expiring')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    alertTab === 'expiring'
-                      ? 'bg-card dark:bg-muted text-warning shadow-sm'
-                      : 'text-dim hover:text-heading dark:hover:text-white'
-                  }`}
+ alertTab === 'expiring'
+ ? 'bg-card dark:bg-muted text-warning shadow-sm'
+ : 'text-dim hover:text-heading dark:hover:text-white'
+ }`}
                 >
                   Kadaluarsa ({expiringAlerts.length})
                 </button>
@@ -620,7 +616,7 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
                         <p className="text-[10px] text-dim font-mono">SKU: {item.sku || '-'}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-xs font-extrabold text-danger dark:text-danger bg-danger-soft px-2 py-0.5 rounded-md">
+                        <span className="text-xs font-extrabold text-danger bg-danger-soft px-2 py-0.5 rounded-md">
                           {item.current_qty} {item.unit_name}
                         </span>
                         <p className="text-[9px] text-dim mt-0.5 font-semibold">Min: {item.min_stock}</p>
@@ -643,7 +639,7 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
                         <p className="text-[10px] text-dim font-mono">Batch: {item.batch_no || '-'} • Exp: {item.expiry_date}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-xs font-extrabold text-warning dark:text-warning bg-warning-soft px-2 py-0.5 rounded-md">
+                        <span className="text-xs font-extrabold text-warning bg-warning-soft px-2 py-0.5 rounded-md">
                           {item.days_left} hari lagi
                         </span>
                         <p className="text-[9px] text-dim mt-0.5 font-semibold">Sisa: {item.qty}</p>

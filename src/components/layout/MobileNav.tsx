@@ -46,7 +46,7 @@ export default function MobileNav({
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-3 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2">
-      <nav className="pointer-events-auto max-w-md mx-auto bg-card/90 dark:bg-[#0d121f]/90 backdrop-blur-xl border border-line/80 dark:border-line/50 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 flex items-center justify-around p-1.5 select-none transition-all">
+      <nav className="pointer-events-auto max-w-md mx-auto bg-card/90 border border-line/80 dark:border-line/50 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 flex items-center justify-around p-1.5 select-none transition-all">
         {NAV_ITEMS.filter(item => item.show).map((item) => {
           const Icon = item.icon;
           const isActive = activeMenu === item.id;

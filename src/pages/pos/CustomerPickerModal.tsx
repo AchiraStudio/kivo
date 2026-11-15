@@ -13,8 +13,8 @@ interface Props {
 
 const TIER_CONFIG = {
     regular: { label: 'Regular', color: 'bg-muted text-body dark:bg-muted dark:text-body' },
-    member:  { label: 'Member',  color: 'bg-accent-soft text-accent dark:bg-accent/30 dark:text-accent'  },
-    vip:     { label: 'VIP',     color: 'bg-warning-soft text-warning dark:bg-warning/30 dark:text-warning' },
+    member:  { label: 'Member',  color: 'bg-accent-soft text-accent '  },
+    vip:     { label: 'VIP',     color: 'bg-warning-soft text-warning ' },
 };
 
 export default function CustomerPickerModal({ isOpen, onClose, onSelect, selectedId }: Props) {

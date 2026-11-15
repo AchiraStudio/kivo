@@ -123,7 +123,7 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
         <div className="flex items-center justify-between w-full">
           <div className="text-xs text-dim">
             {successMsg ? (
-              <span className="text-success dark:text-success font-bold flex items-center gap-1.5">
+              <span className="text-success font-bold flex items-center gap-1.5">
                 <Check size={15} /> {successMsg}
               </span>
             ) : (
@@ -145,7 +145,7 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
               type="button"
               disabled={loading || saving}
               onClick={handleSave}
-              className="px-6 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/25 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+              className="px-6 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
             >
               {saving ? (
                 <>
@@ -190,10 +190,10 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-extrabold text-sm capitalize">{role.label}</span>
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                      isSelected 
-                        ? 'bg-primary-soft text-primary' 
-                        : 'bg-line dark:bg-muted text-dim'
-                    }`}>
+ isSelected 
+ ? 'bg-primary-soft text-primary' 
+ : 'bg-line dark:bg-muted text-dim'
+ }`}>
                       {count} Izin
                     </span>
                   </div>
@@ -245,7 +245,7 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 bg-danger-soft dark:bg-danger/20 border border-danger/30 dark:border-danger/40 rounded-xl text-xs text-danger dark:text-danger flex items-center gap-2">
+            <div className="p-3.5 bg-danger-soft border border-danger/30 rounded-xl text-xs text-danger flex items-center gap-2">
               <AlertCircle size={16} className="shrink-0" />
               <span>{errorMsg}</span>
             </div>

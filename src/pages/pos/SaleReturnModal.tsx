@@ -103,12 +103,12 @@ export default function SaleReturnModal({ saleId, onClose }: Props) {
       title="Proses Retur Penjualan"
       subtitle={detail.sale.transaction_no}
       icon={RotateCcw}
-      iconBg="bg-danger-soft dark:bg-danger/30 text-danger dark:text-danger"
+      iconBg="bg-danger-soft text-danger "
       footer={
         <div className="flex justify-between items-center w-full">
           <div>
             <p className="text-xs text-dim font-medium mb-0.5">Total Nilai Retur</p>
-            <p className="text-xl font-bold text-danger dark:text-danger">Rp {totalReturnVal.toLocaleString('id-ID')}</p>
+            <p className="text-xl font-bold text-danger ">Rp {totalReturnVal.toLocaleString('id-ID')}</p>
           </div>
           <div className="flex gap-3">
             <button
@@ -122,7 +122,7 @@ export default function SaleReturnModal({ saleId, onClose }: Props) {
               type="button"
               onClick={handleSubmit} 
               disabled={submitting || totalReturnVal === 0 || !reason.trim()} 
-              className="px-6 py-2.5 bg-danger hover:bg-danger text-white font-bold rounded-xl shadow-lg shadow-danger/20 disabled:opacity-50 transition-colors"
+              className="px-6 py-2.5 bg-danger hover:bg-danger text-white font-bold rounded-xl disabled:opacity-50 transition-colors"
             >
               {submitting ? 'Memproses...' : 'Proses Retur'}
             </button>
@@ -131,7 +131,7 @@ export default function SaleReturnModal({ saleId, onClose }: Props) {
       }
     >
       <div className="space-y-6">
-        <div className="bg-warning-soft dark:bg-warning/20 text-warning dark:text-warning p-4 rounded-xl border border-warning/30 dark:border-warning/50 flex gap-3">
+        <div className="bg-warning-soft text-warning p-4 rounded-xl border border-warning/30 flex gap-3">
           <AlertCircle className="shrink-0 mt-0.5" size={20} />
           <div className="text-xs leading-relaxed">
             <p className="font-bold mb-1 text-sm">Informasi Retur</p>

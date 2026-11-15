@@ -50,7 +50,7 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
   const fetchItems = async (catId: string, searchStr: string) => {
     setLoadingItems(true);
     try {
-      // Use a large per_page to load all items at once — no pagination needed here
+      // Use a large per_page to load all items at once, no pagination needed here
       const res = await getItemsFiltered(searchStr, catId === 'all' ? '' : catId, '', true, 1, 9999);
       setItems(res.items);
     } catch (e) {
@@ -176,7 +176,7 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-primary/20 active:scale-[0.98] disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
           >
             {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             {isSubmitting ? 'Menyimpan...' : 'Simpan Penyesuaian'}
@@ -274,7 +274,7 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
               </thead>
               <tbody className="divide-y divide-line dark:divide-line/50 text-sm">
                 {items.map(item => (
-                  <tr key={item.id} className={`hover:bg-muted/50 dark:hover:bg-card/30 transition-colors ${selectedIds.has(item.id) ? 'bg-primary-soft dark:bg-primary-soft' : ''}`}>
+                  <tr key={item.id} className={`hover:bg-muted/50 dark:hover:bg-card/30 transition-colors ${selectedIds.has(item.id) ? 'bg-primary-soft ' : ''}`}>
                     <td className="py-2 px-4 text-center">
                       <input 
                         type="checkbox" 

@@ -114,7 +114,7 @@ export default function AccountDrawer({ isOpen, onClose, onSaved, editAccountId 
             type="submit"
             form="accountForm"
             disabled={loading}
-            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md shadow-primary/20 disabled:opacity-50"
+            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all disabled:opacity-50"
           >
             <Save size={16} />
             {loading ? 'Menyimpan...' : 'Simpan Akun'}
@@ -124,7 +124,7 @@ export default function AccountDrawer({ isOpen, onClose, onSaved, editAccountId 
     >
       <form id="accountForm" onSubmit={handleSubmit} className="space-y-4">
         {isSystem && (
-          <div className="p-3.5 bg-warning-soft dark:bg-warning/20 border border-warning/30 dark:border-warning/40 text-warning dark:text-warning rounded-xl text-xs">
+          <div className="p-3.5 bg-warning-soft border border-warning/30 text-warning rounded-xl text-xs">
             Akun sistem bawaan. Tipe akun dan saldo normal dilindungi dan tidak dapat diubah.
           </div>
         )}

@@ -25,13 +25,13 @@ interface Props {
 type ReportSubtype = 'recap' | 'detailed' | 'daily' | 'payment_methods' | 'customer' | 'cashier' | 'product_margin';
 
 const METHOD_CONFIG: Record<string, { label: string; icon: any; color: string; badgeBg: string; textCol: string }> = {
-  cash:     { label: 'Tunai (Cash)',       icon: Banknote,       color: 'bg-emerald-500', badgeBg: 'bg-emerald-500/10', textCol: 'text-emerald-500' },
-  transfer: { label: 'Transfer Bank',      icon: ArrowRightLeft, color: 'bg-blue-500',    badgeBg: 'bg-blue-500/10',    textCol: 'text-blue-500' },
-  debit:    { label: 'Kartu Debit / EDC',  icon: CreditCard,     color: 'bg-indigo-500',  badgeBg: 'bg-indigo-500/10',  textCol: 'text-indigo-500' },
-  credit:   { label: 'Kartu Kredit',       icon: CreditCard,     color: 'bg-purple-500',  badgeBg: 'bg-purple-500/10',  textCol: 'text-purple-500' },
-  qris:     { label: 'QRIS / E-Wallet',    icon: Smartphone,     color: 'bg-amber-500',   badgeBg: 'bg-amber-500/10',   textCol: 'text-amber-500' },
-  card:     { label: 'Kartu EDC',          icon: CreditCard,     color: 'bg-indigo-500',  badgeBg: 'bg-indigo-500/10',  textCol: 'text-indigo-500' },
-  tempo:    { label: 'Tempo / Piutang',    icon: FileText,       color: 'bg-rose-500',    badgeBg: 'bg-rose-500/10',    textCol: 'text-rose-500' },
+  cash:     { label: 'Tunai (Cash)',       icon: Banknote,       color: 'bg-success', badgeBg: 'bg-success/10', textCol: 'text-success' },
+  transfer: { label: 'Transfer Bank',      icon: ArrowRightLeft, color: 'bg-info',    badgeBg: 'bg-info/10',    textCol: 'text-info' },
+  debit:    { label: 'Kartu Debit / EDC',  icon: CreditCard,     color: 'bg-primary',  badgeBg: 'bg-primary/10',  textCol: 'text-primary' },
+  credit:   { label: 'Kartu Kredit',       icon: CreditCard,     color: 'bg-primary',  badgeBg: 'bg-primary/10',  textCol: 'text-primary' },
+  qris:     { label: 'QRIS / E-Wallet',    icon: Smartphone,     color: 'bg-warning',   badgeBg: 'bg-warning/10',   textCol: 'text-warning' },
+  card:     { label: 'Kartu EDC',          icon: CreditCard,     color: 'bg-primary',  badgeBg: 'bg-primary/10',  textCol: 'text-primary' },
+  tempo:    { label: 'Tempo / Piutang',    icon: FileText,       color: 'bg-danger',    badgeBg: 'bg-danger/10',    textCol: 'text-danger' },
 };
 
 const SUB_REPORTS: { id: ReportSubtype; label: string; desc: string }[] = [
@@ -219,8 +219,8 @@ export default function LaporanPenjualan({ onBack, initialSubtype = 'recap' }: P
 
   useEffect(() => {
     const handleSync = () => fetchReportData();
-    window.addEventListener('chirasys:sync', handleSync);
-    return () => window.removeEventListener('chirasys:sync', handleSync);
+    window.addEventListener('kivo:sync', handleSync);
+    return () => window.removeEventListener('kivo:sync', handleSync);
   }, [activeSubtype, dateFrom, dateTo, selectedCustomerId, selectedUserId, selectedPaymentMethod, selectedCategoryId, selectedPriceType]);
 
   // Aggregated KPI Calculations

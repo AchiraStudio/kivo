@@ -114,7 +114,7 @@ pub async fn create_sale(
             match first_branch {
                 Some(b) => b,
                 None => {
-                    let _ = sqlx::query("INSERT OR IGNORE INTO branches (id, name, mode) VALUES ('branch_001', 'ChiraSys Main HQ', 'local')")
+                    let _ = sqlx::query("INSERT OR IGNORE INTO branches (id, name, mode) VALUES ('branch_001', 'Kivo Main HQ', 'local')")
                         .execute(&mut *tx)
                         .await;
                     "branch_001".to_string()

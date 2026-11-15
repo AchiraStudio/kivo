@@ -60,7 +60,7 @@ export default function LaporanPembelian({ onBack }: Props) {
                   <td className="py-3 px-6 text-right font-mono text-heading">{r.purchase_count}</td>
                   <td className="py-3 px-6 text-right font-mono font-semibold text-heading">Rp {r.total_amount.toLocaleString('id-ID')}</td>
                   <td className="py-3 px-6 text-right font-mono text-success">Rp {r.paid_amount.toLocaleString('id-ID')}</td>
-                  <td className={`py-3 px-6 text-right font-mono font-bold ${(r.total_amount - r.paid_amount) > 0 ? 'text-danger dark:text-danger' : 'text-dim'}`}>
+                  <td className={`py-3 px-6 text-right font-mono font-bold ${(r.total_amount - r.paid_amount) > 0 ? 'text-danger ' : 'text-dim'}`}>
                     {(r.total_amount - r.paid_amount) > 0 ? `Rp ${(r.total_amount - r.paid_amount).toLocaleString('id-ID')}` : '-'}
                   </td>
                 </tr>

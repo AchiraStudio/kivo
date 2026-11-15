@@ -10,7 +10,7 @@ export interface SelectOption {
 export interface SelectProps {
   value?: string;
   onChange?: (value: string) => void;
-  /** Explicit options list — or pass <option> elements as children */
+  /** Explicit options list, or pass <option> elements as children */
   options?: SelectOption[];
   children?: React.ReactNode;
   disabled?: boolean;
@@ -45,7 +45,7 @@ function optionsFromChildren(children: React.ReactNode): SelectOption[] {
 }
 
 /**
- * Custom themed dropdown — replaces every native <select> in the app.
+ * Custom themed dropdown that replaces every native <select> in the app.
  * Accepts either `options={[{value,label}]}` or `<option>` children so existing
  * JSX converts mechanically. Popover panel, keyboard nav, check-mark selection.
  */

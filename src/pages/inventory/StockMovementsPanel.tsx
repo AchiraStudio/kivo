@@ -60,7 +60,7 @@ export default function StockMovementsPanel({ isOpen, onClose, item, branchId }:
                   )}
                 </div>
                 <div className="text-right">
-                  <p className={`font-mono font-bold text-base flex items-center justify-end gap-1 ${mov.direction === 'in' ? 'text-success dark:text-success' : 'text-danger dark:text-danger'}`}>
+                  <p className={`font-mono font-bold text-base flex items-center justify-end gap-1 ${mov.direction === 'in' ? 'text-success ' : 'text-danger '}`}>
                     {mov.direction === 'in' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                     {mov.direction === 'in' ? '+' : '-'}{Math.abs(mov.qty_change)}
                   </p>

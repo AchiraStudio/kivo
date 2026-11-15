@@ -111,7 +111,7 @@ export default function HostQrModal({ isOpen, onClose }: HostQrModalProps) {
 
         {/* QR Code Presentation Box */}
         <div className="flex flex-col items-center justify-center p-6 bg-card border border-line rounded-2xl shadow-sm relative overflow-hidden">
-          <div className="p-3 bg-white rounded-2xl shadow-md border border-neutral-200">
+          <div className="p-3 bg-white rounded-2xl border border-line">
             <QRCodeSVG
               value={hostWebUrl}
               size={180}

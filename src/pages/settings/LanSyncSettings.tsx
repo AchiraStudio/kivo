@@ -1,22 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Wifi,
-  Server,
-  Laptop,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
-  Radio,
-  Loader2,
-  Network,
-  Unplug,
-  Activity,
-  Terminal,
-  Copy,
-  Check,
-  Zap,
-  X
-} from 'lucide-react';
+import { Wifi, Server, Laptop, RefreshCw, AlertTriangle, CheckCircle2, Radio, Loader2, Network, Unplug, Activity, Terminal, Copy, Check, X, Plug } from 'lucide-react';
 import {
   getLanStatus,
   getLanPeers,
@@ -103,7 +86,7 @@ export default function LanSyncSettings() {
 
     // Listen for live peer updates from UDP discovery
     let unlistenPeers: (() => void) | undefined;
-    listen<LanPeer[]>('chirasys:lan_peers_updated', (event) => {
+    listen<LanPeer[]>('kivo:lan_peers_updated', (event) => {
       setPeers(event.payload);
     }).then(unsub => {
       unlistenPeers = unsub;
@@ -111,7 +94,7 @@ export default function LanSyncSettings() {
 
     // Listen for status updates
     let unlistenStatus: (() => void) | undefined;
-    listen('chirasys:lan_status_updated', () => {
+    listen('kivo:lan_status_updated', () => {
       loadData();
     }).then(unsub => {
       unlistenStatus = unsub;
@@ -422,8 +405,8 @@ export default function LanSyncSettings() {
           type="button"
           onClick={handleToggleAutoConnect}
           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            status?.auto_connect ? 'bg-primary' : 'bg-line-strong dark:bg-line-strong'
-          }`}
+ status?.auto_connect ? 'bg-primary' : 'bg-line-strong dark:bg-line-strong'
+ }`}
           role="switch"
           aria-checked={status?.auto_connect}
         >
@@ -438,16 +421,16 @@ export default function LanSyncSettings() {
       {/* LIVE ACTIVE CONNECTION STATUS CARD */}
       {isChild ? (
         <div className={`rounded-xl border p-5 transition-all shadow-xs ${
-          isConnected
-            ? 'bg-success-soft border-success/20'
-            : 'bg-warning/5 border-warning/30 dark:border-warning/20'
-        }`}>
+ isConnected
+ ? 'bg-success-soft border-success/20'
+ : 'bg-warning/5 border-warning/30 '
+ }`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-start sm:items-center gap-3.5">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
                 isConnected
-                  ? 'bg-success text-white shadow-success/20'
-                  : 'bg-warning text-white shadow-warning/20'
+                  ? 'bg-success text-white'
+                  : 'bg-warning text-white'
               }`}>
                 {isConnected ? <Activity size={24} className="animate-pulse" /> : <Unplug size={24} />}
               </div>
@@ -455,10 +438,10 @@ export default function LanSyncSettings() {
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                    isConnected
-                      ? 'bg-success-soft text-success dark:bg-success/60 dark:text-success'
-                      : 'bg-warning-soft text-warning dark:bg-amber-950/60 dark:text-warning'
-                  }`}>
+ isConnected
+ ? 'bg-success-soft text-success '
+ : 'bg-warning-soft text-warning '
+ }`}>
                     <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success animate-ping' : 'bg-warning'}`} />
                     {isConnected ? 'Terhubung ke Server Induk' : 'Belum Terhubung ke Induk'}
                   </span>
@@ -511,7 +494,7 @@ export default function LanSyncSettings() {
 
                 <button
                   onClick={handleDisconnect}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-danger dark:text-danger bg-danger-soft dark:bg-danger/30 border border-danger/30 dark:border-danger hover:bg-danger-soft transition-colors flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-danger bg-danger-soft border border-danger/30 hover:bg-danger-soft transition-colors flex items-center gap-1.5"
                 >
                   <Unplug size={13} />
                   Putuskan
@@ -524,30 +507,30 @@ export default function LanSyncSettings() {
 
           {/* Sync Result Toast Banner */}
           {syncResult && (
-            <div className="mt-3 p-3 rounded-xl bg-success-soft dark:bg-success/40 border border-success/30 dark:border-success text-xs text-success dark:text-success/30 flex items-center justify-between">
+            <div className="mt-3 p-3 rounded-xl bg-success-soft border border-success/30 text-xs text-success flex items-center justify-between">
               <span className="flex items-center gap-1.5 font-bold">
                 <CheckCircle2 size={14} className="text-success" /> {syncResult.message}
               </span>
-              <span className="text-[10px] font-mono text-success dark:text-success">Latensi: {syncResult.latency_ms} ms</span>
+              <span className="text-[10px] font-mono text-success ">Latensi: {syncResult.latency_ms} ms</span>
             </div>
           )}
 
           {syncError && (
-            <div className="mt-3 p-3 rounded-xl bg-danger-soft dark:bg-danger/40 border border-danger/30 dark:border-danger text-xs text-danger dark:text-danger flex items-center gap-1.5 font-bold">
+            <div className="mt-3 p-3 rounded-xl bg-danger-soft border border-danger/30 text-xs text-danger flex items-center gap-1.5 font-bold">
               <AlertTriangle size={14} className="text-danger shrink-0" /> {syncError}
             </div>
           )}
         </div>
       ) : (
         /* Status Card for Parent Device */
-        <div className="bg-primary-soft/70 dark:bg-primary-soft border border-primary/30 dark:border-primary/60 rounded-xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-primary-soft/70 border border-primary/30 rounded-xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-bold shadow-xs shrink-0">
               <Server size={24} />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 rounded-full bg-primary-soft text-primary dark:bg-primary dark:text-primary text-[11px] font-black uppercase">
+                <span className="px-2.5 py-0.5 rounded-full bg-primary-soft text-primary text-[11px] font-black uppercase">
                   Server Induk Aktif
                 </span>
                 <span className="text-xs text-dim font-mono">Port :{status?.http_port}</span>
@@ -610,7 +593,7 @@ export default function LanSyncSettings() {
 
           <div className="mt-4 pt-3 border-t border-line flex items-center justify-between">
             <span className="text-xs font-bold text-heading">Status Server Lokal</span>
-            <span className="flex items-center gap-1.5 text-[11px] font-bold text-success dark:text-success bg-success-soft dark:bg-success/30 px-2 py-0.5 rounded-full border border-success/30 dark:border-success/50">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-success bg-success-soft px-2 py-0.5 rounded-full border border-success/30 ">
               <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> Aktif (:3699)
             </span>
           </div>
@@ -628,10 +611,10 @@ export default function LanSyncSettings() {
             <button
               onClick={() => handleRoleChange('parent')}
               className={`p-4 rounded-xl border text-left transition-all relative ${
-                status?.role === 'parent'
-                  ? 'border-primary bg-primary-soft/50 dark:bg-primary/30 ring-2 ring-primary/30 shadow-xs'
-                  : 'border-line hover:border-line-strong dark:hover:border-line-strong bg-muted/50 dark:bg-card/30'
-              }`}
+ status?.role === 'parent'
+ ? 'border-primary bg-primary-soft/50 ring-2 ring-primary/30 shadow-xs'
+ : 'border-line hover:border-line-strong dark:hover:border-line-strong bg-muted/50 dark:bg-card/30'
+ }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -651,10 +634,10 @@ export default function LanSyncSettings() {
             <button
               onClick={() => handleRoleChange('child')}
               className={`p-4 rounded-xl border text-left transition-all relative ${
-                status?.role === 'child'
-                  ? 'border-accent bg-accent-soft/50 dark:bg-blue-950/30 ring-2 ring-accent/30 shadow-xs'
-                  : 'border-line hover:border-line-strong dark:hover:border-line-strong bg-muted/50 dark:bg-card/30'
-              }`}
+ status?.role === 'child'
+ ? 'border-accent bg-accent-soft/50 ring-2 ring-accent/30 shadow-xs'
+ : 'border-line hover:border-line-strong dark:hover:border-line-strong bg-muted/50 dark:bg-card/30'
+ }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -684,8 +667,8 @@ export default function LanSyncSettings() {
               <button
                 onClick={handleToggleAutoConnect}
                 className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                  status?.auto_connect ? 'bg-primary' : 'bg-line-strong dark:bg-line-strong'
-                }`}
+ status?.auto_connect ? 'bg-primary' : 'bg-line-strong dark:bg-line-strong'
+ }`}
               >
                 <div className={`bg-card w-4 h-4 rounded-full shadow-md transform transition-transform ${status?.auto_connect ? 'translate-x-5' : 'translate-x-0'}`} />
               </button>
@@ -754,10 +737,10 @@ export default function LanSyncSettings() {
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 ${
-                      isParentPeer
-                        ? 'bg-primary-soft text-primary-hover dark:bg-primary dark:text-primary border border-primary/30 dark:border-primary'
-                        : 'bg-accent-soft text-accent dark:bg-blue-950 dark:text-accent border border-accent/30 dark:border-accent'
-                    }`}>
+ isParentPeer
+ ? 'bg-primary-soft text-primary-hover border border-primary/30 '
+ : 'bg-accent-soft text-accent border border-accent/30 '
+ }`}>
                       {isParentPeer ? <Server size={18} /> : <Laptop size={18} />}
                     </div>
 
@@ -770,14 +753,14 @@ export default function LanSyncSettings() {
                           </span>
                         )}
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${
-                          isParentPeer
-                            ? 'bg-primary-soft text-primary-hover border-primary/30 dark:bg-primary/40 dark:text-primary dark:border-primary'
-                            : 'bg-accent-soft text-accent border-accent/30 dark:bg-blue-950/40 dark:text-accent dark:border-accent'
-                        }`}>
+ isParentPeer
+ ? 'bg-primary-soft text-primary-hover border-primary/30 '
+ : 'bg-accent-soft text-accent border-accent/30 '
+ }`}>
                           {isParentPeer ? 'Induk (Server)' : 'Kasir Klien'}
                         </span>
                         {isPairedWithThis && (
-                          <span className="px-2 py-0.5 rounded-full bg-success-soft text-success dark:bg-success/60 dark:text-success border border-success dark:border-success text-[10px] font-black uppercase flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full bg-success-soft text-success border border-success text-[10px] font-black uppercase flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> Terhubung
                           </span>
                         )}
@@ -785,7 +768,7 @@ export default function LanSyncSettings() {
                       <div className="flex items-center gap-2 mt-1 text-[11px] text-dim font-mono">
                         <span>IP: {peer.ip_address}:{peer.http_port}</span>
                         <span>•</span>
-                        <span className="flex items-center gap-1 text-success dark:text-success">
+                        <span className="flex items-center gap-1 text-success ">
                           <span className="w-1.5 h-1.5 rounded-full bg-success" /> Online
                         </span>
                       </div>
@@ -809,7 +792,7 @@ export default function LanSyncSettings() {
                         {isPairedWithThis ? (
                           <button
                             onClick={handleDisconnect}
-                            className="px-3 py-1.5 rounded-xl border border-danger/30 dark:border-danger bg-danger-soft dark:bg-danger/30 text-danger dark:text-danger text-xs font-bold flex items-center gap-1 hover:bg-danger-soft transition-colors cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl border border-danger/30 bg-danger-soft text-danger text-xs font-bold flex items-center gap-1 hover:bg-danger-soft transition-colors cursor-pointer"
                           >
                             <Unplug size={12} /> Putuskan
                           </button>
@@ -817,12 +800,12 @@ export default function LanSyncSettings() {
                           <button
                             onClick={() => handleConnectPeer(peer)}
                             disabled={connectingPeer === peer.device_id}
-                            className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-black flex items-center gap-1.5 hover:bg-primary/90 transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             {connectingPeer === peer.device_id ? (
                               <><Loader2 size={14} className="animate-spin" /> Menghubungkan...</>
                             ) : (
-                              <><Zap size={14} className="text-yellow-300 fill-yellow-300" /> Hubungkan ke Induk Ini</>
+                              <><Plug size={14} /> Hubungkan ke Induk Ini</>
                             )}
                           </button>
                         )}
@@ -834,10 +817,10 @@ export default function LanSyncSettings() {
                       <button
                         onClick={() => handleParentRequestConnectChild(peer)}
                         disabled={parentConnectingChild === peer.device_id}
-                        className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                        className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-black flex items-center gap-1.5 hover:bg-primary/90 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                         title="Kirim instruksi ke komputer kasir klien agar otomatis terhubung ke Server Induk ini"
                       >
-                        <Zap size={14} className="text-yellow-300 fill-yellow-300" />
+                        <Plug size={14} />
                         {parentConnectingChild === peer.device_id ? 'Menghubungkan...' : 'Hubungkan Kasir Klien Ini'}
                       </button>
                     )}
@@ -898,7 +881,7 @@ export default function LanSyncSettings() {
                 disabled={isConnectingManual || !manualIp.trim()}
                 className="flex-1 btn-primary text-xs py-2 flex items-center justify-center gap-1.5"
               >
-                {isConnectingManual ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+                {isConnectingManual ? <Loader2 size={13} className="animate-spin" /> : <Plug size={13} />}
                 Hubungkan
               </button>
             </div>
@@ -907,10 +890,10 @@ export default function LanSyncSettings() {
           {/* Manual Ping Result Banner */}
           {manualTestResult && (
             <div className={`mt-3 p-3.5 rounded-xl border text-xs flex items-center justify-between ${
-              manualTestResult.success
-                ? 'bg-success-soft dark:bg-success/40 border-success/30 dark:border-success text-success dark:text-success/30'
-                : 'bg-danger-soft dark:bg-danger/40 border-danger/30 dark:border-danger text-danger dark:text-danger/30'
-            }`}>
+ manualTestResult.success
+ ? 'bg-success-soft border-success/30 text-success '
+ : 'bg-danger-soft border-danger/30 text-danger '
+ }`}>
               <div className="flex items-center gap-2">
                 {manualTestResult.success ? <CheckCircle2 size={16} className="text-success" /> : <AlertTriangle size={16} className="text-danger" />}
                 <div>
@@ -920,12 +903,12 @@ export default function LanSyncSettings() {
                       : 'Gagal terhubung ke alamat IP'}
                   </p>
                   {manualTestResult.error && (
-                    <p className="text-[11px] text-danger dark:text-danger mt-0.5">{manualTestResult.error}</p>
+                    <p className="text-[11px] text-danger mt-0.5">{manualTestResult.error}</p>
                   )}
                 </div>
               </div>
               {manualTestResult.success && (
-                <span className="font-mono text-[11px] font-bold text-success dark:text-success">
+                <span className="font-mono text-[11px] font-bold text-success ">
                   {manualTestResult.latency_ms} ms
                 </span>
               )}
@@ -943,7 +926,7 @@ export default function LanSyncSettings() {
           title="Pusat Diagnostik & Debug Koneksi LAN"
           subtitle={`Memverifikasi integritas jaringan lokal ke ${diagnosticTarget?.ip}:${diagnosticTarget?.port}`}
           icon={Terminal}
-          iconBg="bg-primary-soft text-primary dark:text-primary"
+          iconBg="bg-primary-soft text-primary "
           footer={
             <div className="flex justify-between items-center w-full">
               <button
@@ -987,10 +970,10 @@ export default function LanSyncSettings() {
               <div className="space-y-3">
                 {/* Status Header Banner */}
                 <div className={`p-4 rounded-xl border flex items-center justify-between ${
-                  diagnosticResult.success
-                    ? 'bg-success-soft dark:bg-success/40 border-success/30 dark:border-success text-success dark:text-success-soft'
-                    : 'bg-danger-soft dark:bg-danger/40 border-danger/30 dark:border-danger text-danger dark:text-danger-soft'
-                }`}>
+ diagnosticResult.success
+ ? 'bg-success-soft border-success/30 text-success '
+ : 'bg-danger-soft border-danger/30 text-danger '
+ }`}>
                   <div className="flex items-center gap-3">
                     {diagnosticResult.success ? (
                       <CheckCircle2 size={24} className="text-success" />
@@ -1024,7 +1007,7 @@ export default function LanSyncSettings() {
 
                   <div className="flex items-center justify-between py-1 border-b border-line/60 dark:border-line">
                     <span className="text-body">1. HTTP Handshake & Latensi Ping</span>
-                    <span className={`font-bold font-mono ${diagnosticResult.success ? 'text-success dark:text-success' : 'text-danger'}`}>
+                    <span className={`font-bold font-mono ${diagnosticResult.success ? 'text-success ' : 'text-danger'}`}>
                       {diagnosticResult.success ? `PASS (${diagnosticResult.latency_ms} ms)` : 'FAIL'}
                     </span>
                   </div>

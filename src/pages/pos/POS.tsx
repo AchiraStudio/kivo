@@ -3,7 +3,7 @@ import {
   ShoppingCart, Search, Plus, Minus, Trash2, UserCheck, 
   PauseCircle, PlayCircle, Loader2, HelpCircle, Edit3, Check, 
   X as XIcon, Crown, LayoutGrid, List, ArrowRight, RotateCcw,
-  Activity, Pill, Package, Sparkles
+  Activity, Pill, Package, Baby
 } from 'lucide-react';
 import { usePosStore, PosLine, PosHold } from './POSStore';
 import { 
@@ -24,29 +24,29 @@ function getCategoryAvatar(categoryName?: string) {
   if (cat.includes('ALKES') || cat.includes('ALAT') || cat.includes('MEDIS') || cat.includes('JARUM') || cat.includes('SPUIT') || cat.includes('PERBAN') || cat.includes('KASA')) {
     return {
       Icon: Activity,
-      avatarClass: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/20',
-      badgeClass: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+      avatarClass: 'bg-info/15 text-info border border-info/20',
+      badgeClass: 'bg-info/10 text-info',
     };
   }
   if (cat.includes('BIOTIK') || cat.includes('OBAT') || cat.includes('INTERNIS') || cat.includes('BAPIL') || cat.includes('GENERIK') || cat.includes('TABLET') || cat.includes('KAPSUL') || cat.includes('SIRUP') || cat.includes('INJEKSI') || cat.includes('SALEP')) {
     return {
       Icon: Pill,
-      avatarClass: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20',
-      badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+      avatarClass: 'bg-primary/15 text-primary border border-primary/20',
+      badgeClass: 'bg-primary/10 text-primary',
     };
   }
   if (cat.includes('BABY') || cat.includes('ANAK') || cat.includes('BAYI') || cat.includes('KOSMETIK') || cat.includes('BEAUTY') || cat.includes('SKIN') || cat.includes('PERAWATAN')) {
     return {
-      Icon: Sparkles,
-      avatarClass: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20',
-      badgeClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+      Icon: Baby,
+      avatarClass: 'bg-danger/15 text-danger border border-danger/20',
+      badgeClass: 'bg-danger/10 text-danger',
     };
   }
   if (cat.includes('HERBAL') || cat.includes('JAMU') || cat.includes('ALAMI') || cat.includes('VITAMIN') || cat.includes('SUPLEMEN')) {
     return {
       Icon: Pill,
-      avatarClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
-      badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      avatarClass: 'bg-success/15 text-success border border-success/20',
+      badgeClass: 'bg-success/10 text-success',
     };
   }
   return {
@@ -177,8 +177,8 @@ export default function POS() {
       fetchItems();
       getCategories().then(setCategories).catch(console.error);
     };
-    window.addEventListener('chirasys:sync', handleSync);
-    return () => window.removeEventListener('chirasys:sync', handleSync);
+    window.addEventListener('kivo:sync', handleSync);
+    return () => window.removeEventListener('kivo:sync', handleSync);
   }, [fetchItems]);
 
   // Hardware Barcode Scanner Hook
@@ -355,7 +355,7 @@ export default function POS() {
           break;
         case 'F2':
           e.preventDefault();
-          kickCashDrawer('').catch(err => console.error('Cash drawer kick failed:', err));
+          kickCashDrawer().catch(err => console.error('Cash drawer kick failed:', err));
           break;
         case 'F3':
           e.preventDefault();
@@ -682,7 +682,7 @@ export default function POS() {
           {cart.length > 0 && (
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black font-mono tracking-tight shrink-0 transition-all ${
               mobilePosTab === 'cart'
-                ? 'bg-white text-primary'
+                ? 'bg-card text-primary'
                 : 'bg-primary text-white shadow-xs'
             }`}>
               {cart.reduce((sum, item) => sum + item.qty, 0)}
@@ -729,20 +729,20 @@ export default function POS() {
               <button
                 onClick={() => setPriceType('retail')}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  priceType === 'retail' 
-                    ? 'bg-card dark:bg-line-strong shadow-xs text-primary dark:text-white' 
-                    : 'text-body hover:text-heading'
-                }`}
+ priceType === 'retail' 
+ ? 'bg-card dark:bg-line-strong shadow-xs text-primary dark:text-white' 
+ : 'text-body hover:text-heading'
+ }`}
               >
                 Eceran
               </button>
               <button
                 onClick={() => setPriceType('wholesale')}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  priceType === 'wholesale' 
-                    ? 'bg-card dark:bg-line-strong shadow-xs text-primary dark:text-white' 
-                    : 'text-body hover:text-heading'
-                }`}
+ priceType === 'wholesale' 
+ ? 'bg-card dark:bg-line-strong shadow-xs text-primary dark:text-white' 
+ : 'text-body hover:text-heading'
+ }`}
               >
                 Grosir
               </button>
@@ -759,10 +759,10 @@ export default function POS() {
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                    viewMode === 'grid' 
-                      ? 'bg-card dark:bg-line-strong text-primary dark:text-white shadow-xs' 
-                      : 'text-dim hover:text-body'
-                  }`}
+ viewMode === 'grid' 
+ ? 'bg-card dark:bg-line-strong text-primary dark:text-white shadow-xs' 
+ : 'text-dim hover:text-body'
+ }`}
                   title="Tampilan Grid Card"
                 >
                   <LayoutGrid size={14} />
@@ -770,10 +770,10 @@ export default function POS() {
                 <button
                   onClick={() => setViewMode('table')}
                   className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                    viewMode === 'table' 
-                      ? 'bg-card dark:bg-line-strong text-primary dark:text-white shadow-xs' 
-                      : 'text-dim hover:text-body'
-                  }`}
+ viewMode === 'table' 
+ ? 'bg-card dark:bg-line-strong text-primary dark:text-white shadow-xs' 
+ : 'text-dim hover:text-body'
+ }`}
                   title="Tampilan Daftar List"
                 >
                   <List size={14} />
@@ -849,10 +849,10 @@ export default function POS() {
                     ref={el => { itemRefs.current[idx] = el; }}
                     onClick={() => addToCart(item)}
                     className={`group relative flex flex-col justify-between text-left rounded-2xl p-3 sm:p-3.5 transition-all duration-200 cursor-pointer select-none border ${
-                      inCartQty > 0
-                        ? 'bg-primary/[0.04] dark:bg-primary/[0.08] border-primary shadow-sm ring-2 ring-primary/25'
-                        : 'bg-card border-line/90 dark:border-line hover:border-primary/50 hover:shadow-md active:scale-[0.98] shadow-2xs'
-                    } ${isOutOfStock ? 'opacity-80 hover:opacity-100' : ''}`}
+ inCartQty > 0
+ ? 'bg-primary/[0.04] /[0.08] border-primary shadow-sm ring-2 ring-primary/25'
+ : 'bg-card border-line/90 dark:border-line hover:border-primary/50 hover:shadow-md active:scale-[0.98] shadow-2xs'
+ } ${isOutOfStock ? 'opacity-80 hover:opacity-100' : ''}`}
                   >
                     {/* Floating In-Cart Badge */}
                     {inCartQty > 0 && (
@@ -884,14 +884,14 @@ export default function POS() {
                         {/* Stock Level Indicator */}
                         {item.current_stock !== undefined && (
                           <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0 font-mono flex items-center gap-1 ${
-                            isOutOfStock
-                              ? 'text-danger bg-danger-soft/80 dark:bg-danger/30 border border-danger/30'
-                              : isLowStock
-                              ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30'
-                              : 'text-success bg-success-soft dark:bg-success/30 border border-success/30'
-                          }`}>
+ isOutOfStock
+ ? 'text-danger bg-danger-soft/80 border border-danger/30'
+ : isLowStock
+ ? 'text-warning bg-warning/10 border border-warning/30'
+ : 'text-success bg-success-soft border border-success/30'
+ }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${
-                              isOutOfStock ? 'bg-danger' : isLowStock ? 'bg-amber-500 animate-pulse' : 'bg-success'
+                              isOutOfStock ? 'bg-danger' : isLowStock ? 'bg-warning animate-pulse' : 'bg-success'
                             }`} />
                             <span>{item.current_stock > 0 ? item.current_stock : 'Habis'}</span>
                           </span>
@@ -906,7 +906,7 @@ export default function POS() {
                       {/* Generic Name / Prescription / Rack */}
                       <div className="flex items-center gap-1.5 mt-1 min-h-[16px]">
                         {item.requires_prescription === 1 && (
-                          <span className="px-1.5 py-0.2 bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[9px] font-black rounded border border-rose-500/30 shrink-0">
+                          <span className="px-1.5 py-0.2 bg-danger/15 text-danger text-[9px] font-black rounded border border-danger/30 shrink-0">
                             Rx
                           </span>
                         )}
@@ -972,8 +972,8 @@ export default function POS() {
                         key={item.id} 
                         onClick={() => addToCart(item)}
                         className={`hover:bg-primary-soft/60 dark:hover:bg-primary-soft/20 transition-colors cursor-pointer ${
-                          inCartQty > 0 ? 'bg-primary/[0.03] dark:bg-primary/[0.06]' : ''
-                        }`}
+ inCartQty > 0 ? 'bg-primary/[0.03] /[0.06]' : ''
+ }`}
                       >
                         <td className="py-2.5 px-4">
                           <div className="flex items-center gap-2">
@@ -986,7 +986,7 @@ export default function POS() {
                         <td className="py-2.5 px-4 font-bold text-heading">
                           <div className="flex items-center gap-1.5">
                             {item.requires_prescription === 1 && (
-                              <span className="px-1 py-0.2 bg-rose-500/15 text-rose-600 text-[8px] font-black rounded border border-rose-500/30">Rx</span>
+                              <span className="px-1 py-0.2 bg-danger/15 text-danger text-[8px] font-black rounded border border-danger/30">Rx</span>
                             )}
                             <span>{item.name}</span>
                           </div>
@@ -998,14 +998,14 @@ export default function POS() {
                         <td className="py-2.5 px-3 text-center">
                           {item.current_stock !== undefined ? (
                             <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-extrabold inline-flex items-center gap-1 ${
-                              isOutOfStock
-                                ? 'text-danger bg-danger-soft dark:bg-danger/30 border border-danger/30'
-                                : isLowStock
-                                ? 'text-amber-600 bg-amber-500/10 border border-amber-500/30'
-                                : 'text-success bg-success-soft dark:bg-success/30 border border-success/30'
-                            }`}>
+ isOutOfStock
+ ? 'text-danger bg-danger-soft border border-danger/30'
+ : isLowStock
+ ? 'text-warning bg-warning/10 border border-warning/30'
+ : 'text-success bg-success-soft border border-success/30'
+ }`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${
-                                isOutOfStock ? 'bg-danger' : isLowStock ? 'bg-amber-500' : 'bg-success'
+                                isOutOfStock ? 'bg-danger' : isLowStock ? 'bg-warning' : 'bg-success'
                               }`} />
                               <span>{item.current_stock > 0 ? item.current_stock : 'Habis'}</span>
                             </span>
@@ -1104,7 +1104,7 @@ export default function POS() {
                   {selectedCustomer ? (TIER_LABEL[selectedCustomer.customer_tier] || 'Regular') : 'Non-Member'}
                 </span>
                 {selectedCustomer?.loyalty_points ? (
-                  <span className="text-[9px] font-extrabold bg-warning-soft text-warning dark:bg-amber-950/40 dark:text-warning px-1.5 py-0.2 rounded-full">
+                  <span className="text-[9px] font-extrabold bg-warning-soft text-warning px-1.5 py-0.2 rounded-full">
                     {selectedCustomer.loyalty_points} Poin
                   </span>
                 ) : null}
@@ -1129,7 +1129,7 @@ export default function POS() {
             {holds.length > 0 && (
               <button
                 onClick={() => handleResume(holds[0])}
-                className="flex items-center gap-1 px-2 py-0.5 bg-warning-soft dark:bg-amber-950/40 text-warning dark:text-warning border border-warning/30 dark:border-warning rounded-lg text-[10px] font-extrabold animate-pulse"
+                className="flex items-center gap-1 px-2 py-0.5 bg-warning-soft text-warning border border-warning/30 rounded-lg text-[10px] font-extrabold animate-pulse"
                 title="Lanjutkan Transaksi Tertahan (F5)"
               >
                 <PlayCircle size={11} /> {holds.length} Tertahan
@@ -1166,12 +1166,12 @@ export default function POS() {
                   onFocus={() => setSelectedCartIdx(idx)}
                   onClick={() => setSelectedCartIdx(idx)}
                   className={`p-3.5 rounded-xl border transition-all relative ${
-                    isSelected
-                      ? 'border-primary ring-2 ring-primary/20 bg-primary-soft dark:bg-primary-soft shadow-xs'
-                      : l.is_bogo_free
-                        ? 'bg-success-soft/60 dark:bg-success/20 border-success/30 dark:border-success/50'
-                        : 'bg-card border-line hover:border-line-strong'
-                  }`}
+ isSelected
+ ? 'border-primary ring-2 ring-primary/20 bg-primary-soft shadow-xs'
+ : l.is_bogo_free
+ ? 'bg-success-soft/60 border-success/30 '
+ : 'bg-card border-line hover:border-line-strong'
+ }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -1233,7 +1233,7 @@ export default function POS() {
 
                       {l.discount_amount > 0 && (
                         <div className="mt-1">
-                          <span className="text-[10px] font-bold bg-success-soft dark:bg-success/40 text-success dark:text-success px-1.5 py-0.5 rounded-md border border-success/30 dark:border-success/40">
+                          <span className="text-[10px] font-bold bg-success-soft text-success px-1.5 py-0.5 rounded-md border border-success/30 ">
                             Diskon -Rp {l.discount_amount.toLocaleString('id-ID')}
                           </span>
                         </div>
@@ -1336,11 +1336,11 @@ export default function POS() {
               {cartDiscount > 0 && (
                 <div className="flex justify-between items-center text-body">
                   <span>Diskon Promo</span>
-                  <span className="font-bold text-success dark:text-success">-Rp {cartDiscount.toLocaleString('id-ID')}</span>
+                  <span className="font-bold text-success ">-Rp {cartDiscount.toLocaleString('id-ID')}</span>
                 </div>
               )}
               {currentTierDiscountPercent > 0 && (
-                <div className="flex justify-between items-center text-primary dark:text-primary font-semibold">
+                <div className="flex justify-between items-center text-primary font-semibold">
                   <span className="flex items-center gap-1"><Crown size={12} /> Diskon Member ({currentTierDiscountPercent}%)</span>
                   <span>-Rp {tierDiscountAmount.toLocaleString('id-ID')}</span>
                 </div>
@@ -1358,10 +1358,10 @@ export default function POS() {
           <div 
             onClick={cart.length > 0 ? startEditGrandTotal : undefined}
             className={`p-3.5 rounded-xl border transition-all cursor-pointer tour-pos-total relative overflow-hidden group ${
-              customGrandTotal !== null
-                ? 'bg-warning/10 border-warning/60 dark:bg-amber-950/20 dark:border-warning/60'
-                : 'bg-card border-line hover:border-primary hover:shadow-md'
-            }`}
+ customGrandTotal !== null
+ ? 'bg-warning/10 border-warning/60 '
+ : 'bg-card border-line hover:border-primary hover:shadow-md'
+ }`}
             title="Klik untuk ubah / negosiasi total harga (F8 / Alt+T)"
           >
             <div className="flex items-start justify-between gap-2">
@@ -1381,7 +1381,7 @@ export default function POS() {
                     <span className="text-dim line-through font-mono font-bold">
                       Rp {Math.round(calculatedGrandTotal).toLocaleString('id-ID')}
                     </span>
-                    <span className="text-[10px] font-bold text-warning dark:text-warning bg-warning-soft dark:bg-amber-950/60 px-1.5 py-0.2 rounded-md">
+                    <span className="text-[10px] font-bold text-warning bg-warning-soft px-1.5 py-0.2 rounded-md">
                       Harga Disesuaikan
                     </span>
                   </div>
@@ -1395,7 +1395,7 @@ export default function POS() {
                     e.stopPropagation();
                     resetGrandTotalOverride();
                   }}
-                  className="flex items-center gap-1 px-2 py-1 bg-warning/30/80 hover:bg-warning dark:bg-warning/60 dark:hover:bg-warning text-warning dark:text-warning-soft text-[10px] font-bold rounded-lg transition-all"
+                  className="flex items-center gap-1 px-2 py-1 bg-warning/30/80 hover:bg-warning dark:hover:bg-warning text-warning text-[10px] font-bold rounded-lg transition-all"
                   title="Kembalikan ke Total Hitungan Normal"
                 >
                   <RotateCcw size={11} /> Reset
@@ -1451,7 +1451,7 @@ export default function POS() {
             <button
               onClick={() => setShowPayment(true)}
               disabled={cart.length === 0}
-              className="col-span-3 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black bg-primary hover:bg-primary-hover text-white shadow-sm shadow-primary/25 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none transition-all tour-pos-payment cursor-pointer"
+              className="col-span-3 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black bg-primary hover:bg-primary-hover text-white active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none transition-all tour-pos-payment cursor-pointer"
             >
               <span>BAYAR SEKARANG</span>
               <ArrowRight size={16} />
@@ -1519,7 +1519,7 @@ export default function POS() {
       {cart.length > 0 && mobilePosTab === 'catalog' && (
         <div
           onClick={() => setMobilePosTab('cart')}
-          className="lg:hidden fixed bottom-18 left-3 right-3 z-30 bg-primary text-white p-3.5 rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform animate-fade-in"
+          className="lg:hidden fixed bottom-18 left-3 right-3 z-30 bg-primary text-white p-3.5 rounded-2xl flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform animate-fade-in"
         >
           <div className="flex items-center gap-2.5">
             <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-black">

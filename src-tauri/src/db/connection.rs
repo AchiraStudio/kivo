@@ -11,7 +11,7 @@ pub async fn establish_connection(app_handle: &tauri::AppHandle) -> Result<Sqlit
         Ok(dir) => dir,
         Err(_) => {
             if let Some(appdata) = std::env::var_os("APPDATA") {
-                PathBuf::from(appdata).join("com.chirasys.erp")
+                PathBuf::from(appdata).join("com.kivo.app")
             } else {
                 PathBuf::from(".").join("data")
             }
@@ -22,18 +22,7 @@ pub async fn establish_connection(app_handle: &tauri::AppHandle) -> Result<Sqlit
         fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
     }
 
-    let db_path = app_dir.join("chirasys.db");
-    
-    // Seamless fallback: If target db does not exist, check if legacy com.chirasys.app db exists and copy it
-    if !db_path.exists() {
-        if let Some(appdata) = std::env::var_os("APPDATA") {
-            let legacy_db = PathBuf::from(&appdata).join("com.chirasys.app").join("chirasys.db");
-            if legacy_db.exists() {
-                println!("📦 Found legacy database at {}, copying to {}", legacy_db.display(), db_path.display());
-                let _ = fs::copy(&legacy_db, &db_path);
-            }
-        }
-    }
+    let db_path = app_dir.join("kivo.db");
 
     println!("🗄️ DATABASE IS LOCATED AT: {}", db_path.display());
 
@@ -148,6 +137,7 @@ async fn run_migrations(pool: &SqlitePool) -> Result<(), String> {
         (include_str!("./migrations/058_staff_lan_permission.sql"), 58),
         (include_str!("./migrations/059_disable_auto_connect.sql"), 59),
         (include_str!("./migrations/060_disable_network_sync_defaults.sql"), 60),
+        (include_str!("./migrations/061_member_health.sql"), 61),
     ];
 
     for (sql, version) in migrations {

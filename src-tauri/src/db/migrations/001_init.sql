@@ -19,6 +19,6 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Insert a default admin account and branch
-INSERT OR IGNORE INTO branches (id, name, mode) VALUES ('branch_001', 'ChiraSys Main HQ', 'local');
+INSERT OR IGNORE INTO branches (id, name, mode) VALUES ('branch_001', 'Kivo Main HQ', 'local');
 INSERT OR IGNORE INTO users (id, branch_id, name, username, password_hash, role) 
 VALUES ('user_001', 'branch_001', 'System Admin', 'admin', 'hashed_password_placeholder', 'owner');

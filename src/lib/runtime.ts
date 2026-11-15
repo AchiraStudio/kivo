@@ -7,7 +7,7 @@ export const isTauri = (): boolean => {
 
 export const getHostUrl = (): string => {
   // 1. Check custom user-configured host in localStorage
-  const custom = localStorage.getItem('kivo_host_url') || localStorage.getItem('chirasys_lan_parent_url');
+  const custom = localStorage.getItem('kivo_host_url') || localStorage.getItem('kivo_lan_parent_url');
   if (custom && custom.trim() !== '') {
     return custom.trim().replace(/\/+$/, '');
   }
@@ -28,10 +28,10 @@ export const setHostUrl = (url: string | null) => {
   if (url && url.trim() !== '') {
     const clean = url.trim().replace(/\/+$/, '');
     localStorage.setItem('kivo_host_url', clean);
-    localStorage.setItem('chirasys_lan_parent_url', clean);
+    localStorage.setItem('kivo_lan_parent_url', clean);
   } else {
     localStorage.removeItem('kivo_host_url');
-    localStorage.removeItem('chirasys_lan_parent_url');
+    localStorage.removeItem('kivo_lan_parent_url');
   }
 };
 

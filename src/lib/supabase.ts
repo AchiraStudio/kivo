@@ -7,13 +7,11 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 export function getSavedSupabaseCredentials(): { url: string; anonKey: string; isConfigured: boolean } {
   const url =
     localStorage.getItem('kivo_supabase_url') ||
-    localStorage.getItem('chirasys_supabase_url') ||
     import.meta.env.VITE_SUPABASE_URL ||
     '';
 
   const anonKey =
     localStorage.getItem('kivo_supabase_anon_key') ||
-    localStorage.getItem('chirasys_supabase_anon_key') ||
     import.meta.env.VITE_SUPABASE_ANON_KEY ||
     '';
 
@@ -56,14 +54,12 @@ export function updateSupabaseCredentials(url: string, anonKey: string): void {
     localStorage.setItem('kivo_supabase_url', cleanUrl);
   } else {
     localStorage.removeItem('kivo_supabase_url');
-    localStorage.removeItem('chirasys_supabase_url');
   }
 
   if (cleanKey) {
     localStorage.setItem('kivo_supabase_anon_key', cleanKey);
   } else {
     localStorage.removeItem('kivo_supabase_anon_key');
-    localStorage.removeItem('chirasys_supabase_anon_key');
   }
 
   // Invalidate cached client to recreate with new credentials

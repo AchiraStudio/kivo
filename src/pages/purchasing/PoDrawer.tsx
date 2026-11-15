@@ -134,7 +134,7 @@ export default function PoDrawer({ isOpen, onClose, onSuccess, branchId }: PoDra
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md shadow-primary/20 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>}
               Simpan & Terbitkan PO
@@ -267,4 +267,4 @@ export default function PoDrawer({ isOpen, onClose, onSuccess, branchId }: PoDra
       </div>
     </Modal>
   );
-}
+}

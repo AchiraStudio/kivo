@@ -94,7 +94,7 @@ export default function ContextMenu() {
                 console.error('Failed to open devtools:', err);
               }
             }}
-            className="w-full px-3 py-2 flex items-center gap-3 text-sm font-medium text-warning dark:text-warning hover:bg-warning-soft dark:hover:bg-warning/20 transition-colors cursor-pointer"
+            className="w-full px-3 py-2 flex items-center gap-3 text-sm font-medium text-warning hover:bg-warning-soft dark:hover:bg-warning/20 transition-colors cursor-pointer"
           >
             <Code2 size={14} /> Inspect Element
           </button>

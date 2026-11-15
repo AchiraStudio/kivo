@@ -92,7 +92,7 @@ export default function StockOverview({ refreshTrigger, onEditItem }: StockOverv
         <div className="flex gap-3">
           <button
             onClick={handleExportExcel}
-            className="px-4 py-2 bg-success-soft text-success dark:bg-success/10 dark:text-success hover:bg-success-soft rounded-xl text-sm font-bold shadow-sm transition active:scale-95 flex items-center gap-2 border border-success/30 dark:border-success/30"
+            className="px-4 py-2 bg-success-soft text-success hover:bg-success-soft rounded-xl text-sm font-bold shadow-sm transition active:scale-95 flex items-center gap-2 border border-success/30 "
           >
             <FileSpreadsheet size={16} /> Export Excel
           </button>
@@ -115,7 +115,7 @@ export default function StockOverview({ refreshTrigger, onEditItem }: StockOverv
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-card border border-line/60 dark:border-line p-5 rounded-xl flex items-center gap-4 shadow-sm">
-          <div className="p-3 bg-accent-soft dark:bg-blue-950/40 text-accent rounded-xl">
+          <div className="p-3 bg-accent-soft text-accent rounded-xl">
             <Layers size={20} />
           </div>
           <div>
@@ -152,10 +152,10 @@ export default function StockOverview({ refreshTrigger, onEditItem }: StockOverv
             <button 
               onClick={() => setFilterMode('low')} 
               className={`px-4 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors ${
-                filterMode === 'low' 
-                  ? 'bg-card dark:bg-muted text-warning shadow-sm' 
-                  : 'text-body hover:text-body'
-              }`}
+ filterMode === 'low' 
+ ? 'bg-card dark:bg-muted text-warning shadow-sm' 
+ : 'text-body hover:text-body'
+ }`}
             >
               <AlertTriangle size={12} /> Stock Alerts ({lowStockCount})
             </button>
@@ -221,11 +221,11 @@ export default function StockOverview({ refreshTrigger, onEditItem }: StockOverv
                     <td className="py-3 px-6 font-bold text-heading">
                       {row.item_name}
                       {row.current_qty < 0 ? (
-                        <span className="text-[10px] text-danger dark:text-danger block font-black">
+                        <span className="text-[10px] text-danger block font-black">
                           Stok Minus (Defisit {Math.abs(row.current_qty)})
                         </span>
                       ) : row.is_low_stock ? (
-                        <span className="text-[10px] text-warning dark:text-warning block font-normal">
+                        <span className="text-[10px] text-warning block font-normal">
                           Perlu Restock
                         </span>
                       ) : null}
@@ -233,7 +233,7 @@ export default function StockOverview({ refreshTrigger, onEditItem }: StockOverv
                     <td className="py-3 px-6 font-mono text-xs text-body">{row.sku}</td>
                     <td className="py-3 px-6">
                       {row.category_name ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary-soft dark:bg-primary/60 text-primary dark:text-primary border border-primary/30 dark:border-primary/50">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary-soft text-primary border border-primary/30 ">
                           {row.category_name}
                         </span>
                       ) : (
@@ -243,14 +243,14 @@ export default function StockOverview({ refreshTrigger, onEditItem }: StockOverv
                     <td className="py-3 px-6 text-center text-body">{row.unit_name || '-'}</td>
                     <td className="py-3 px-6 text-right font-mono text-body">{row.min_stock}</td>
                     <td className={`py-3 px-6 text-right font-mono font-bold ${
-                      row.current_qty < 0
-                        ? 'text-danger dark:text-danger font-black'
-                        : row.is_low_stock
-                        ? 'text-warning dark:text-warning'
-                        : 'text-heading'
-                    }`}>
+ row.current_qty < 0
+ ? 'text-danger font-black'
+ : row.is_low_stock
+ ? 'text-warning '
+ : 'text-heading'
+ }`}>
                       {row.current_qty < 0 ? (
-                        <span className="px-2 py-0.5 rounded-md bg-danger-soft dark:bg-danger/40 border border-danger/30 dark:border-danger/50">
+                        <span className="px-2 py-0.5 rounded-md bg-danger-soft border border-danger/30 ">
                           {row.current_qty}
                         </span>
                       ) : (

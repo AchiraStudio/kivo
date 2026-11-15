@@ -8,7 +8,7 @@
 
 ## 🌟 Executive Summary
 
-**Kivo v1.3.2** represents the monumental transformation of the system from its initial prototype stage (formerly Chirasys) into a full-fledged, enterprise-grade, **offline-first Multi-Branch POS & ERP platform**.
+**Kivo v1.3.2** represents the monumental transformation of the system from its initial prototype stage into a full-fledged, enterprise-grade, **offline-first Multi-Branch POS & ERP platform**.
 
 This release brings an end-to-end modern visual overhaul, an interactive First-Run Onboarding Wizard, an enterprise multi-branch cloud sync engine powered by Supabase, local LAN peer-to-peer sync, an intelligent AI Assistant with function calling, and a **100% Pure Bring Your Own Key (BYOK)** security architecture with zero hardcoded credentials.
 
@@ -26,7 +26,7 @@ Kivo v1.3.2 cements a zero-trust, enterprise privacy model where **no credential
 
 ---
 
-## 🎨 2. Complete Brand & UI Overhaul (Chirasys ➔ Kivo)
+## 🎨 2. Complete Brand & UI Overhaul (Kivo)
 
 * **Design System & Typography:** Migrated to Tailwind CSS v4 with bespoke color tokens (`primary`, `primary-hover`, `primary-soft`, `heading`, `body`, `dim`, `line`, `card`, `danger`, `warning`, `success`) and crisp typography via `@fontsource-variable/manrope`.
 * **Reusable UI Primitives (`src/components/ui/`):**

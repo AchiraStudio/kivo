@@ -162,7 +162,7 @@ export default function PurchaseDetail({ purchaseId, onBack }: PurchaseDetailPro
               <button
                 type="button"
                 onClick={handlePayment}
-                className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md shadow-primary/20 transition-all"
+                className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-xl text-sm font-bold transition-all"
               >
                 Simpan Pembayaran
               </button>
@@ -228,7 +228,7 @@ export default function PurchaseDetail({ purchaseId, onBack }: PurchaseDetailPro
               <button
                 type="button"
                 onClick={handleReturn}
-                className="bg-danger hover:bg-danger text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md shadow-danger/20 transition-all"
+                className="bg-danger hover:bg-danger text-white px-5 py-2 rounded-xl text-sm font-bold transition-all"
               >
                 Proses Retur
               </button>

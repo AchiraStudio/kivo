@@ -30,13 +30,13 @@ fn main() {
         eprintln!("{}", msg);
 
         if let Some(appdata) = std::env::var_os("APPDATA") {
-            let _ = std::fs::write(std::path::Path::new(&appdata).join("chirasys_crash.log"), &msg);
+            let _ = std::fs::write(std::path::Path::new(&appdata).join("kivo_crash.log"), &msg);
         }
         if let Some(localappdata) = std::env::var_os("LOCALAPPDATA") {
-            let _ = std::fs::write(std::path::Path::new(&localappdata).join("chirasys_crash.log"), &msg);
+            let _ = std::fs::write(std::path::Path::new(&localappdata).join("kivo_crash.log"), &msg);
         }
         let _ = std::fs::write("crash.log", &msg);
     }));
 
-    chirasys::run()
+    kivo::run()
 }

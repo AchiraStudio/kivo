@@ -26,7 +26,7 @@ export default function JournalList() {
   const handleDeleteSale = async (entry: JournalEntry) => {
     setDeleting(true);
     try {
-      // Delete the underlying sale — this will also cascade-delete the journal entry
+      // Delete the underlying sale, which will also cascade-delete the journal entry
       await invoke('delete_sale', { id: entry.source_id });
       setDeleteConfirmEntry(null);
       fetchEntries();
@@ -54,8 +54,8 @@ export default function JournalList() {
 
   useEffect(() => {
     const handleSync = () => fetchEntries();
-    window.addEventListener('chirasys:sync', handleSync);
-    return () => window.removeEventListener('chirasys:sync', handleSync);
+    window.addEventListener('kivo:sync', handleSync);
+    return () => window.removeEventListener('kivo:sync', handleSync);
   }, []);
 
   const filteredEntries = entries.filter(e => {
@@ -243,7 +243,7 @@ export default function JournalList() {
             <p className="text-xs text-body">
               Keterangan: <span className="font-mono font-bold text-heading">{deleteConfirmEntry.description}</span>
             </p>
-            <div className="text-xs text-danger dark:text-danger bg-danger-soft dark:bg-danger/20 p-3 rounded-xl border border-danger/30 dark:border-danger/40">
+            <div className="text-xs text-danger bg-danger-soft p-3 rounded-xl border border-danger/30 ">
               Tindakan ini akan menghapus transaksi penjualan beserta seluruh baris jurnal akuntansi terkait secara permanen.
             </div>
           </div>

@@ -89,7 +89,7 @@ export default function SupplierList() {
         ) : (
           <div className="flex-1 overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-left text-xs">
-              <thead className="sticky top-0 bg-muted/90 dark:bg-card/90 backdrop-blur-md border-b border-line text-dim font-bold uppercase tracking-wider z-10">
+              <thead className="sticky top-0 bg-muted/90 dark:bg-card/90 border-b border-line text-dim font-bold uppercase tracking-wider z-10">
                 <tr>
                   <th className="py-3.5 px-6">Nama Perusahaan / Vendor</th>
                   <th className="py-3.5 px-6">Contact Person (PIC)</th>
@@ -123,7 +123,7 @@ export default function SupplierList() {
                             href={`https://wa.me/${s.phone.replace(/[^0-9]/g, '')}`} 
                             target="_blank" 
                             rel="noreferrer"
-                            className="text-success dark:text-success hover:underline flex items-center gap-1 text-[11px] font-bold"
+                            className="text-success hover:underline flex items-center gap-1 text-[11px] font-bold"
                           >
                             <Phone size={12} /> {s.phone}
                           </a>
@@ -134,7 +134,7 @@ export default function SupplierList() {
                       {s.email && <p className="text-[10px] text-dim font-sans mt-0.5">{s.email}</p>}
                     </td>
                     <td className="py-3.5 px-6">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent-soft dark:bg-blue-950/40 text-primary text-[10px] font-extrabold uppercase tracking-wide border border-accent-soft dark:border-accent/40">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent-soft text-primary text-[10px] font-extrabold uppercase tracking-wide border border-accent-soft ">
                         <CreditCard size={11} /> {s.payment_terms || 'NET 30'}
                       </span>
                     </td>

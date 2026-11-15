@@ -54,8 +54,8 @@ export default function SalesHistoryModal({ isOpen, onClose }: Props) {
     const handleSync = () => {
       fetchSales();
     };
-    window.addEventListener('chirasys:sync', handleSync);
-    return () => window.removeEventListener('chirasys:sync', handleSync);
+    window.addEventListener('kivo:sync', handleSync);
+    return () => window.removeEventListener('kivo:sync', handleSync);
   }, [isOpen]);
 
   const handleDelete = async (saleId: string) => {
@@ -144,10 +144,10 @@ export default function SalesHistoryModal({ isOpen, onClose }: Props) {
                     ref={el => { rowRefs.current[idx] = el; }}
                     onClick={() => setSelectedIdx(idx)}
                     className={`cursor-pointer transition-colors ${
-                      idx === selectedIdx 
-                        ? 'bg-primary-soft dark:bg-primary-soft' 
-                        : 'hover:bg-muted/40'
-                    }`}
+ idx === selectedIdx 
+ ? 'bg-primary-soft ' 
+ : 'hover:bg-muted/40'
+ }`}
                   >
                     <td className="py-3.5 px-4 font-mono text-xs text-dim">
                       {new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
@@ -165,12 +165,12 @@ export default function SalesHistoryModal({ isOpen, onClose }: Props) {
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        s.status === 'completed'
-                          ? 'bg-success-soft text-success dark:bg-success/30 dark:text-success'
-                          : s.status === 'returned'
-                            ? 'bg-warning-soft text-warning dark:bg-warning/30 dark:text-warning'
-                            : 'bg-danger-soft text-danger dark:bg-danger/30 dark:text-danger'
-                      }`}>
+ s.status === 'completed'
+ ? 'bg-success-soft text-success '
+ : s.status === 'returned'
+ ? 'bg-warning-soft text-warning '
+ : 'bg-danger-soft text-danger '
+ }`}>
                         {s.status}
                       </span>
                     </td>
@@ -187,7 +187,7 @@ export default function SalesHistoryModal({ isOpen, onClose }: Props) {
                           <button
                             onClick={() => setReturnSaleId(s.id)}
                             title="Retur Transaksi"
-                            className="p-1.5 hover:bg-warning-soft dark:hover:bg-warning/30 text-warning dark:text-warning rounded-lg transition-colors"
+                            className="p-1.5 hover:bg-warning-soft dark:hover:bg-warning/30 text-warning rounded-lg transition-colors"
                           >
                             <RotateCcw size={15} />
                           </button>

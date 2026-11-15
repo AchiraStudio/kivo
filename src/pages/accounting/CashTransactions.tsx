@@ -61,14 +61,14 @@ export default function CashTransactions() {
       <div className="flex gap-4 mb-8">
         <button 
           onClick={() => setType('in')}
-          className={`flex-1 p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-3 ${type === 'in' ? 'border-success bg-success-soft text-success dark:bg-success/10 dark:text-success' : 'border-line text-dim hover:bg-muted'}`}
+          className={`flex-1 p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-3 ${type === 'in' ? 'border-success bg-success-soft text-success ' : 'border-line text-dim hover:bg-muted'}`}
         >
           <ArrowDownCircle size={24} />
           <div className="text-left"><p className="font-bold">Kas Masuk</p><p className="text-xs opacity-80">Terima Dana</p></div>
         </button>
         <button 
           onClick={() => setType('out')}
-          className={`flex-1 p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-3 ${type === 'out' ? 'border-danger bg-danger-soft text-danger dark:bg-danger/10 dark:text-danger' : 'border-line text-dim hover:bg-muted'}`}
+          className={`flex-1 p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-3 ${type === 'out' ? 'border-danger bg-danger-soft text-danger ' : 'border-line text-dim hover:bg-muted'}`}
         >
           <ArrowUpCircle size={24} />
           <div className="text-left"><p className="font-bold">Kas Keluar</p><p className="text-xs opacity-80">Pengeluaran Dana</p></div>
@@ -104,7 +104,7 @@ export default function CashTransactions() {
           <textarea value={desc} onChange={e => setDesc(e.target.value)} required placeholder="Deskripsi transaksi..." rows={3} className="w-full bg-muted dark:bg-muted border border-line rounded-xl px-4 py-3 outline-none focus:border-primary resize-none" />
         </div>
 
-        <button type="submit" disabled={submitting} className="w-full bg-primary text-white font-bold text-base px-6 py-4 rounded-xl mt-4 hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 disabled:opacity-50">
+        <button type="submit" disabled={submitting} className="w-full bg-primary text-white font-bold text-base px-6 py-4 rounded-xl mt-4 hover:bg-primary-hover transition-colors disabled:opacity-50">
           {submitting ? 'Memproses...' : 'Simpan Transaksi'}
         </button>
       </form>

@@ -1,5 +1,5 @@
 # 🚀 Kivo — Modern Multi-Branch POS & ERP Platform
-# 🚀 Kivo — Modern Multi-Branch POS & ERP Platform (v1.4.0)
+# 🚀 Kivo — Modern Multi-Branch POS & ERP Platform (v1.5.0)
 
 <div align="center">
 
@@ -10,7 +10,7 @@
 *Engineered with Rust, Tauri 2.0, React 19, SQLite, and Supabase Cloud Sync.*
 
 [![Release](https://img.shields.io/badge/version-1.3.2-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
-[![Release](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
+[![Release](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/tauri-v2.0-24C8D8.svg)](https://tauri.app/)
 [![React](https://img.shields.io/badge/react-v19-61DAFB.svg)](https://react.dev/)

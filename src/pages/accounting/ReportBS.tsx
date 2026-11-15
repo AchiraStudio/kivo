@@ -77,7 +77,7 @@ export default function ReportBS() {
                  <div className="flex-1 flex flex-col">
                      {renderSection("Assets", data.assets, data.total_assets)}
                      
-                     <div className="mt-8 flex justify-between py-4 text-base font-bold text-primary-hover dark:text-primary bg-primary-soft dark:bg-primary-soft px-6 rounded-xl border border-primary-soft dark:border-primary/20">
+                     <div className="mt-8 flex justify-between py-4 text-base font-bold text-primary-hover dark:text-primary bg-primary-soft px-6 rounded-xl border border-primary-soft ">
                         <div>Total Assets</div>
                         <div className="tabular-nums">{data.total_assets.toLocaleString('id-ID')}</div>
                      </div>
@@ -88,7 +88,7 @@ export default function ReportBS() {
                      {renderSection("Liabilities", data.liabilities, data.liabilities.reduce((sum, r) => sum + r.amount, 0))}
                      {renderSection("Equity", data.equity, data.equity.reduce((sum, r) => sum + r.amount, 0))}
 
-                     <div className={`mt-auto flex justify-between py-4 text-base font-bold px-6 rounded-xl border ${data.total_assets === data.total_liabilities_equity ? 'bg-success-soft text-success border-success/30 dark:bg-success/20 dark:text-success' : 'bg-danger-soft text-red-800 border-danger/30 dark:bg-red-900/20 dark:text-red-400'}`}>
+                     <div className={`mt-auto flex justify-between py-4 text-base font-bold px-6 rounded-xl border ${data.total_assets === data.total_liabilities_equity ? 'bg-success-soft text-success border-success/30 ' : 'bg-danger-soft text-danger border-danger/30 '}`}>
                         <div>Total Liabilities & Equity</div>
                         <div className="tabular-nums">{data.total_liabilities_equity.toLocaleString('id-ID')}</div>
                      </div>

@@ -44,7 +44,7 @@ export default function ChartOfAccounts() {
       switch(type) {
           case 'asset': return 'bg-accent-soft text-accent border-accent/30';
           case 'liability': return 'bg-danger-soft text-danger border-danger/30';
-          case 'equity': return 'bg-primary-soft text-purple-700 border-purple-200';
+          case 'equity': return 'bg-primary-soft text-primary border-primary/30';
           case 'income': return 'bg-success-soft text-success border-success/30';
           case 'expense': return 'bg-warning-soft text-warning border-warning/30';
           default: return 'bg-muted text-body border-line';

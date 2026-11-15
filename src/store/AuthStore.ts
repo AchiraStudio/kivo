@@ -27,12 +27,12 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       setAuth: (token, user) => set({ token, user }),
       clearAuth: () => {
-        localStorage.removeItem('chirasys_lan_parent_url');
+        localStorage.removeItem('kivo_lan_parent_url');
         set({ token: null, user: null });
       },
     }),
     {
-      name: 'chirasys-auth', // localStorage key
+      name: 'kivo-auth', // localStorage key
     }
   )
 );
@@ -79,7 +79,7 @@ if (typeof window !== 'undefined') {
       const decoded = decodeSessionPayload(sessionParam);
       if (decoded) {
         localStorage.setItem(
-          'chirasys-auth',
+          'kivo-auth',
           JSON.stringify({
             state: { token: decoded.token, user: decoded.user },
             version: 0,
@@ -87,7 +87,7 @@ if (typeof window !== 'undefined') {
         );
       }
     } else if (tokenParam && tokenParam.trim() !== '') {
-      const existing = localStorage.getItem('chirasys-auth');
+      const existing = localStorage.getItem('kivo-auth');
       let existingUser = null;
       try {
         existingUser = JSON.parse(existing || '{}')?.state?.user;
@@ -105,7 +105,7 @@ if (typeof window !== 'undefined') {
       };
 
       localStorage.setItem(
-        'chirasys-auth',
+        'kivo-auth',
         JSON.stringify({
           state: { token: tokenParam, user },
           version: 0,

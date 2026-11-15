@@ -17,12 +17,12 @@ const ROLES = [
 
 function getRoleColor(role: string) {
   switch (role) {
-    case 'owner': return 'bg-primary-soft text-purple-700 dark:bg-primary-soft dark:text-purple-400';
+    case 'owner': return 'bg-primary-soft text-primary ';
     case 'admin': return 'bg-primary-soft text-primary';
-    case 'staff': return 'bg-success-soft text-success dark:bg-success/10 dark:text-success';
+    case 'staff': return 'bg-success-soft text-success ';
     // legacy roles
-    case 'kasir': return 'bg-success-soft text-success dark:bg-success/10 dark:text-success';
-    case 'gudang': return 'bg-warning-soft text-warning dark:bg-warning/10 dark:text-warning';
+    case 'kasir': return 'bg-success-soft text-success ';
+    case 'gudang': return 'bg-warning-soft text-warning ';
     default: return 'bg-muted text-body dark:bg-muted dark:text-body';
   }
 }
@@ -288,11 +288,11 @@ export default function UserManagement() {
                     {/* Permissions Status */}
                     <td className="py-3 px-6">
                       {u.role.toLowerCase() === 'owner' ? (
-                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-primary-soft text-purple-700 dark:bg-primary-soft dark:text-purple-400">
+                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-primary-soft text-primary ">
                           Akses Penuh
                         </span>
                       ) : u.is_custom_perms ? (
-                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-warning-soft text-warning dark:bg-warning/10 dark:text-warning flex items-center gap-1 w-fit">
+                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-warning-soft text-warning flex items-center gap-1 w-fit">
                           <span className="w-1.5 h-1.5 rounded-full bg-warning"></span> Kustom
                         </span>
                       ) : (
@@ -322,7 +322,7 @@ export default function UserManagement() {
                             }
                           }}
                         >
-                          <option value="">— Tidak ada —</option>
+                          <option value="">Tidak ada</option>
                           {workspaces.map(ws => (
                             <option key={ws.id} value={ws.id}>{ws.name} ({ws.code})</option>
                           ))}
@@ -336,7 +336,7 @@ export default function UserManagement() {
                     {/* Active Status */}
                     <td className="py-3 px-6">
                       {u.is_active ? (
-                        <span className="text-success dark:text-success font-semibold text-xs flex items-center gap-1.5">
+                        <span className="text-success font-semibold text-xs flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span> Aktif
                         </span>
                       ) : (
@@ -359,7 +359,7 @@ export default function UserManagement() {
                         <button
                           onClick={() => setPermModalUserId(u.id)}
                           title="Atur Hak Akses Pengguna"
-                          className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-primary-soft hover:bg-primary/15 text-primary dark:bg-primary-soft dark:hover:bg-primary-soft transition-colors flex items-center gap-1.5"
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-primary-soft hover:bg-primary/15 text-primary dark:hover:bg-primary-soft transition-colors flex items-center gap-1.5"
                         >
                           <Shield size={13} />
                           <span>Hak Akses</span>
@@ -436,7 +436,7 @@ function WorkspaceSelect({ value, onChange, workspaces }: { value: string; onCha
       <div className="flex items-center justify-between mb-1.5">
         <label className="block text-xs font-bold text-body uppercase tracking-wide">Workspace</label>
         {workspaces.length > 0 && (
-          <span className="text-[10px] font-semibold text-primary dark:text-brand-light flex items-center gap-1">
+          <span className="text-[10px] font-semibold text-primary flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
             {workspaces.length} Workspace Tersedia
           </span>
@@ -447,7 +447,7 @@ function WorkspaceSelect({ value, onChange, workspaces }: { value: string; onCha
         onChange={v => onChange(v)}
         className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary cursor-pointer"
       >
-        <option value="">— Tidak di-assign ke workspace —</option>
+        <option value="">Tidak di-assign ke workspace</option>
         {workspaces.map(ws => (
           <option key={ws.id} value={ws.id}>
             {ws.name} ({ws.code})
@@ -503,7 +503,7 @@ function AddStaffModal({ workspaces, currentWorkspaceId, onClose, onSuccess }: {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="bg-danger-soft dark:bg-danger/20 border border-danger/30 dark:border-danger text-danger dark:text-danger text-sm px-4 py-3 rounded-xl">
+          <div className="bg-danger-soft border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl">
             {error}
           </div>
         )}
@@ -544,7 +544,7 @@ function AddStaffModal({ workspaces, currentWorkspaceId, onClose, onSuccess }: {
           <label className="block text-xs font-bold text-body uppercase tracking-wide mb-2">Peran / Role</label>
           <div className="space-y-2">
             {ROLES.map(r => (
-              <label key={r.value} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${role === r.value ? 'border-primary bg-primary-soft dark:bg-primary-soft' : 'border-line hover:border-line-strong'}`}>
+              <label key={r.value} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${role === r.value ? 'border-primary bg-primary-soft ' : 'border-line hover:border-line-strong'}`}>
                 <input type="radio" name="role" value={r.value} checked={role === r.value} onChange={() => setRole(r.value)} className="mt-0.5 accent-primary" />
                 <div>
                   <p className="font-bold text-sm text-heading">{r.label}</p>
@@ -633,7 +633,7 @@ function EditUserModal({ user, workspaces, onClose, onSuccess }: { user: UserRow
     >
       <form onSubmit={handleUpdate} className="space-y-5">
         {error && (
-          <div className="bg-danger-soft dark:bg-danger/20 border border-danger/30 dark:border-danger text-danger dark:text-danger text-sm px-4 py-3 rounded-xl flex items-start gap-2">
+          <div className="bg-danger-soft border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl flex items-start gap-2">
             <AlertTriangle size={15} className="shrink-0 mt-0.5" />
             <p>{error}</p>
           </div>
@@ -688,7 +688,7 @@ function EditUserModal({ user, workspaces, onClose, onSuccess }: { user: UserRow
             type="button" 
             onClick={handleDelete} 
             disabled={loading}
-            className="px-4 py-2.5 bg-danger-soft hover:bg-danger-soft text-danger dark:bg-danger/20 dark:hover:bg-danger/40 rounded-xl text-sm font-bold transition-colors"
+            className="px-4 py-2.5 bg-danger-soft hover:bg-danger-soft text-danger dark:hover:bg-danger/40 rounded-xl text-sm font-bold transition-colors"
           >
             Hapus User
           </button>

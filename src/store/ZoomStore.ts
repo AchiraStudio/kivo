@@ -19,7 +19,7 @@ export const useZoomStore = create<ZoomState>()(
       setZoom: (zoom) => set({ zoom: Math.min(150, Math.max(70, zoom)) }),
     }),
     {
-      name: 'chirasys-zoom',
+      name: 'kivo-zoom',
     }
   )
 );

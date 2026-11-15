@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, Minimize2, Maximize2, Trash2, Copy, Check, X, BarChart3, Package, Gift, ArrowRight, Key } from 'lucide-react';
+import { Send, User, Loader2, Minimize2, Maximize2, Trash2, Copy, Check, X, BarChart3, Package, Gift, ArrowRight, Key, MessageSquare } from 'lucide-react';
 import { ChatMessage, sendChatRequest, getOpenAIApiKey, getSelectedAIModel } from '../../lib/aiClient';
 import * as api from '../../lib/api';
 import { useAuthStore } from '../../store/AuthStore';
@@ -157,8 +157,8 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
     setSavingSettings(true);
     try {
       const cleanKey = apiKeyInput.trim();
-      localStorage.setItem('chirasys_openai_api_key', cleanKey);
-      localStorage.setItem('chirasys_ai_model', selectedModel);
+      localStorage.setItem('kivo_openai_api_key', cleanKey);
+      localStorage.setItem('kivo_ai_model', selectedModel);
       try {
         await api.setSetting('openai_api_key', cleanKey);
         await api.setSetting('openai_model', selectedModel);
@@ -338,7 +338,7 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
     <>
       {/* Backdrop for mobile */}
       <div
-        className="fixed inset-0 z-[100] bg-card/50 backdrop-blur-sm sm:hidden animate-fade-in"
+        className="fixed inset-0 z-[100] bg-card/50 sm:hidden animate-fade-in"
         onClick={onClose}
       />
 
@@ -355,10 +355,10 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
           <div className="flex items-center gap-2.5">
             <div className="relative">
               <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
-                <Sparkles size={16} />
+                <MessageSquare size={16} />
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-card"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success border-2 border-card"></span>
               </span>
             </div>
             <div>
@@ -408,7 +408,7 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
 
         {/* Settings Modal Overlay */}
         {showSettings && (
-          <div className="absolute inset-0 z-30 bg-black/40 backdrop-blur-xs p-4 flex flex-col justify-center animate-fade-in">
+          <div className="absolute inset-0 z-30 bg-black/40 p-4 flex flex-col justify-center animate-fade-in">
             <div className="bg-card rounded-xl p-4 border border-line shadow-xl space-y-3.5">
               <div className="flex items-center justify-between border-b border-line pb-2.5">
                 <div className="flex items-center gap-2">
@@ -497,7 +497,7 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
           {visibleMessages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center px-4 py-6 animate-fade-in">
               <div className="w-12 h-12 rounded-xl bg-primary-soft text-primary flex items-center justify-center mb-3 shadow-xs">
-                <Sparkles size={22} />
+                <MessageSquare size={22} />
               </div>
 
               <h3 className="font-bold text-base text-heading tracking-tight">
@@ -576,7 +576,7 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
                     ? 'bg-muted text-heading border border-line'
                     : 'bg-primary-soft text-primary'
                 }`}>
-                  {isUser ? <User size={14} /> : <Bot size={14} />}
+                  {isUser ? <User size={14} /> : <MessageSquare size={14} />}
                 </div>
 
                 {/* Bubble Container */}
@@ -637,7 +637,7 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
           {loading && (
             <div className="flex gap-2.5 animate-fade-in">
               <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-soft text-primary flex items-center justify-center mt-0.5">
-                <Sparkles size={14} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin" />
               </div>
               <div className="bg-card border border-line rounded-2xl rounded-tl-xs px-4 py-2.5 flex items-center gap-2.5 shadow-xs">
                 <div className="flex items-center gap-1">
@@ -704,7 +704,7 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
 
           <div className="flex items-center justify-between px-1 mt-1.5">
             <p className="text-[10px] text-dim flex items-center gap-1">
-              <Sparkles size={11} className="text-primary shrink-0" />
+              <MessageSquare size={11} className="text-primary shrink-0" />
               Kivo AI dapat melakukan kesalahan. Verifikasi data penting.
             </p>
             {input.trim() && (

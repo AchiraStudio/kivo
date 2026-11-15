@@ -70,7 +70,7 @@ export default function ReportTB() {
               ) : (
                 data.map(row => (
                   <tr key={row.account_id} className="hover:bg-muted/50 dark:hover:bg-muted/20">
-                    <td className="px-6 py-3 font-mono text-primary dark:text-primary">{row.code}</td>
+                    <td className="px-6 py-3 font-mono text-primary ">{row.code}</td>
                     <td className="px-6 py-3 font-medium text-heading">{row.name}</td>
                     <td className="px-6 py-3 text-right tabular-nums">{row.total_debit > row.total_credit ? (row.total_debit - row.total_credit).toLocaleString('id-ID') : '-'}</td>
                     <td className="px-6 py-3 text-right tabular-nums">{row.total_credit > row.total_debit ? (row.total_credit - row.total_debit).toLocaleString('id-ID') : '-'}</td>

@@ -73,7 +73,7 @@ export default function PrintReportModal({
             <button
               type="button"
               onClick={handlePrint}
-              className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-xs shadow-md shadow-primary/20 flex items-center gap-2"
+              className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-xs flex items-center gap-2"
             >
               <Printer size={15} /> Cetak Dokumen (Print)
             </button>

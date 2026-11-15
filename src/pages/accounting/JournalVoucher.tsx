@@ -113,9 +113,9 @@ export default function JournalVoucher({ isOpen, onClose, entryId }: JournalVouc
 
             {/* Double-entry explanation note */}
             {detail.entry.source_type === 'sale' && (
-              <div className="p-3.5 bg-accent-soft dark:bg-accent/20 border border-accent/30 dark:border-accent/40 rounded-xl flex items-start gap-3">
+              <div className="p-3.5 bg-accent-soft border border-accent/30 rounded-xl flex items-start gap-3">
                 <Info size={16} className="text-primary shrink-0 mt-0.5" />
-                <p className="text-xs text-accent dark:text-accent leading-relaxed">
+                <p className="text-xs text-accent leading-relaxed">
                   <strong>Catatan Akuntansi:</strong> Total debit/kredit (Rp {totalDebit.toLocaleString('id-ID')}) adalah 2× dari nilai penjualan karena setiap transaksi menghasilkan dua pasang jurnal berpasangan: (1) Kas ↔ Pendapatan Penjualan dan (2) HPP ↔ Persediaan Barang Dagang.
                 </p>
               </div>

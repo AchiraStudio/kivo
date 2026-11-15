@@ -7,10 +7,10 @@ import Select from '../../components/ui/Select';
 interface Props { onBack: () => void; }
 
 const URGENCY = (days: number) => {
-  if (days <= 7)  return { label: 'KRITIS',     color: 'bg-danger-soft text-danger dark:bg-danger/30 dark:text-danger',   row: 'bg-danger-soft/50 dark:bg-danger/10' };
-  if (days <= 14) return { label: 'MENDESAK',   color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', row: 'bg-orange-50/50 dark:bg-orange-900/10' };
-  if (days <= 30) return { label: 'PERHATIAN',  color: 'bg-warning-soft text-warning dark:bg-warning/30 dark:text-warning', row: '' };
-  return            { label: 'AMAN',           color: 'bg-success-soft text-success dark:bg-success/30 dark:text-success', row: '' };
+  if (days <= 7)  return { label: 'KRITIS',     color: 'bg-danger-soft text-danger ',   row: 'bg-danger-soft/50 ' };
+  if (days <= 14) return { label: 'MENDESAK',   color: 'bg-warning-soft text-warning ', row: 'bg-warning-soft/50' };
+  if (days <= 30) return { label: 'PERHATIAN',  color: 'bg-warning-soft text-warning ', row: '' };
+  return            { label: 'AMAN',           color: 'bg-success-soft text-success ', row: '' };
 };
 
 export default function LaporanKadaluarsa({ onBack }: Props) {
@@ -57,20 +57,20 @@ export default function LaporanKadaluarsa({ onBack }: Props) {
       {(critical > 0 || urgent > 0) && (
         <div className="flex gap-3">
           {critical > 0 && (
-            <div className="flex-1 p-4 bg-danger-soft dark:bg-danger/20 border border-danger/30 dark:border-danger/50 rounded-xl flex items-center gap-3">
+            <div className="flex-1 p-4 bg-danger-soft border border-danger/30 rounded-xl flex items-center gap-3">
               <AlertTriangle className="text-danger shrink-0" size={24}/>
               <div>
-                <p className="font-bold text-danger dark:text-danger">{critical} item KRITIS</p>
-                <p className="text-xs text-danger/80 dark:text-danger/80">Kadaluarsa dalam 7 hari</p>
+                <p className="font-bold text-danger ">{critical} item KRITIS</p>
+                <p className="text-xs text-danger/80 ">Kadaluarsa dalam 7 hari</p>
               </div>
             </div>
           )}
           {urgent > 0 && (
-            <div className="flex-1 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/50 rounded-xl flex items-center gap-3">
+            <div className="flex-1 p-4 bg-warning-soft border border-warning/30 rounded-xl flex items-center gap-3">
               <AlertTriangle className="text-warning shrink-0" size={24}/>
               <div>
-                <p className="font-bold text-orange-700 dark:text-orange-400">{urgent} item MENDESAK</p>
-                <p className="text-xs text-warning/80 dark:text-orange-400/80">Kadaluarsa dalam 14 hari</p>
+                <p className="font-bold text-warning">{urgent} item MENDESAK</p>
+                <p className="text-xs text-warning/80 ">Kadaluarsa dalam 14 hari</p>
               </div>
             </div>
           )}

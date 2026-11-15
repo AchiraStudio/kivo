@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Cloud, CloudOff, RefreshCw, ZoomIn, ZoomOut, Sparkles, Radio, QrCode, Menu } from 'lucide-react';
+import { Sun, Moon, Cloud, CloudOff, RefreshCw, ZoomIn, ZoomOut, Radio, QrCode, Menu, ArrowUpCircle, MessageSquare } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
 import { useSyncStore } from '../../store/SyncStore';
 import { useZoomStore } from '../../store/ZoomStore';
+import { useUpdaterStore } from '../../store/UpdaterStore';
 import { getLanPeers, LanPeer } from '../../lib/api';
 import { listen } from '../../lib/events';
 
@@ -18,12 +19,13 @@ export default function Topbar({ activeMenu, onOpenAIChat, onOpenHostQr, onOpenM
   const { theme, setTheme } = useTheme();
   const { status, lastSyncTime } = useSyncStore();
   const { zoom, zoomIn, zoomOut, reset } = useZoomStore();
+  const { updateInfo, openModal } = useUpdaterStore();
   const [lanPeerCount, setLanPeerCount] = useState(0);
 
   useEffect(() => {
     getLanPeers().then(p => setLanPeerCount(p.length)).catch(() => {});
     let unlisten: (() => void) | undefined;
-    listen<LanPeer[]>('chirasys:lan_peers_updated', e => {
+    listen<LanPeer[]>('kivo:lan_peers_updated', e => {
       setLanPeerCount(e.payload.length);
     }).then(u => {
       unlisten = u;
@@ -127,6 +129,18 @@ export default function Topbar({ activeMenu, onOpenAIChat, onOpenHostQr, onOpenM
           </button>
         )}
 
+        {/* Available Update Badge */}
+        {updateInfo?.has_update && (
+          <button
+            onClick={openModal}
+            className="flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all animate-pulse cursor-pointer shadow-2xs"
+            title={`Pembaruan Kivo ${updateInfo.latest_version} tersedia`}
+          >
+            <ArrowUpCircle size={14} className="text-primary" />
+            <span className="hidden sm:inline">Update {updateInfo.latest_version}</span>
+          </button>
+        )}
+
         {/* Theme Toggle */}
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -136,14 +150,14 @@ export default function Topbar({ activeMenu, onOpenAIChat, onOpenHostQr, onOpenM
           {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
-        {/* AI Chat CTA — opens AI Assistant modal */}
+        {/* AI Chat button, opens AI Assistant modal */}
         {onOpenAIChat && (
           <button
             onClick={onOpenAIChat}
             className="ml-0.5 flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold text-xs transition-all active:scale-[0.98] shadow-xs cursor-pointer"
             title="Tanya Kivo AI Assistant"
           >
-            <Sparkles size={14} aria-hidden="true" />
+            <MessageSquare size={14} aria-hidden="true" />
             <span className="hidden sm:inline">Tanya Kivo AI</span>
           </button>
         )}

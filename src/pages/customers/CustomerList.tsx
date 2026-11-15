@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getCustomers, Customer } from '../../lib/api';
-import { Loader2, Plus, UserCircle, Edit2, Search, Eye } from 'lucide-react';
+import { Loader2, Plus, UserCircle, Edit2, Search, Eye, HeartPulse } from 'lucide-react';
 import CustomerModal from './CustomerModal';
-import CustomerProfileDrawer from './CustomerProfileDrawer';
+import CustomerProfileDrawer, { ProfileTab } from './CustomerProfileDrawer';
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -11,10 +11,18 @@ export default function CustomerList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
   const [profileCustomer, setProfileCustomer] = useState<Customer | null>(null);
+  const [profileTab, setProfileTab] = useState<ProfileTab>('purchases');
+  const openProfile = (c: Customer, tab: ProfileTab) => { setProfileTab(tab); setProfileCustomer(c); };
+
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadData = () => {
     setLoading(true);
-    getCustomers().then(data => { setCustomers(data); setLoading(false); });
+    setLoadError(null);
+    getCustomers()
+      .then(setCustomers)
+      .catch(e => setLoadError(String(e)))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadData(); }, []);
@@ -23,8 +31,8 @@ export default function CustomerList() {
   const openEdit = (c: Customer) => { setCustomerToEdit(c); setIsModalOpen(true); };
 
   const getTierColor = (tier: string) => {
-    if (tier === 'vip') return 'bg-warning-soft text-warning border-warning/30 dark:bg-warning/30 dark:text-warning dark:border-warning';
-    if (tier === 'member') return 'bg-accent-soft text-accent border-accent/30 dark:bg-accent/30 dark:text-accent dark:border-accent';
+    if (tier === 'vip') return 'bg-warning-soft text-warning border-warning/30 ';
+    if (tier === 'member') return 'bg-accent-soft text-accent border-accent/30 ';
     return 'bg-muted text-body border-line dark:bg-muted dark:text-body dark:border-line-strong';
   };
 
@@ -47,15 +55,22 @@ export default function CustomerList() {
               type="text" 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or phone..." 
+              placeholder="Cari nama atau nomor telepon"
+              aria-label="Cari pelanggan" 
               className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim" 
             />
           </div>
         </div>
-        {loading ? <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" size={32} /></div> : (
+        {loading ? <div className="flex justify-center py-20" role="status" aria-label="Memuat pelanggan"><Loader2 className="animate-spin text-primary" size={32} /></div> : loadError ? (
+          <div className="py-16 text-center px-4">
+            <p className="text-sm font-semibold text-danger">Data pelanggan gagal dimuat</p>
+            <p className="text-xs text-body mt-1 break-words">{loadError}</p>
+            <button onClick={loadData} className="mt-3 px-3 py-1.5 rounded-lg border border-line bg-card text-xs font-semibold text-heading hover:bg-muted cursor-pointer">Coba lagi</button>
+          </div>
+        ) : (
           <div className="flex-1 overflow-y-auto custom-scrollbar relative"><table className="w-full text-left">
             <thead className="sticky top-0 bg-background border-b border-line text-xs uppercase text-body font-semibold z-10">
-              <tr><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Name</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Phone</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Tier & Expiry</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5 text-right">Actions</th></tr>
+              <tr><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Nama</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Telepon</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Tier dan Masa Berlaku</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5 text-right">Aksi</th></tr>
             </thead>
             <tbody className="divide-y divide-line dark:divide-line/60 text-sm">
               {customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || (c.phone || '').includes(search)).map(c => (
@@ -71,16 +86,17 @@ export default function CustomerList() {
                         {c.customer_tier}
                       </span>
                       {c.membership_expiry && c.customer_tier !== 'regular' && (
-                        <span className="text-[10px] text-dim font-mono" title="Membership Expiry Date">
-                          Exp: {c.membership_expiry.split(' ')[0]}
+                        <span className="text-[10px] text-dim font-mono" title="Masa berlaku membership">
+                          s/d {c.membership_expiry.split(' ')[0]}
                         </span>
                       )}
                     </div>
                   </td>
                   <td className="py-2.5 px-3 sm:py-3 sm:px-5 text-right">
                     <div className="flex justify-end gap-1.5">
-                      <button onClick={() => setProfileCustomer(c)} title="Lihat Profil" className="p-1.5 text-primary bg-primary-soft hover:bg-primary/20 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"><Eye size={14} /></button>
-                      <button onClick={() => openEdit(c)} title="Edit Pelanggan" className="p-1.5 text-dim hover:text-primary bg-muted hover:bg-line rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"><Edit2 size={14} /></button>
+                      {c.id !== 'customer_umum' && <button onClick={() => openProfile(c, 'health')} title="Catatan Kesehatan" aria-label={`Catatan kesehatan ${c.name}`} className="p-1.5 text-primary bg-primary-soft hover:bg-primary/20 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"><HeartPulse size={14} /></button>}
+                      <button onClick={() => openProfile(c, 'purchases')} title="Lihat Profil" aria-label={`Lihat profil ${c.name}`} className="p-1.5 text-primary bg-primary-soft hover:bg-primary/20 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"><Eye size={14} /></button>
+                      <button onClick={() => openEdit(c)} title="Edit Pelanggan" aria-label={`Edit ${c.name}`} className="p-1.5 text-dim hover:text-primary bg-muted hover:bg-line rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"><Edit2 size={14} /></button>
                     </div>
                   </td>
                 </tr>
@@ -90,7 +106,7 @@ export default function CustomerList() {
         )}
       </div>
       <CustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} customerToEdit={customerToEdit} />
-      <CustomerProfileDrawer isOpen={!!profileCustomer} onClose={() => setProfileCustomer(null)} customer={profileCustomer} />
+      <CustomerProfileDrawer isOpen={!!profileCustomer} onClose={() => setProfileCustomer(null)} customer={profileCustomer} initialTab={profileTab} />
     </div>
   );
 }

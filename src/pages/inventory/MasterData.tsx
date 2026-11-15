@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Tag, FolderTree, Plus, Loader2, Trash2, Edit2, Save, X, ChevronRight, Wand2, Search, Layers, Sparkles, Building2 } from 'lucide-react';
+import { Tag, FolderTree, Plus, Loader2, Trash2, Edit2, Save, X, ChevronRight, Search, Layers, Building2 } from 'lucide-react';
 import { getBrands, addBrand, updateBrand, deleteBrand, getCategories, addCategory, updateCategory, deleteCategory, Brand, Category, discoverPotentialBrands, DiscoveredBrand, invoke } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
 
@@ -196,10 +196,10 @@ export default function MasterData() {
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary-soft text-primary border border-primary/20 flex items-center gap-1.5">
               <Layers size={13} /> Master Data Registry
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-success/10 text-success dark:text-success border border-success/20 flex items-center gap-1.5">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-success/10 text-success border border-success/20 flex items-center gap-1.5">
               <FolderTree size={13} /> {categories.length} Kategori
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary-soft text-primary dark:text-purple-400 border border-primary/20 flex items-center gap-1.5">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary-soft text-primary border border-primary/20 flex items-center gap-1.5">
               <Tag size={13} /> {brands.length} Brand
             </span>
           </div>
@@ -215,9 +215,9 @@ export default function MasterData() {
 
         <button
           onClick={handleDiscover}
-          className="flex items-center gap-2 px-4 py-2.5 bg-success hover:bg-success text-white rounded-xl text-xs font-bold shadow-md shadow-success/20 transition-all cursor-pointer shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 bg-success hover:bg-success text-white rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
         >
-          <Wand2 size={15} /> Auto-Discover Brand Baru
+          <Search size={15} /> Auto-Discover Brand Baru
         </button>
       </div>
 
@@ -226,10 +226,10 @@ export default function MasterData() {
         <button
           onClick={() => { setActiveTab('categories'); setEditingId(null); setSearchQuery(''); }}
           className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-            activeTab === 'categories'
-              ? 'bg-primary text-white shadow-md shadow-primary/20'
-              : 'bg-card border border-line text-body hover:text-heading dark:hover:text-white hover:bg-muted/60'
-          }`}
+ activeTab === 'categories'
+ ? 'bg-primary text-white'
+ : 'bg-card border border-line text-body hover:text-heading dark:hover:text-white hover:bg-muted/60'
+ }`}
         >
           <FolderTree size={15} /> Kategori Produk ({categories.length})
         </button>
@@ -237,10 +237,10 @@ export default function MasterData() {
         <button
           onClick={() => { setActiveTab('brands'); setEditingId(null); setSearchQuery(''); }}
           className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-            activeTab === 'brands'
-              ? 'bg-primary text-white shadow-md shadow-primary/20'
-              : 'bg-card border border-line text-body hover:text-heading dark:hover:text-white hover:bg-muted/60'
-          }`}
+ activeTab === 'brands'
+ ? 'bg-primary text-white'
+ : 'bg-card border border-line text-body hover:text-heading dark:hover:text-white hover:bg-muted/60'
+ }`}
         >
           <Tag size={15} /> Registri Brand ({brands.length})
         </button>
@@ -302,7 +302,7 @@ export default function MasterData() {
               <button
                 type="submit"
                 disabled={isSubmitting || !newItemName.trim()}
-                className="w-full py-3.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                 Simpan {activeTab === 'categories' ? 'Kategori' : 'Brand'}
@@ -313,8 +313,8 @@ export default function MasterData() {
           {/* Additional Info / AI Card */}
           {activeTab === 'brands' && (
             <div className="bg-muted/60 rounded-xl p-6 border border-line shadow-sm space-y-3">
-              <div className="flex items-center gap-2.5 text-success dark:text-success">
-                <Sparkles size={18} />
+              <div className="flex items-center gap-2.5 text-success ">
+                <Tag size={18} />
                 <h3 className="text-sm font-bold">Auto-Assign Brand Engine</h3>
               </div>
               <p className="text-xs text-body leading-relaxed">
@@ -435,7 +435,7 @@ export default function MasterData() {
           size="2xl"
           title="Auto-Discover Brand Produk"
           subtitle="Memindai nama obat unassigned untuk mendeteksi merk baru"
-          icon={Wand2}
+          icon={Search}
           iconBg="bg-success/10 text-success"
           footer={
             <div className="flex justify-end gap-3 w-full">
@@ -450,7 +450,7 @@ export default function MasterData() {
                 type="button"
                 onClick={handleAddDiscovered} 
                 disabled={isAddingDiscovered || selectedDiscovered.size === 0} 
-                className="flex items-center gap-2 bg-success hover:bg-success text-white px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md shadow-success/20 disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-2 bg-success hover:bg-success text-white px-5 py-2.5 rounded-xl font-bold text-xs transition-all disabled:opacity-50 cursor-pointer"
               >
                 {isAddingDiscovered ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 Daftarkan {selectedDiscovered.size} Brand
@@ -495,10 +495,10 @@ export default function MasterData() {
                   <label 
                     key={idx}
                     className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                      selectedDiscovered.has(brand.name) 
-                        ? 'bg-success-soft border-success dark:bg-success/20 dark:border-success' 
-                        : 'bg-card border-line hover:border-success dark:bg-card dark:border-line'
-                    }`}
+ selectedDiscovered.has(brand.name) 
+ ? 'bg-success-soft border-success ' 
+ : 'bg-card border-line hover:border-success dark:bg-card dark:border-line'
+ }`}
                   >
                     <input 
                       type="checkbox" 

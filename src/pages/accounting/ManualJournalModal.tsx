@@ -115,7 +115,7 @@ export default function ManualJournalModal({ isOpen, onClose, onSaved }: ManualJ
             type="submit"
             form="journalForm"
             disabled={loading || !isBalanced}
-            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md shadow-primary/20 disabled:opacity-50"
+            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all disabled:opacity-50"
           >
             <Save size={16} />
             {loading ? 'Memposting...' : 'Posting Jurnal'}
@@ -218,10 +218,10 @@ export default function ManualJournalModal({ isOpen, onClose, onSaved }: ManualJ
         </div>
 
         <div className={`p-4 rounded-xl border flex justify-between items-center ${
-          isBalanced 
-            ? 'bg-success-soft border-success/30 text-success dark:bg-success/20 dark:border-success dark:text-success' 
-            : 'bg-danger-soft border-danger/30 text-danger dark:bg-danger/20 dark:border-danger dark:text-danger'
-        }`}>
+ isBalanced 
+ ? 'bg-success-soft border-success/30 text-success ' 
+ : 'bg-danger-soft border-danger/30 text-danger '
+ }`}>
           <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
             {isBalanced ? (
               <>

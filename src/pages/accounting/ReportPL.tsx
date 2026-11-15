@@ -88,14 +88,14 @@ export default function ReportPL() {
                  {renderGroup(data.revenue, "Revenue")}
                  {renderGroup(data.cogs, "Cost of Goods Sold")}
                  
-                 <div className="flex justify-between py-4 mb-6 text-base font-bold text-primary-hover dark:text-primary bg-primary-soft dark:bg-primary-soft px-4 rounded-xl">
+                 <div className="flex justify-between py-4 mb-6 text-base font-bold text-primary-hover dark:text-primary bg-primary-soft px-4 rounded-xl">
                     <div>Gross Profit</div>
                     <div className="tabular-nums">{data.gross_profit.toLocaleString('id-ID')}</div>
                  </div>
 
                  {renderGroup(data.expenses, "Operating Expenses")}
 
-                 <div className={`flex justify-between py-5 text-lg font-bold px-4 rounded-xl mt-8 ${data.net_profit >= 0 ? 'bg-success-soft text-success dark:bg-success/20 dark:text-success' : 'bg-danger-soft text-red-800 dark:bg-red-900/20 dark:text-red-400'}`}>
+                 <div className={`flex justify-between py-5 text-lg font-bold px-4 rounded-xl mt-8 ${data.net_profit >= 0 ? 'bg-success-soft text-success ' : 'bg-danger-soft text-danger '}`}>
                     <div>Net Profit / (Loss)</div>
                     <div className="tabular-nums">{data.net_profit.toLocaleString('id-ID')}</div>
                  </div>

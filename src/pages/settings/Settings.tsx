@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Database, CheckCircle2, Loader2, Save, AlertTriangle, Globe, RefreshCw, LogOut, Building2, MapPin, Lock, Printer, Sliders, UserCheck, Download, Trash2, UploadCloud, DownloadCloud, ChevronDown, ChevronUp, Network, Link2, Zap, Flame, Activity, Plus, Eye, EyeOff, ExternalLink, Copy, CheckCheck, Server, Cloud, ShieldCheck } from 'lucide-react';
+import { Database, CheckCircle2, Loader2, Save, AlertTriangle, Globe, RefreshCw, LogOut, Building2, MapPin, Lock, Printer, Sliders, UserCheck, Download, Trash2, UploadCloud, DownloadCloud, ChevronDown, ChevronUp, Network, Link2, Flame, Activity, Plus, Eye, EyeOff, ExternalLink, Copy, CheckCheck, Server, Cloud, ShieldCheck, ArrowUpCircle, Plug } from 'lucide-react';
 import { optimizeDatabase, exportDatabase, getSettings, setSetting, getSyncStatus, SyncStatus, leaveWorkspace, joinWorkspace, createWorkspace, getAvailableWorkspaces, sysadminGetWorkspaces, sysadminCreateWorkspace, sysadminDeleteWorkspace, WorkspaceListInfo, UserRowFull, getUsers, assignUserWorkspace, triggerSyncPush, triggerSyncPull, resetDbSpecific, nukeCloudWorkspaceData, getCloudConfig, setCloudConfig, testCloudConnection, getBootstrapSql, getTruncateSql, openBrowserUrl, invoke } from '../../lib/api';
 import { save } from '@tauri-apps/plugin-dialog';
 import { useAuthStore } from '../../store/AuthStore';
+import { useUpdaterStore } from '../../store/UpdaterStore';
 import { supabase, updateSupabaseCredentials, getSavedSupabaseCredentials } from '../../lib/supabase';
 import UserManagement from './UserManagement';
 import HardwareSettings from './HardwareSettings';
@@ -104,11 +105,11 @@ const SELECT_OPTIONS: Record<string, { label: string; value: string }[]> = {
   ],
 };
 
-// Keys managed separately in the Profil section — hide from General list
+// Keys managed separately in the Profil section, hide from General list
 const PROFILE_KEYS = ['company_name', 'branch_name'];
 const MEMBER_KEYS = ['tier_member_discount', 'tier_vip_discount', 'tier_member_duration_months', 'tier_vip_duration_months'];
 
-// Internal/diagnostic keys owned by other screens (LAN tab, Cloud tab, SetupWizard) — never editable here
+// Internal/diagnostic keys owned by other screens (LAN tab, Cloud tab, SetupWizard), never editable here
 const INTERNAL_KEYS = new Set([
   'has_completed_setup', 'workspace_id', 'workspace_name', 'workspace_code', 'last_pull_at', 'auto_sync',
   'lan_role', 'lan_udp_port', 'lan_http_port', 'lan_device_name', 'lan_auto_connect',
@@ -172,6 +173,20 @@ export default function Settings() {
 
   // Nuke Supabase state
   const [nukeStep, setNukeStep] = useState<0 | 1 | 2>(0);
+
+  // App Updater State
+  const { updateInfo, isChecking: isCheckingUpdate, lastChecked: updateLastChecked, checkUpdates, openModal } = useUpdaterStore();
+
+  const handleManualUpdateCheck = async () => {
+    const res = await checkUpdates(true);
+    if (res && !res.has_update) {
+      toast.success('Kivo sudah menggunakan versi terbaru (v1.5.0)!');
+    } else if (res && res.has_update) {
+      openModal();
+    } else {
+      toast.error('Tidak dapat memeriksa pembaruan. Pastikan perangkat terhubung ke internet.');
+    }
+  };
   const [nukeConfirmText, setNukeConfirmText] = useState('');
   const [nukeAllData, setNukeAllData] = useState(true);
 
@@ -428,7 +443,7 @@ export default function Settings() {
   const handleToggleAutoSync = async (enabled: boolean) => {
     try {
       await setSetting('auto_sync', enabled ? 'true' : 'false');
-      window.dispatchEvent(new CustomEvent('chirasys:auto_sync_changed'));
+      window.dispatchEvent(new CustomEvent('kivo:auto_sync_changed'));
       await loadSyncStatus();
       await loadSettings();
     } catch (e: any) {
@@ -493,7 +508,7 @@ export default function Settings() {
   const handleExportDB = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const defaultPath = `chirasys_backup_${today}.db`;
+      const defaultPath = `kivo_backup_${today}.db`;
       const filePath = await save({
         defaultPath,
         filters: [{ name: 'SQLite Database', extensions: ['db', 'sqlite'] }]
@@ -789,7 +804,7 @@ export default function Settings() {
                     <div className="p-3 rounded-lg bg-muted/40 border border-line flex flex-col gap-0.5">
                       <p className="text-[10px] font-semibold text-dim uppercase tracking-wide">Terakhir Sync</p>
                       <p className="text-xs font-medium text-heading truncate">
-                        {syncStatus.last_synced ? new Date(syncStatus.last_synced).toLocaleTimeString('id-ID') : '—'}
+                        {syncStatus.last_synced ? new Date(syncStatus.last_synced).toLocaleTimeString('id-ID') : '-'}
                       </p>
                     </div>
                   </div>
@@ -946,7 +961,7 @@ export default function Settings() {
                               </>
                             ) : (
                               <>
-                                <Zap size={12} className="text-primary" />
+                                <Plug size={12} className="text-primary" />
                                 <span>Uji Koneksi</span>
                               </>
                             )}
@@ -1126,7 +1141,7 @@ export default function Settings() {
                           disabled={isJoining || !joinCode.trim()}
                           className="px-5 py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50 transition-all"
                         >
-                          {isJoining ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+                          {isJoining ? <Loader2 size={13} className="animate-spin" /> : <Plug size={13} />}
                           {isJoining ? 'Menghubungkan...' : 'Hubungkan Sekarang'}
                         </button>
                       </div>
@@ -1215,7 +1230,7 @@ export default function Settings() {
                       disabled={isJoining || !joinCode.trim()}
                       className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
                     >
-                      {isJoining ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+                      {isJoining ? <Loader2 size={13} className="animate-spin" /> : <Plug size={13} />}
                       {isJoining ? 'Menghubungkan...' : 'Hubungkan'}
                     </button>
                   </div>
@@ -1229,6 +1244,56 @@ export default function Settings() {
         /* TAB 1: KONFIGURASI UMUM (FULL WIDTH 12-COLUMN GRID) */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
 
+          {/* ── App Version & GitHub Updates Card (12 Cols) ── */}
+          <div className="lg:col-span-12 bg-card rounded-xl border border-line shadow-xs p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 bg-primary/10 text-primary rounded-xl">
+                <ArrowUpCircle size={24} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-heading">Kivo Desktop</h3>
+                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-muted text-dim">
+                    v1.5.0
+                  </span>
+                  {updateInfo?.has_update && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-soft text-primary border border-primary/20 animate-pulse">
+                      Update v{updateInfo.latest_version} Tersedia
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-dim mt-0.5">
+                  {updateLastChecked
+                    ? `Pemeriksaan terakhir: ${updateLastChecked.toLocaleTimeString('id-ID')}`
+                    : 'Terhubung ke rilis resmi GitHub (AchiraStudio/kivo)'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              {updateInfo?.has_update ? (
+                <button
+                  type="button"
+                  onClick={openModal}
+                  className="btn-primary text-xs flex items-center gap-2 px-4 py-2 w-full sm:w-auto justify-center"
+                >
+                  <Download size={14} />
+                  <span>Lihat & Perbarui ({updateInfo.latest_version})</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleManualUpdateCheck}
+                  disabled={isCheckingUpdate}
+                  className="px-4 py-2 bg-muted hover:bg-muted/80 text-heading text-xs font-semibold rounded-lg border border-line transition-colors flex items-center gap-2 w-full sm:w-auto justify-center cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw size={14} className={isCheckingUpdate ? "animate-spin text-primary" : ""} />
+                  <span>{isCheckingUpdate ? 'Memeriksa...' : 'Periksa Pembaruan'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* ── Profil Perusahaan & Cabang (8 Cols) ── */}
           <div className="lg:col-span-8 bg-card rounded-xl border border-line shadow-sm p-6 sm:p-7 space-y-6">
             <div className="flex items-center justify-between border-b border-line pb-4">
@@ -1240,14 +1305,14 @@ export default function Settings() {
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-extrabold text-heading">Profil Perusahaan & Cabang</h2>
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-primary-soft text-primary border border-primary/20">
-                      Kivo v1.4
+                      Kivo v1.5
                     </span>
                   </div>
                   <p className="text-xs text-dim">Identitas utama bisnis yang ditampilkan pada sidebar & nota transaksi</p>
                 </div>
               </div>
               {profileSuccess && (
-                <span className="flex items-center gap-1.5 text-xs font-bold text-success bg-success-soft dark:bg-success/30 px-3 py-1 rounded-full border border-success/30 animate-fade-in">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-success bg-success-soft px-3 py-1 rounded-full border border-success/30 animate-fade-in">
                   <CheckCircle2 size={14} /> {profileSuccess}
                 </span>
               )}
@@ -1300,7 +1365,7 @@ export default function Settings() {
                 <button
                   onClick={handleSaveProfile}
                   disabled={profileSaving}
-                  className="py-3 px-6 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="py-3 px-6 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {profileSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   Simpan Profil Bisnis
@@ -1332,7 +1397,7 @@ export default function Settings() {
                 <button
                   onClick={handleExportDB}
                   disabled={loading}
-                  className="w-full py-3 px-4 bg-success hover:bg-success text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-success/20"
+                  className="w-full py-3 px-4 bg-success hover:bg-success text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Download size={15} /> Export Database Backup (.db)
                 </button>
@@ -1392,15 +1457,15 @@ export default function Settings() {
 
           {/* ── Danger Zone / Reset Options (5 Cols) ── */}
           {isAdmin && (
-            <div className="lg:col-span-5 bg-card rounded-xl border border-danger/30/80 dark:border-danger/60 shadow-sm p-6 sm:p-7 flex flex-col justify-between space-y-5">
+            <div className="lg:col-span-5 bg-card rounded-xl border border-danger/30/80 shadow-sm p-6 sm:p-7 flex flex-col justify-between space-y-5">
               <div className="space-y-4">
-                <div className="flex items-center gap-3 border-b border-danger-soft dark:border-danger/50 pb-4">
-                  <div className="p-3 bg-danger-soft dark:bg-danger/30 text-danger rounded-xl">
+                <div className="flex items-center gap-3 border-b border-danger-soft pb-4">
+                  <div className="p-3 bg-danger-soft text-danger rounded-xl">
                     <AlertTriangle size={22} />
                   </div>
                   <div>
-                    <h2 className="text-base font-extrabold text-danger dark:text-danger">Danger Zone (Reset Data)</h2>
-                    <p className="text-xs text-dim">Hanya untuk Admin — Pembersihan Data</p>
+                    <h2 className="text-base font-extrabold text-danger ">Danger Zone (Reset Data)</h2>
+                    <p className="text-xs text-dim">Hanya untuk Admin: Pembersihan Data</p>
                   </div>
                 </div>
 
@@ -1409,7 +1474,7 @@ export default function Settings() {
                     <button
                       onClick={() => setResetTarget('sales')}
                       disabled={loading}
-                      className="w-full py-3 bg-danger-soft dark:bg-danger/30 hover:bg-danger-soft dark:hover:bg-danger/40 text-danger dark:text-danger border border-danger/30 dark:border-danger/60 rounded-xl font-bold text-xs transition-all cursor-pointer"
+                      className="w-full py-3 bg-danger-soft hover:bg-danger-soft dark:hover:bg-danger/40 text-danger border border-danger/30 rounded-xl font-bold text-xs transition-all cursor-pointer"
                     >
                       Reset Data Penjualan (Sales)
                     </button>
@@ -1420,7 +1485,7 @@ export default function Settings() {
                     <button
                       onClick={() => setResetTarget('inventory')}
                       disabled={loading}
-                      className="w-full py-3 bg-danger-soft dark:bg-danger/30 hover:bg-danger-soft dark:hover:bg-danger/40 text-danger dark:text-danger border border-danger/30 dark:border-danger/60 rounded-xl font-bold text-xs transition-all cursor-pointer"
+                      className="w-full py-3 bg-danger-soft hover:bg-danger-soft dark:hover:bg-danger/40 text-danger border border-danger/30 rounded-xl font-bold text-xs transition-all cursor-pointer"
                     >
                       Reset Data Stok & Pembelian
                     </button>
@@ -1431,7 +1496,7 @@ export default function Settings() {
                     <button
                       onClick={() => setResetTarget('all')}
                       disabled={loading}
-                      className="w-full py-3.5 bg-danger hover:bg-danger text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-danger/20 cursor-pointer"
+                      className="w-full py-3.5 bg-danger hover:bg-danger text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"
                     >
                       Reset Semua Data Local (Factory Reset)
                     </button>
@@ -1439,7 +1504,7 @@ export default function Settings() {
                   </div>
 
                   {isAdmin && (
-                    <div className="space-y-1 pt-3 border-t border-danger/30/60 dark:border-danger/60">
+                    <div className="space-y-1 pt-3 border-t border-danger/30/60 ">
                       <button
                         onClick={() => setNukeStep(1)}
                         disabled={loading}
@@ -1486,7 +1551,7 @@ export default function Settings() {
           size="md"
           title={resetTarget === 'maintenance' ? 'Optimize Database?' : 'Konfirmasi Wipe Database'}
           icon={AlertTriangle}
-          iconBg="bg-danger-soft dark:bg-danger/30 text-danger"
+          iconBg="bg-danger-soft text-danger"
           footer={
             <div className="flex gap-3 w-full">
               <button
@@ -1500,7 +1565,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleResetDB}
                 disabled={resetTarget !== 'maintenance' && confirmText !== 'DELETE'}
-                className="flex-[1.5] py-3 bg-danger hover:bg-danger text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-danger/20"
+                className="flex-[1.5] py-3 bg-danger hover:bg-danger text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
                 {loading ? 'Memproses...' : 'Ya, Eksekusi'}
@@ -1514,17 +1579,17 @@ export default function Settings() {
                 <p className="text-xs text-body leading-relaxed">
                   Menjalankan <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">VACUUM</code> dan <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">ANALYZE</code> untuk mengompresi database SQLite.
                 </p>
-                <p className="text-xs font-bold text-success dark:text-success">
+                <p className="text-xs font-bold text-success ">
                   Aplikasi mungkin jeda sejenak. Tidak ada data yang dihapus.
                 </p>
               </>
             ) : (
               <>
-                <div className="p-4 bg-danger-soft dark:bg-danger/20 border border-danger/30 dark:border-danger/50 rounded-xl space-y-2">
+                <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl space-y-2">
                   <p className="text-xs font-bold text-danger uppercase tracking-wider flex items-center gap-1.5">
                     <AlertTriangle size={13} /> Tindakan Permanen
                   </p>
-                  <p className="text-xs text-danger dark:text-danger leading-relaxed">
+                  <p className="text-xs text-danger leading-relaxed">
                     {resetTarget === 'sales' && 'Seluruh transaksi kasir, pembayaran, dan laporan penjualan akan dihapus permanen.'}
                     {resetTarget === 'inventory' && 'Seluruh kartu stok, mutasi barang, dan PO pembelian akan dihapus.'}
                     {resetTarget === 'all' && 'SELURUH DATA (Master Data, Stok, Sales) akan dihapus total dan aplikasi kembali ke kondisi awal.'}
@@ -1538,7 +1603,7 @@ export default function Settings() {
                   value={confirmText}
                   onChange={e => setConfirmText(e.target.value)}
                   placeholder="DELETE"
-                  className="w-full bg-muted border border-danger/30 dark:border-danger/80 rounded-xl px-4 py-3 text-sm font-bold text-danger outline-none uppercase font-mono"
+                  className="w-full bg-muted border border-danger/30 rounded-xl px-4 py-3 text-sm font-bold text-danger outline-none uppercase font-mono"
                 />
               </>
             )}
@@ -1567,7 +1632,7 @@ export default function Settings() {
               <button
                 type="button"
                 onClick={() => setNukeStep(2)}
-                className="flex-[1.5] py-3 bg-danger hover:bg-danger text-white rounded-xl text-xs font-black transition-all cursor-pointer shadow-md shadow-danger/20 flex items-center justify-center gap-1.5"
+                className="flex-[1.5] py-3 bg-danger hover:bg-danger text-white rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>Lanjut ke Konfirmasi Akhir</span>
                 <span>→</span>
@@ -1678,7 +1743,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleNukeCloudData}
                 disabled={nukeConfirmText !== 'NUKE CLOUD DATA' || loading}
-                className="flex-[1.5] py-3 bg-danger hover:bg-danger text-white rounded-xl text-xs font-black transition-all disabled:opacity-40 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-danger/30"
+                className="flex-[1.5] py-3 bg-danger hover:bg-danger text-white rounded-xl text-xs font-black transition-all disabled:opacity-40 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
                 {loading ? 'Mengosongkan Data Cloud...' : (
@@ -1694,7 +1759,7 @@ export default function Settings() {
             <h3 className="text-lg font-black text-heading">Ketik untuk Mengonfirmasi</h3>
             <p className="text-xs text-dim leading-relaxed">
               Target pembersihan: <strong className="text-heading">{nukeAllData ? 'Seluruh Data Cloud' : `Workspace ${syncStatus?.workspace_name || 'Aktif'}`}</strong>.<br/>
-              Ketik frasa <code className="bg-danger-soft dark:bg-danger text-danger font-mono px-1.5 py-0.5 rounded font-bold">NUKE CLOUD DATA</code> di bawah ini untuk membuka tombol eksekusi:
+              Ketik frasa <code className="bg-danger-soft text-danger font-mono px-1.5 py-0.5 rounded font-bold">NUKE CLOUD DATA</code> di bawah ini untuk membuka tombol eksekusi:
             </p>
             <input
               type="text"
@@ -1786,7 +1851,7 @@ export default function Settings() {
                 <>Jalankan skrip SQL di bawah ini di <strong>SQL Editor</strong> Supabase untuk mengosongkan seluruh baris transaksi, pesanan, inventaris, dan produk. <strong className="text-success">Akun pengguna (users), hak akses, workspace, dan struktur tabel 100% AMAN.</strong></>
               )}
             </p>
-            <div className="relative rounded-xl border border-line bg-slate-950 p-3 max-h-[380px] overflow-y-auto custom-scrollbar font-mono text-[11px] text-slate-200">
+            <div className="relative rounded-xl border border-line bg-card p-3 max-h-[380px] overflow-y-auto custom-scrollbar font-mono text-[11px] text-dim">
               <pre className="whitespace-pre-wrap select-all">{sqlContent}</pre>
             </div>
           </div>
@@ -1849,7 +1914,7 @@ function CustomSelect({
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 left-0 top-full mt-1.5 z-50 bg-card dark:bg-[#0F172A] border border-line rounded-xl shadow-2xl py-1.5 max-h-56 overflow-y-auto custom-scrollbar animate-fade-in duration-150">
+          <div className="absolute right-0 left-0 top-full mt-1.5 z-50 bg-card border border-line rounded-xl shadow-2xl py-1.5 max-h-56 overflow-y-auto custom-scrollbar animate-fade-in duration-150">
             {options.map((opt) => {
               const isSelected = opt.value === value;
               return (
@@ -1861,10 +1926,10 @@ function CustomSelect({
                     setIsOpen(false);
                   }}
                   className={`w-full flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors cursor-pointer text-left ${
-                    isSelected
-                      ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-accent font-extrabold'
-                      : 'text-heading hover:bg-muted/80'
-                  }`}
+ isSelected
+ ? 'bg-primary-soft text-primary font-extrabold'
+ : 'text-heading hover:bg-muted/80'
+ }`}
                 >
                   <span className="truncate">{opt.label}</span>
                   {isSelected && <CheckCircle2 size={14} className="text-primary shrink-0 ml-2" />}
@@ -1954,7 +2019,7 @@ function SettingRow({ config, onSave, disabled }: { config: { key: string; value
                 if (val !== config.value) {
                   if (isApiKey) {
                     localStorage.setItem('kivo_openai_api_key', val.trim());
-                    localStorage.setItem('chirasys_openai_api_key', val.trim());
+                    localStorage.setItem('kivo_openai_api_key', val.trim());
                   }
                   onSave(config.key, val);
                 }

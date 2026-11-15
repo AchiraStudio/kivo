@@ -175,7 +175,7 @@ export default function LoginPage({ onOpenSetupWizard }: LoginPageProps) {
           <button
             type="submit"
             disabled={loading || !username || !password}
-            className="w-full mt-1.5 bg-primary hover:bg-primary-hover text-white font-bold h-11 rounded-xl shadow-md shadow-primary/25 transition-all active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer"
+            className="w-full mt-1.5 bg-primary hover:bg-primary-hover text-white font-bold h-11 rounded-xl transition-all active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer"
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : <LogIn size={16} />}
             <span>Masuk ke Akun</span>
@@ -214,7 +214,7 @@ export default function LoginPage({ onOpenSetupWizard }: LoginPageProps) {
 
       {/* Footer Branding */}
       <footer className="relative z-10 mt-6 text-center text-[10px] text-dim">
-        <span>Kivo Platform v1.4 &copy; {new Date().getFullYear()} — Multi-Branch Business &amp; POS Solution</span>
+        <span>Kivo Platform v1.5 &copy; {new Date().getFullYear()} | Multi-Branch Business &amp; POS Solution</span>
       </footer>
     </div>
   );

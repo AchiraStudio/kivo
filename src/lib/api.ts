@@ -8,9 +8,9 @@ let cachedParentUrl: string | null = null;
 export const setLanParentHost = (url: string | null) => {
   cachedParentUrl = url;
   if (url) {
-    localStorage.setItem('chirasys_lan_parent_url', url);
+    localStorage.setItem('kivo_lan_parent_url', url);
   } else {
-    localStorage.removeItem('chirasys_lan_parent_url');
+    localStorage.removeItem('kivo_lan_parent_url');
   }
 };
 
@@ -21,7 +21,7 @@ export const getLanParentHost = (): string | null => {
   }
   // Only route business queries to LAN Parent if user is actively logged in!
   try {
-    const authRaw = localStorage.getItem('chirasys-auth');
+    const authRaw = localStorage.getItem('kivo-auth');
     if (!authRaw) return null;
     const authObj = JSON.parse(authRaw);
     if (!authObj?.state?.token) return null;
@@ -30,7 +30,7 @@ export const getLanParentHost = (): string | null => {
   }
 
   if (cachedParentUrl !== null) return cachedParentUrl;
-  const stored = localStorage.getItem('chirasys_lan_parent_url');
+  const stored = localStorage.getItem('kivo_lan_parent_url');
   cachedParentUrl = stored || null;
   return cachedParentUrl;
 };
@@ -48,7 +48,28 @@ const WEB_UNSUPPORTED_COMMANDS = new Set([
   'parent_request_connect_child',
   'trigger_lan_sync_now',
   'clone_from_parent',
+  'check_for_updates',
+  'download_and_install_update',
 ]);
+
+// Commands that need the desktop shell (file dialogs, cloud admin, user admin). A web client
+// gets a clear message instead of a silent empty result.
+const DESKTOP_ONLY_COMMANDS = new Set([
+  'auto_assign_brands', 'discover_potential_brands',
+  'create_user', 'create_workspace', 'create_workspace_invite', 'delete_user', 'join_workspace',
+  'reset_user_password', 'toggle_user_active', 'update_user', 'update_user_permissions', 'update_role_default_permissions',
+  'export_database', 'export_items_excel', 'export_receive_template', 'export_sales_excel', 'export_stock_excel',
+  'import_items_excel', 'parse_receive_excel', 'open_browser_url', 'optimize_database', 'reset_db_specific',
+  'get_bootstrap_sql', 'get_truncate_sql', 'get_cloud_config', 'set_cloud_config', 'test_cloud_connection',
+  'nuke_cloud_workspace_data', 'sysadmin_login', 'sysadmin_create_workspace_invite', 'sysadmin_update_workspace_password',
+  'trigger_sync_pull', 'trigger_sync_push',
+]);
+
+// Commands that legitimately take longer than a normal LAN round trip.
+// Reads where an empty fallback would be misleading (an outage must not look like "no records").
+const STRICT_READ_COMMANDS = new Set(['get_health_records', 'get_medicine_presets']);
+
+const SLOW_RPC_COMMANDS = new Set(['send_ai_chat_request', 'bulk_add_stock', 'apply_hpp_retroactive', 'get_stock_valuation', 'get_general_ledger']);
 
 // Commands that MUST run locally on Desktop (when running in Tauri Desktop with local DB)
 const LOCAL_ONLY_COMMANDS = new Set([
@@ -99,6 +120,8 @@ const LOCAL_ONLY_COMMANDS = new Set([
   'lan_remote_kick_drawer',
   'lan_remote_print_receipt',
   'open_devtools',
+  'check_for_updates',
+  'download_and_install_update',
 ]);
 
 // fallow-ignore-next-line unused-export
@@ -108,6 +131,9 @@ export const invoke = async <T>(cmd: string, args?: Record<string, any>): Promis
   }
 
   const isWeb = !isTauri();
+  if (isWeb && DESKTOP_ONLY_COMMANDS.has(cmd)) {
+    throw new Error('Fitur ini hanya tersedia di aplikasi desktop Kivo pada Server Induk.');
+  }
   const parentUrl = getLanParentHost();
 
   // If in a Web Browser (!isTauri()):
@@ -126,7 +152,7 @@ export const invoke = async <T>(cmd: string, args?: Record<string, any>): Promis
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: cmd, params: args || {} }),
-        signal: AbortSignal.timeout(5000), // Prevent indefinite browser freeze
+        signal: AbortSignal.timeout(SLOW_RPC_COMMANDS.has(cmd) ? 60000 : 8000), // Prevent indefinite browser freeze
       });
 
       if (!response.ok) {
@@ -143,9 +169,9 @@ export const invoke = async <T>(cmd: string, args?: Record<string, any>): Promis
     } catch (err: any) {
       console.warn(`[LAN RPC] Failed to call ${cmd} on parent (${parentUrl}):`, err);
       if (err.name === 'TimeoutError' || (err.message && (err.message.includes('Failed to fetch') || err.message.includes('network') || err.message.includes('timed out')))) {
-        if (isWeb) {
-          // Graceful fallback when web browser is loaded without an active host connection
-          if (cmd === 'get_settings') return [] as unknown as T;
+        if (isWeb && cmd.startsWith('get_') && !STRICT_READ_COMMANDS.has(cmd)) {
+          // Reads degrade to an empty result so the page still renders when the host is unreachable.
+          // Writes never do: pretending a save succeeded would silently lose the data.
           if (cmd === 'get_sync_status') return { workspace_id: '', auto_sync: false } as unknown as T;
           if (cmd === 'get_current_user') return null as unknown as T;
           return [] as unknown as T;
@@ -381,6 +407,35 @@ export const addCustomer = async (name: string, phone?: string, email?: string, 
 export const updateCustomer = async (id: string, name: string, phone?: string, email?: string, address?: string, region?: string, customerTier: string = 'regular', notes?: string, membershipExpiry?: string): Promise<Customer> => invoke('update_customer', { id, name, phone: phone || null, email: email || null, address: address || null, region: region || null, customerTier, notes: notes || null, membershipExpiry: membershipExpiry || null });
 export const toggleCustomerActive = async (id: string): Promise<void> => invoke('toggle_customer_active', { id });
 
+// --- Member health records & medicine presets ---
+export type BloodSugarContext = 'fasting' | 'after_meal' | 'random';
+export interface HealthMedicine { id: string; record_id: string; item_id?: string | null; name: string; qty: number; unit?: string | null; price: number; instructions?: string | null; }
+export interface HealthRecord {
+  id: string; customer_id: string; checked_at: string;
+  blood_sugar?: number | null; blood_sugar_context?: BloodSugarContext | null;
+  cholesterol_total?: number | null; cholesterol_hdl?: number | null; cholesterol_ldl?: number | null; triglycerides?: number | null;
+  uric_acid?: number | null; systolic?: number | null; diastolic?: number | null; weight?: number | null; height?: number | null;
+  notes?: string | null; created_at: string; updated_at: string; medicines: HealthMedicine[];
+}
+export interface MedicineInput { item_id?: string | null; name: string; qty: number; unit?: string | null; price: number; instructions?: string | null; }
+export interface HealthRecordInput {
+  id?: string; customer_id: string; checked_at?: string;
+  blood_sugar?: number | null; blood_sugar_context?: BloodSugarContext | null;
+  cholesterol_total?: number | null; cholesterol_hdl?: number | null; cholesterol_ldl?: number | null; triglycerides?: number | null;
+  uric_acid?: number | null; systolic?: number | null; diastolic?: number | null; weight?: number | null; height?: number | null;
+  notes?: string | null; medicines: MedicineInput[];
+}
+export interface PresetItem { id: string; preset_id: string; item_id?: string | null; name: string; qty: number; unit?: string | null; price: number; instructions?: string | null; sort_order: number; }
+export interface MedicinePreset { id: string; name: string; notes?: string | null; created_at: string; updated_at: string; items: PresetItem[]; }
+export interface MedicinePresetInput { id?: string; name: string; notes?: string | null; items: MedicineInput[]; }
+
+export const getHealthRecords = async (customerId: string): Promise<HealthRecord[]> => invoke('get_health_records', { customerId });
+export const saveHealthRecord = async (input: HealthRecordInput): Promise<HealthRecord> => invoke('save_health_record', { input });
+export const deleteHealthRecord = async (id: string): Promise<void> => invoke('delete_health_record', { id });
+export const getMedicinePresets = async (): Promise<MedicinePreset[]> => invoke('get_medicine_presets');
+export const saveMedicinePreset = async (input: MedicinePresetInput): Promise<MedicinePreset> => invoke('save_medicine_preset', { input });
+export const deleteMedicinePreset = async (id: string): Promise<void> => invoke('delete_medicine_preset', { id });
+
 // --- Phase 4 ---
 export const getPurchaseOrders = async (branchId: string): Promise<PurchaseOrder[]> => invoke('get_purchase_orders', { branchId });
 export const getPoLines = async (poId: string): Promise<PoLine[]> => invoke('get_po_lines', { poId });
@@ -471,11 +526,50 @@ export interface DetectedPrinterInfo {
   Default: boolean;
 }
 export const listPrinters = async (): Promise<DetectedPrinterInfo[]> => invoke('list_printers');
-export const kickCashDrawer = async (printerName: string = ''): Promise<string> => {
+
+let cachedPrinterName: string | null = null;
+let lastDrawerKickTime = 0;
+
+export const setCachedPrinterName = (name: string) => {
+  cachedPrinterName = name;
+  try { localStorage.setItem('kivo_printer_name', name); } catch {}
+};
+
+export const getCachedPrinterName = (): string => {
+  if (cachedPrinterName) return cachedPrinterName;
   try {
-    return await invoke('lan_remote_kick_drawer', { printerName: printerName || null });
+    const stored = localStorage.getItem('kivo_printer_name');
+    if (stored) return stored;
+  } catch {}
+  return '';
+};
+
+export const kickCashDrawer = async (printerName: string = ''): Promise<string> => {
+  const now = Date.now();
+  if (now - lastDrawerKickTime < 600) {
+    return 'Debounced';
+  }
+  lastDrawerKickTime = now;
+
+  let target = printerName;
+  if (!target) {
+    target = getCachedPrinterName();
+  }
+  if (!target) {
+    try {
+      const settings = await getSettings();
+      const p = settings.find(s => s.key === 'printer_name')?.value;
+      if (p) {
+        target = p;
+        setCachedPrinterName(p);
+      }
+    } catch {}
+  }
+
+  try {
+    return await invoke('lan_remote_kick_drawer', { printerName: target || null });
   } catch {
-    return await invoke('kick_cash_drawer', { printerName });
+    return await invoke('kick_cash_drawer', { printerName: target || null });
   }
 };
 export const printRawReceipt = async (printerName: string = '', bytes: number[]): Promise<string> => {
@@ -836,6 +930,35 @@ export const testCloudConnection = async (url: string, anonKey: string): Promise
 export const getBootstrapSql = async (): Promise<string> => invoke('get_bootstrap_sql');
 export const getTruncateSql = async (): Promise<string> => invoke('get_truncate_sql');
 export const openBrowserUrl = async (url: string): Promise<void> => invoke('open_browser_url', { url });
+
+// --- App Updater ---
+export interface UpdateCheckResult {
+  has_update: boolean;
+  current_version: string;
+  latest_version: string;
+  release_title: string;
+  release_notes: string;
+  published_at: string;
+  download_url: string | null;
+  asset_name: string | null;
+  asset_size: number;
+}
+
+export interface UpdaterProgress {
+  downloaded: number;
+  total: number;
+  percentage: number;
+  status: string;
+}
+
+export const checkForUpdates = async (): Promise<UpdateCheckResult> => {
+  return await invoke('check_for_updates');
+};
+
+export const downloadAndInstallUpdate = async (downloadUrl: string, assetName: string): Promise<string> => {
+  return await invoke('download_and_install_update', { downloadUrl, assetName });
+};
+
 
 
 

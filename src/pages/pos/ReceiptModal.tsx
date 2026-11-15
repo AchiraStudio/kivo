@@ -214,7 +214,7 @@ export default function ReceiptModal({ saleId, onClose }: ReceiptModalProps) {
                             type="button"
                             onClick={handleManualPrint}
                             disabled={loadingDetail || printStatus === 'printing'}
-                            className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md shadow-primary/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                             <RefreshCw size={13} className={printStatus === 'printing' ? 'animate-spin' : ''} />
                             <span>Cetak Ulang</span>
@@ -226,28 +226,28 @@ export default function ReceiptModal({ saleId, onClose }: ReceiptModalProps) {
             <div className="space-y-4 py-2">
                 {/* Status Indicator Banner */}
                 {printStatus === 'printing' && (
-                    <div className="p-4 rounded-xl bg-accent-soft dark:bg-blue-950/30 border border-accent/30 dark:border-accent/40 flex items-center gap-3 text-accent dark:text-accent animate-pulse">
+                    <div className="p-4 rounded-xl bg-accent-soft border border-accent/30 flex items-center gap-3 text-accent animate-pulse">
                         <Loader2 size={20} className="animate-spin text-primary shrink-0" />
                         <span className="text-xs font-semibold">{printMsg}</span>
                     </div>
                 )}
 
                 {printStatus === 'success' && (
-                    <div className="p-4 rounded-xl bg-success-soft dark:bg-success/30 border border-success/30 dark:border-success/40 flex items-center gap-3 text-success dark:text-success">
+                    <div className="p-4 rounded-xl bg-success-soft border border-success/30 flex items-center gap-3 text-success ">
                         <CheckCircle2 size={20} className="text-success shrink-0" />
                         <div className="text-xs">
                             <p className="font-bold">Transaksi Selesai & Dicetak</p>
-                            <p className="text-success/80 dark:text-success/80 mt-0.5">{printMsg}</p>
+                            <p className="text-success/80 mt-0.5">{printMsg}</p>
                         </div>
                     </div>
                 )}
 
                 {printStatus === 'error' && (
-                    <div className="p-4 rounded-xl bg-danger-soft dark:bg-danger/30 border border-danger/30 dark:border-danger/40 flex items-center gap-3 text-danger dark:text-danger">
+                    <div className="p-4 rounded-xl bg-danger-soft border border-danger/30 flex items-center gap-3 text-danger ">
                         <AlertTriangle size={20} className="text-danger shrink-0" />
                         <div className="text-xs">
                             <p className="font-bold">Gagal Mencetak Struk</p>
-                            <p className="text-danger/80 dark:text-danger/80 mt-0.5">{printMsg}</p>
+                            <p className="text-danger/80 mt-0.5">{printMsg}</p>
                         </div>
                     </div>
                 )}

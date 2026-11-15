@@ -9,7 +9,7 @@ import { isTauri, getHostUrl } from '../lib/runtime';
  * 1. Tauri Native Desktop (using native Tauri event emitter)
  * 2. Remote Web Terminals (Android, iOS, iPad, Web Browsers via ultra-low-latency LAN long-polling)
  * 
- * Broadcasts standard `chirasys:sync` DOM CustomEvent on window so all components
+ * Broadcasts standard `kivo:sync` DOM CustomEvent on window so all components
  * (POS, Inventory, Dashboard, Reports) react and update in real-time.
  */
 export function useRealtimeSync() {
@@ -23,26 +23,26 @@ export function useRealtimeSync() {
       listen<string>('sync-received', (event) => {
         const table = event.payload;
         console.log(`🔄 Cloud sync received for table: ${table}`);
-        window.dispatchEvent(new CustomEvent('chirasys:sync', { detail: { table, source: 'cloud' } }));
+        window.dispatchEvent(new CustomEvent('kivo:sync', { detail: { table, source: 'cloud' } }));
       }).then(unsub => unlistens.push(unsub));
 
-      listen('chirasys:sync', (event) => {
+      listen('kivo:sync', (event) => {
         console.log('🔄 LAN sync updated database:', event.payload);
-        window.dispatchEvent(new CustomEvent('chirasys:sync', { detail: { source: 'lan', ...(event.payload as object || {}) } }));
+        window.dispatchEvent(new CustomEvent('kivo:sync', { detail: { source: 'lan', ...(event.payload as object || {}) } }));
       }).then(unsub => unlistens.push(unsub));
 
-      listen('chirasys:lan_status_updated', () => {
-        console.log('🔄 LAN status updated — refreshing data');
-        window.dispatchEvent(new CustomEvent('chirasys:sync', { detail: { source: 'lan_status' } }));
+      listen('kivo:lan_status_updated', () => {
+        console.log('🔄 LAN status updated, refreshing data');
+        window.dispatchEvent(new CustomEvent('kivo:sync', { detail: { source: 'lan_status' } }));
       }).then(unsub => unlistens.push(unsub));
     }
 
     // 2. Inter-tab Sync (Syncs across multiple browser tabs on same device)
-    const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('chirasys_sync_channel') : null;
+    const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kivo_sync_channel') : null;
     if (bc) {
       bc.onmessage = (event) => {
         if (event.data) {
-          window.dispatchEvent(new CustomEvent('chirasys:sync', { detail: event.data }));
+          window.dispatchEvent(new CustomEvent('kivo:sync', { detail: event.data }));
         }
       };
     }
@@ -77,7 +77,7 @@ export function useRealtimeSync() {
 
             if (data.changed || (prevVersion === 0 && data.version > 0)) {
               console.log(`⚡ [Realtime LAN] Server change received: table='${data.table}', version=${data.version}`);
-              window.dispatchEvent(new CustomEvent('chirasys:sync', {
+              window.dispatchEvent(new CustomEvent('kivo:sync', {
                 detail: { table: data.table, version: data.version, source: 'lan_poll' }
               }));
               bc?.postMessage({ table: data.table, version: data.version, source: 'lan_poll' });
@@ -103,7 +103,7 @@ export function useRealtimeSync() {
               currentVersion = data.version;
               if (oldV > 0) {
                 console.log(`⚡ [Realtime LAN] Re-synchronized after wake: version=${data.version}`);
-                window.dispatchEvent(new CustomEvent('chirasys:sync', {
+                window.dispatchEvent(new CustomEvent('kivo:sync', {
                   detail: { table: data.table, version: data.version, source: 'wake_poll' }
                 }));
                 bc?.postMessage({ table: data.table, version: data.version, source: 'wake_poll' });

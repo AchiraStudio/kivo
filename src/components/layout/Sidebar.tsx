@@ -85,7 +85,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
     let unlistenPull: () => void;
     let unlistenLanStatus: () => void;
 
-    listen('chirasys:lan_status_updated', () => checkLan())
+    listen('kivo:lan_status_updated', () => checkLan())
       .then(fn => { unlistenLanStatus = fn; });
 
     const handleProgress = (type: 'push' | 'pull', payload: SyncEventPayload) => {
@@ -108,7 +108,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
       .then(fn => { unlistenPull = fn; });
 
     let unlistenLanProgress: () => void;
-    listen<LanSyncProgress>('chirasys:lan_sync_progress', (e) => {
+    listen<LanSyncProgress>('kivo:lan_sync_progress', (e) => {
       const p = e.payload;
       setLanSyncProgress(p);
       if (!p.active && (p.stage === 'complete' || p.percent >= 100)) {

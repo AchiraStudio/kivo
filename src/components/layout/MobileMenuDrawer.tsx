@@ -69,17 +69,17 @@ export default function MobileMenuDrawer({
     <div className="fixed inset-0 z-50 flex select-none animate-fade-in">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" 
+        className="fixed inset-0 bg-black/60 transition-opacity" 
         onClick={onClose} 
       />
 
       {/* Drawer Panel */}
-      <div className="relative ml-auto w-full max-w-[340px] bg-card/95 dark:bg-[#0E131F]/95 backdrop-blur-2xl border-l border-line h-full flex flex-col shadow-2xl z-10 animate-slide-in-right pb-[env(safe-area-inset-bottom)]">
+      <div className="relative ml-auto w-full max-w-[340px] bg-card/95 border-l border-line h-full flex flex-col shadow-2xl z-10 animate-slide-in-right pb-[env(safe-area-inset-bottom)]">
         
         {/* Header with User Info */}
         <div className="p-4 border-b border-line/80 bg-muted/30 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary via-purple-600 to-accent text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-md shadow-primary/25">
+            <div className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-sm shrink-0">
               {user?.name?.slice(0, 2).toUpperCase() || 'KV'}
             </div>
             <div className="min-w-0">
@@ -127,7 +127,7 @@ export default function MobileMenuDrawer({
                     onClick={() => handleSelect(item.id)}
                     className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 active:scale-[0.98] cursor-pointer ${
                       isActive
-                        ? 'bg-primary text-white shadow-md shadow-primary/20'
+                        ? 'bg-primary text-white'
                         : 'text-body hover:text-heading hover:bg-muted/60 border border-transparent hover:border-line/40'
                     }`}
                   >
@@ -165,7 +165,7 @@ export default function MobileMenuDrawer({
                 onClose();
                 onOpenHostQr();
               }}
-              className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-primary-soft/80 to-transparent border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98] cursor-pointer group"
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-primary-soft border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98] cursor-pointer group"
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-xs">

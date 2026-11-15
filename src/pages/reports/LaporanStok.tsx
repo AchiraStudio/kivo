@@ -94,7 +94,7 @@ export default function LaporanStok({ onBack }: Props) {
 
           <button
             onClick={handleExportExcel}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-[0.98]"
+            className="px-3 py-1.5 bg-success hover:bg-success/90 text-white rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-[0.98]"
           >
             <FileSpreadsheet size={13} />
             Export Excel
@@ -131,7 +131,7 @@ export default function LaporanStok({ onBack }: Props) {
         <div className="bg-card px-4 py-3 rounded-xl border border-line flex flex-col justify-between">
           <div className="flex items-center justify-between text-dim">
             <span className="text-[11px] font-semibold uppercase tracking-wider">Jumlah SKU Produk</span>
-            <Package size={14} className="text-emerald-500" />
+            <Package size={14} className="text-success" />
           </div>
           <div className="mt-1">
             <span className="text-base font-bold text-heading">
@@ -146,7 +146,7 @@ export default function LaporanStok({ onBack }: Props) {
         <div className="bg-card px-4 py-3 rounded-xl border border-line flex flex-col justify-between sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between text-dim">
             <span className="text-[11px] font-semibold uppercase tracking-wider">Total Unit Fisik</span>
-            <Package size={14} className="text-blue-500" />
+            <Package size={14} className="text-info" />
           </div>
           <div className="mt-1">
             <span className="text-base font-bold text-heading">
@@ -186,7 +186,7 @@ export default function LaporanStok({ onBack }: Props) {
                   <td className="py-3 px-6 text-body">{r.unit_name || '-'}</td>
                   <td className="py-3 px-6 text-right font-mono font-bold text-heading">{r.current_qty.toLocaleString('id-ID')}</td>
                   <td className="py-3 px-6 text-right font-mono text-body">Rp {r.avg_hpp.toLocaleString('id-ID')}</td>
-                  <td className="py-3 px-6 text-right font-mono font-bold text-warning dark:text-warning">Rp {r.total_value.toLocaleString('id-ID')}</td>
+                  <td className="py-3 px-6 text-right font-mono font-bold text-warning ">Rp {r.total_value.toLocaleString('id-ID')}</td>
                 </tr>
               ))}
             </tbody>

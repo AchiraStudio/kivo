@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   Kivo Design Tokens — dual theme (light / .dark)
+   Kivo Design Tokens - dual theme (light / .dark)
    Surfaces, text, borders and status colors are semantic vars;
    utilities like bg-card / border-line / text-heading switch
    automatically with the .dark class on <html>.
@@ -20,23 +20,25 @@
   /* Text */
   --color-heading: #171c3a;
   --color-body: #4d5674;
-  --color-dim: #8a94b0;
+  --color-dim: #5f6988;
 
   /* Primary (magenta, darkened for light bg contrast) */
   --color-primary: #a21fd0;
   --color-primary-hover: #8f19b8;
   --color-primary-soft: #f6e9fb;
-  --color-accent: #0090c8;
+  --color-primary-text: var(--color-primary);
+  --color-danger-text: var(--color-danger);
+  --color-accent: #006c99;
   --color-accent-soft: #e3f4fb;
 
   /* Status */
-  --color-success: #16a34a;
+  --color-success: #157a3a;
   --color-success-soft: #e7f6ec;
-  --color-warning: #b45309;
+  --color-warning: #964507;
   --color-warning-soft: #fdf1e2;
-  --color-danger: #dc2626;
+  --color-danger: #c42020;
   --color-danger-soft: #fdeaea;
-  --color-info: #0284c7;
+  --color-info: #0369a1;
   --color-info-soft: #e5f3fb;
 
   /* Sidebar */
@@ -45,7 +47,7 @@
 }
 
 .dark {
-  /* Surfaces — Dashdark X navy scale */
+  /* Surfaces - Dashdark X navy scale */
   --color-background: #081028;
   --color-card: #0b1739;
   --color-elevated: #0b1739;
@@ -58,11 +60,12 @@
   /* Text */
   --color-heading: #ffffff;
   --color-body: #a3b1d6;
-  --color-dim: #6b7a99;
+  --color-dim: #8391b3;
 
   /* Primary */
-  --color-primary: #cb3cff;
-  --color-primary-hover: #b428f0;
+  --color-primary: #a822e6;
+  --color-primary-hover: #9619d4;
+  --color-primary-text: #d46bff;
   --color-primary-soft: #2b1252;
   --color-accent: #00c2ff;
   --color-accent-soft: #0d2c4d;
@@ -72,7 +75,8 @@
   --color-success-soft: #0c3b2a;
   --color-warning: #ffb547;
   --color-warning-soft: #3a2a0d;
-  --color-danger: #ff5a65;
+  --color-danger: #d92d2d;
+  --color-danger-text: #ff6b75;
   --color-danger-soft: #3d1220;
   --color-info: #40a8f5;
   --color-info-soft: #0d2c4d;
@@ -112,7 +116,7 @@
   --color-sidebar: var(--color-sidebar);
   --color-sidebar-line: var(--color-sidebar-line);
 
-  /* Legacy alias — kept so existing `brand` classes keep working
+  /* Legacy alias - kept so existing `brand` classes keep working
      until every usage is migrated to `primary`. */
   --color-primary: var(--color-primary);
   --color-primary-hover: var(--color-primary-hover);
@@ -203,7 +207,7 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238a94b0'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3e%3c/path%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235f6988'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3e%3c/path%3e%3c/svg%3e");
     background-position: right 0.75rem center;
     background-repeat: no-repeat;
     background-size: 1.125rem 1.125rem;
@@ -212,7 +216,7 @@
   }
 
   .dark select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7a99'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3e%3c/path%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238391b3'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3e%3c/path%3e%3c/svg%3e");
   }
 
   select:hover:not(:disabled) {
@@ -323,4 +327,33 @@
     background: #ffffff !important;
     color: #000000 !important;
   }
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   Dark theme text roles
+   On dark surfaces the brand and danger fills must stay dark enough for
+   white button labels (4.5:1), while the same hues used as text need to be
+   lighter. These overrides give `text-primary` and `text-danger` the
+   lighter text variant in dark mode only.
+   ───────────────────────────────────────────────────────────── */
+.dark .text-primary,
+.dark .hover\:text-primary:hover,
+.dark .group:hover .group-hover\:text-primary {
+  color: var(--color-primary-text);
+}
+.dark .text-danger,
+.dark .hover\:text-danger:hover,
+.dark .group:hover .group-hover\:text-danger {
+  color: var(--color-danger-text);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Keyboard focus
+   Controls that strip the native outline without defining their own
+   focus style still get a visible indicator for Tab navigation.
+   ───────────────────────────────────────────────────────────── */
+:is(input, textarea, select, button, [role="button"])[class*="outline-none"]:not([class*="focus:"]):not([class*="focus-visible:"]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }

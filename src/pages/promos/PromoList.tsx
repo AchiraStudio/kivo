@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { getPromos, deletePromo, togglePromoActive, Promo } from '../../lib/api';
-import { Plus, Edit2, Trash2, Tag, Percent, Gift, Package, Layers, Search, Coins, ToggleLeft, ToggleRight, Sparkles, Filter } from 'lucide-react';
+import { Plus, Edit2, Trash2, Tag, Percent, Gift, Package, Layers, Search, Coins, ToggleLeft, ToggleRight, Filter } from 'lucide-react';
 import PromoDrawer from './PromoDrawer';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
@@ -78,31 +78,31 @@ export default function PromoList() {
     switch (type) {
       case 'percentage':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-success-soft text-success dark:bg-success/40 dark:text-success border border-success/30 dark:border-success/60">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-success-soft text-success border border-success/30 ">
             <Percent size={12} /> Diskon %
           </span>
         );
       case 'fixed_amount':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-accent-soft text-accent dark:bg-blue-950/40 dark:text-accent border border-accent/30 dark:border-accent/60">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-accent-soft text-accent border border-accent/30 ">
             <Coins size={12} /> Potongan Rp
           </span>
         );
       case 'bogo':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-warning-soft text-warning dark:bg-amber-950/40 dark:text-warning border border-warning/30 dark:border-warning/60">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-warning-soft text-warning border border-warning/30 ">
             <Gift size={12} /> BOGO
           </span>
         );
       case 'tiered':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-primary-soft text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-primary-soft text-primary border border-primary/30">
             <Layers size={12} /> Bertingkat
           </span>
         );
       case 'bundle':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-primary-soft text-primary-hover dark:bg-primary/40 dark:text-primary border border-primary/30 dark:border-primary/60">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-primary-soft text-primary-hover dark:text-primary border border-primary/30 ">
             <Package size={12} /> Paket Bundle
           </span>
         );
@@ -120,9 +120,9 @@ export default function PromoList() {
       case 'item':
         return <span className="text-xs font-semibold text-heading">Item Tertentu</span>;
       case 'category':
-        return <span className="text-xs font-semibold text-primary dark:text-purple-400">Kategori</span>;
+        return <span className="text-xs font-semibold text-primary ">Kategori</span>;
       case 'transaction':
-        return <span className="text-xs font-semibold text-accent dark:text-accent">Total Transaksi</span>;
+        return <span className="text-xs font-semibold text-accent ">Total Transaksi</span>;
       default:
         return <span className="text-xs font-semibold text-dim">{appliesTo}</span>;
     }
@@ -135,7 +135,7 @@ export default function PromoList() {
         <div>
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
-              <Sparkles size={20} />
+              <Tag size={20} />
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-heading">
@@ -154,7 +154,7 @@ export default function PromoList() {
               setEditPromoId(null);
               setIsDrawerOpen(true);
             }}
-            className="px-4 py-2.5 bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl font-bold text-xs shadow-md shadow-primary/20 transition-all flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2.5 bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
           >
             <Plus size={15} /> Buat Promo Baru
           </button>
@@ -176,19 +176,19 @@ export default function PromoList() {
         <div className="bg-card p-4 rounded-xl border border-line shadow-sm flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold uppercase text-dim">Promo Aktif</div>
-            <div className="text-xl font-extrabold text-success dark:text-success mt-1">{activeCount}</div>
+            <div className="text-xl font-extrabold text-success mt-1">{activeCount}</div>
           </div>
-          <div className="w-9 h-9 rounded-xl bg-success-soft dark:bg-success/40 text-success flex items-center justify-center">
-            <Sparkles size={16} />
+          <div className="w-9 h-9 rounded-xl bg-success-soft text-success flex items-center justify-center">
+            <Tag size={16} />
           </div>
         </div>
 
         <div className="bg-card p-4 rounded-xl border border-line shadow-sm flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold uppercase text-dim">Bundle & BOGO</div>
-            <div className="text-xl font-extrabold text-primary dark:text-primary mt-1">{bundleCount}</div>
+            <div className="text-xl font-extrabold text-primary mt-1">{bundleCount}</div>
           </div>
-          <div className="w-9 h-9 rounded-xl bg-primary-soft dark:bg-primary/40 text-primary flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
             <Package size={16} />
           </div>
         </div>
@@ -196,9 +196,9 @@ export default function PromoList() {
         <div className="bg-card p-4 rounded-xl border border-line shadow-sm flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold uppercase text-dim">Khusus Member</div>
-            <div className="text-xl font-extrabold text-primary dark:text-purple-400 mt-1">{memberOnlyCount}</div>
+            <div className="text-xl font-extrabold text-primary mt-1">{memberOnlyCount}</div>
           </div>
-          <div className="w-9 h-9 rounded-xl bg-primary-soft dark:bg-purple-950/40 text-primary flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
             <Gift size={16} />
           </div>
         </div>
@@ -271,7 +271,7 @@ export default function PromoList() {
               ) : filteredPromos.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-16">
-                    <Sparkles className="mx-auto text-dim dark:text-body mb-2" size={32} />
+                    <Tag className="mx-auto text-dim dark:text-body mb-2" size={32} />
                     <p className="text-sm font-bold text-heading">Belum ada promo ditemukan</p>
                     <p className="text-xs text-dim mt-1">Buat program promosi baru untuk menarik lebih banyak transaksi.</p>
                   </td>
@@ -295,7 +295,7 @@ export default function PromoList() {
                         )}
                         <div className="flex items-center gap-1.5 mt-1">
                           {promo.member_tier && (
-                            <span className="text-[10px] font-bold bg-primary-soft text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] font-bold bg-primary-soft text-primary px-2 py-0.5 rounded-full">
                               Member {promo.member_tier.toUpperCase()}
                             </span>
                           )}
@@ -354,7 +354,7 @@ export default function PromoList() {
                           title="Klik untuk mengubah status aktif"
                         >
                           {promo.active ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-success-soft text-success dark:bg-success/40 dark:text-success">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-success-soft text-success ">
                               <ToggleRight size={15} className="text-success" /> Aktif
                             </span>
                           ) : (

@@ -1,5 +1,5 @@
 // src/pages/pos/PaymentModal.tsx
-// Redesigned UI — Modern, responsive 2-column layout, quick-cash helpers, and theme consistency.
+// Redesigned UI: modern, responsive 2-column layout, quick-cash helpers, and theme consistency.
 import { useState, useEffect, useRef } from 'react';
 import { PosLine } from './POSStore';
 import { createSale, CreateSaleInput, invoke } from '../../lib/api';
@@ -228,9 +228,9 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
 
         try {
             const saleId = await createSale(input);
-            window.dispatchEvent(new CustomEvent('chirasys:sync', { detail: { table: 'sales', source: 'local_sale', saleId } }));
+            window.dispatchEvent(new CustomEvent('kivo:sync', { detail: { table: 'sales', source: 'local_sale', saleId } }));
             if (typeof BroadcastChannel !== 'undefined') {
-                const bc = new BroadcastChannel('chirasys_sync_channel');
+                const bc = new BroadcastChannel('kivo_sync_channel');
                 bc.postMessage({ table: 'sales', source: 'local_sale', saleId });
                 bc.close();
             }
@@ -268,10 +268,10 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                                             key={method.key}
                                             onClick={() => handleSelectMethod(method.key)}
                                             className={`relative p-2.5 sm:p-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border transition-all text-center group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary ${
-                                                isActive 
-                                                    ? 'bg-primary-soft border-primary text-primary shadow-sm shadow-primary/10' 
-                                                    : 'bg-muted/40 border-line hover:border-line-strong dark:hover:border-line-strong text-body hover:text-heading dark:hover:text-white'
-                                            }`}
+ isActive 
+ ? 'bg-primary-soft border-primary text-primary' 
+ : 'bg-muted/40 border-line hover:border-line-strong dark:hover:border-line-strong text-body hover:text-heading dark:hover:text-white'
+ }`}
                                         >
                                             <div className={`p-2 rounded-xl transition-colors ${method.colorClass}`}>
                                                 <Icon size={18} />
@@ -280,7 +280,7 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                                             
                                             {/* Badge indicating this method has an entered amount */}
                                             {hasValue && !isActive && (
-                                                <div className="absolute top-2 right-2 text-success dark:text-success">
+                                                <div className="absolute top-2 right-2 text-success ">
                                                     <CheckCircle2 size={14} className="fill-success/10" />
                                                 </div>
                                             )}
@@ -298,7 +298,7 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                                 </span>
                                 <button
                                     onClick={handleClear}
-                                    className="text-xs font-bold text-danger dark:text-danger hover:underline focus:outline-none focus:ring-2 focus:ring-danger rounded px-1"
+                                    className="text-xs font-bold text-danger hover:underline focus:outline-none focus:ring-2 focus:ring-danger rounded px-1"
                                 >
                                     Clear
                                 </button>
@@ -337,7 +337,7 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                                     >
                                         <option value="">-- Pilih Bank --</option>
                                         {banks.map(b => (
-                                            <option key={b.id} value={b.id}>{b.code} — {b.name}</option>
+                                            <option key={b.id} value={b.id}>{b.code} · {b.name}</option>
                                         ))}
                                     </Select>
                                 </div>
@@ -350,7 +350,7 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                                     <div className="grid grid-cols-3 gap-2">
                                         <button
                                             onClick={handleExact}
-                                            className="py-2.5 bg-primary-soft dark:bg-primary-soft hover:bg-primary-soft dark:hover:bg-primary-soft text-primary font-bold text-xs rounded-xl border border-primary/10 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+                                            className="py-2.5 bg-primary-soft hover:bg-primary-soft dark:hover:bg-primary-soft text-primary font-bold text-xs rounded-xl border border-primary/10 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
                                         >
                                             Uang Pas
                                         </button>
@@ -436,8 +436,8 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                         </div>
 
                         {/* Manual Discount Input */}
-                        <div className="bg-danger-soft/40 dark:bg-danger/10 border border-dashed border-danger/30 dark:border-danger/50 rounded-xl p-4 flex items-center gap-3">
-                            <div className="p-2 bg-danger-soft dark:bg-danger/30 text-danger rounded-lg">
+                        <div className="bg-danger-soft/40 border border-dashed border-danger/30 rounded-xl p-4 flex items-center gap-3">
+                            <div className="p-2 bg-danger-soft text-danger rounded-lg">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="9" cy="9" r="2"/><circle cx="15" cy="15" r="2"/></svg>
                             </div>
                             <div className="flex-1">
@@ -447,11 +447,11 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                                     value={manualDiscountStr}
                                     onChange={e => setManualDiscountStr(e.target.value)}
                                     placeholder="Rp nominal atau 10% (persen)..."
-                                    className="w-full bg-transparent border-none outline-none text-sm font-semibold text-danger dark:text-danger placeholder-danger dark:placeholder-danger focus:ring-0 p-0"
+                                    className="w-full bg-transparent border-none outline-none text-sm font-semibold text-danger placeholder-danger dark:placeholder-danger focus:ring-0 p-0"
                                 />
                             </div>
                             {manualDiscountAmt > 0 && (
-                                <span className="text-xs font-extrabold text-danger bg-danger-soft dark:bg-danger/40 px-2 py-1 rounded-lg whitespace-nowrap">
+                                <span className="text-xs font-extrabold text-danger bg-danger-soft px-2 py-1 rounded-lg whitespace-nowrap">
                                     - Rp {manualDiscountAmt.toLocaleString('id-ID')}
                                 </span>
                             )}
@@ -588,7 +588,7 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                             <button
                                 onClick={() => handlePay(true)}
                                 disabled={!isReady || loading}
-                                className="w-full py-3.5 bg-primary hover:bg-primary-hover text-white disabled:bg-line dark:disabled:bg-muted disabled:text-dim dark:disabled:text-body rounded-xl text-sm font-bold shadow-sm shadow-primary/25 transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary "
+                                className="w-full py-3.5 bg-primary hover:bg-primary-hover text-white disabled:bg-line dark:disabled:bg-muted disabled:text-dim dark:disabled:text-body rounded-xl text-sm font-bold transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary "
                             >
                                 {loading ? <Loader2 size={18} className="animate-spin" /> : null}
                                 <span>{loading ? 'Memproses...' : 'Simpan & Cetak (c+End)'}</span>

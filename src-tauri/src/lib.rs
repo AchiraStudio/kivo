@@ -32,7 +32,7 @@ pub fn run() {
                     }
                     if let Some(appdata) = std::env::var_os("APPDATA") {
                         let _ = std::fs::write(
-                            std::path::Path::new(&appdata).join("chirasys_crash.log"),
+                            std::path::Path::new(&appdata).join("kivo_crash.log"),
                             format!("DATABASE ERROR: {}", e),
                         );
                     }
@@ -124,6 +124,12 @@ pub fn run() {
             commands::customers::add_customer,
             commands::customers::update_customer,
             commands::customers::toggle_customer_active,
+            commands::health::get_health_records,
+            commands::health::save_health_record,
+            commands::health::delete_health_record,
+            commands::health::get_medicine_presets,
+            commands::health::save_medicine_preset,
+            commands::health::delete_medicine_preset,
             // Phase 4
             commands::purchasing::get_purchase_orders,
             commands::purchasing::get_po_lines,
@@ -252,6 +258,10 @@ pub fn run() {
 
             // AI Native Request
             commands::ai::send_ai_chat_request,
+
+            // App Updater
+            commands::updater::check_for_updates,
+            commands::updater::download_and_install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

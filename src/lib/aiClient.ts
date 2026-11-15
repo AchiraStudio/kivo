@@ -12,7 +12,7 @@ export interface ChatMessage {
 
 export async function getOpenAIApiKey(): Promise<string> {
   // 1. Check localStorage
-  const localKey = localStorage.getItem('kivo_openai_api_key') || localStorage.getItem('chirasys_openai_api_key');
+  const localKey = localStorage.getItem('kivo_openai_api_key');
   if (localKey && localKey.trim()) return localKey.trim();
 
   // 2. Check DB settings
@@ -30,7 +30,7 @@ export async function getOpenAIApiKey(): Promise<string> {
 }
 
 export async function getSelectedAIModel(): Promise<string> {
-  const localModel = localStorage.getItem('kivo_ai_model') || localStorage.getItem('chirasys_ai_model');
+  const localModel = localStorage.getItem('kivo_ai_model');
   if (localModel && localModel.trim()) return localModel.trim();
 
   try {
@@ -60,7 +60,7 @@ function buildConversationPrompt(messages: ChatMessage[], user: UserInfo, branch
     minute: '2-digit'
   });
 
-  const systemContent = `Kamu adalah Kivo AI, asisten AI cerdas untuk platform bisnis dan kasir Kivo (Kivo 1.4).
+  const systemContent = `Kamu adalah Kivo AI, asisten AI cerdas untuk platform bisnis dan kasir Kivo (Kivo 1.5).
 Pengguna: ${user.username} | Role: ${user.role} | Branch: ${branchId}
 Waktu Saat Ini: ${todayReadable}, pukul ${timeReadable} (ISO: ${todayIso}).
 
@@ -75,7 +75,7 @@ Aturan:
 - Jangan menyuruh pengguna melakukan manual jika kamu bisa melakukannya dengan tools yang tersedia.
 - Jika tools mengembalikan error Permission Denied, jelaskan bahwa role '${user.role}' tidak punya izin.
 - Untuk promo bundle: gunakan tool create_promo dengan promo_type='bundle', bundle_items berisi array item, applies_to='item', dan sertakan discount_percent atau discount_value.
-- Saat membuat bundle, kamu TIDAK perlu mengisi item_id tunggal — cukup isi bundle_items saja.`;
+- Saat membuat bundle, kamu TIDAK perlu mengisi item_id tunggal, cukup isi bundle_items saja.`;
 
   const otherMsgs = conversation.filter(m => m.role !== 'system');
   const systemMsg: ChatMessage = {

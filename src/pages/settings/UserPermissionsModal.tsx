@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { 
-  Shield, Loader2, Check, RotateCcw, Search, CheckSquare, Square, AlertCircle, X, Sparkles
-} from 'lucide-react';
+import { Shield, Loader2, Check, RotateCcw, Search, CheckSquare, Square, AlertCircle, X, ShieldCheck } from 'lucide-react';
 import { 
   getPermissionDefinitions, 
   getUserPermissions, 
@@ -128,12 +126,12 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
       badge={
         userData ? (
           <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-            isOwner 
-              ? 'bg-primary-soft text-purple-700 dark:bg-primary-soft dark:text-purple-400' 
-              : userData.role === 'admin' 
-                ? 'bg-primary-soft text-primary' 
-                : 'bg-success-soft text-success dark:bg-success/10 dark:text-success'
-          }`}>
+ isOwner 
+ ? 'bg-primary-soft text-primary ' 
+ : userData.role === 'admin' 
+ ? 'bg-primary-soft text-primary' 
+ : 'bg-success-soft text-success '
+ }`}>
             {userData.role}
           </span>
         ) : null
@@ -142,7 +140,7 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
         <div className="flex items-center justify-between w-full">
           <div className="text-xs text-dim">
             {successMsg ? (
-              <span className="text-success dark:text-success font-bold flex items-center gap-1.5">
+              <span className="text-success font-bold flex items-center gap-1.5">
                 <Check size={15} /> {successMsg}
               </span>
             ) : (
@@ -164,7 +162,7 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
               type="button"
               disabled={loading || saving || isOwner}
               onClick={handleSave}
-              className="px-6 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/25 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+              className="px-6 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
             >
               {saving ? (
                 <>
@@ -191,8 +189,8 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
         <div className="space-y-6">
           {/* Owner Notice or Mode Banner */}
           {isOwner ? (
-            <div className="p-4 bg-primary-soft dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-xl flex items-center gap-3 text-purple-800 dark:text-purple-300">
-              <Sparkles size={20} className="shrink-0 text-primary" />
+            <div className="p-4 bg-primary-soft border border-primary/30 rounded-xl flex items-center gap-3 text-primary">
+              <ShieldCheck size={20} className="shrink-0 text-primary" />
               <p className="text-xs leading-relaxed">
                 Pengguna dengan peran <strong>Owner</strong> memiliki akses penuh tanpa batasan pada semua fitur sistem.
               </p>
@@ -205,10 +203,10 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
                     Mode Hak Akses:
                   </span>
                   <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                    isCustom 
-                      ? 'bg-warning-soft text-warning dark:bg-warning/10 dark:text-warning' 
-                      : 'bg-accent-soft text-accent dark:bg-accent/10 dark:text-accent'
-                  }`}>
+ isCustom 
+ ? 'bg-warning-soft text-warning ' 
+ : 'bg-accent-soft text-accent '
+ }`}>
                     {isCustom ? 'Kustom (Khusus)' : 'Bawaan Peran (Default)'}
                   </span>
                 </div>
@@ -273,7 +271,7 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 bg-danger-soft dark:bg-danger/20 border border-danger/30 dark:border-danger/40 rounded-xl text-xs text-danger dark:text-danger flex items-center gap-2">
+            <div className="p-3.5 bg-danger-soft border border-danger/30 rounded-xl text-xs text-danger flex items-center gap-2">
               <AlertCircle size={16} className="shrink-0" />
               <span>{errorMsg}</span>
             </div>

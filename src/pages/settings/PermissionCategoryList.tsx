@@ -74,12 +74,12 @@ export default function PermissionCategoryList({
                   {catName}
                 </h3>
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                  allActive 
-                    ? 'bg-primary-soft text-primary' 
-                    : activeCount > 0 
-                      ? 'bg-warning-soft text-warning dark:bg-warning/10 dark:text-warning' 
-                      : 'bg-muted text-dim dark:bg-muted dark:text-body'
-                }`}>
+ allActive 
+ ? 'bg-primary-soft text-primary' 
+ : activeCount > 0 
+ ? 'bg-warning-soft text-warning ' 
+ : 'bg-muted text-dim dark:bg-muted dark:text-body'
+ }`}>
                   {activeCount}/{items.length} Aktif
                 </span>
               </div>

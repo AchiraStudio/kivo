@@ -306,7 +306,7 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
             <div className="h-8 w-px bg-line dark:border-line" />
             <div>
               <p className="text-[10px] font-bold uppercase text-dim">Total Nilai Faktur</p>
-              <p className="text-base font-extrabold text-success dark:text-success font-mono">
+              <p className="text-base font-extrabold text-success font-mono">
                 Rp {totalAmount.toLocaleString('id-ID')}
               </p>
             </div>
@@ -324,7 +324,7 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex items-center gap-2 bg-success hover:bg-success text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md shadow-success/20 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 bg-success hover:bg-success text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
               Konfirmasi & Tambah ke Stok
@@ -336,7 +336,7 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
       <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
 
         {/* Toolbar & Excel Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 rounded-xl bg-success-soft/60 dark:bg-success/20 border border-success-soft dark:border-success/40">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 rounded-xl bg-success-soft/60 border border-success-soft ">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-success text-white rounded-xl shadow-xs">
               <FileSpreadsheet size={20} />
@@ -361,7 +361,7 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
               type="button"
               onClick={handleImportExcel}
               disabled={isParsingExcel}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-success hover:bg-success text-white text-xs font-bold transition-all cursor-pointer shadow-xs shadow-success/20"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-success hover:bg-success text-white text-xs font-bold transition-all cursor-pointer"
             >
               {isParsingExcel ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
               Import dari Excel
@@ -416,7 +416,7 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
             <button
               type="button"
               onClick={addLine}
-              className="flex items-center gap-1 text-xs font-bold text-success dark:text-success hover:text-success transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs font-bold text-success hover:text-success transition-colors cursor-pointer"
             >
               <Plus size={15} /> Tambah Baris Manual
             </button>

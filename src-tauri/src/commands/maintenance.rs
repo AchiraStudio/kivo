@@ -219,9 +219,25 @@ mod winspool {
     }
 }
 
-/// Send ESC/POS cash drawer kick pulse natively via Windows Spooler C-FFI (Instant <1ms execution)
-#[tauri::command]
-pub async fn kick_cash_drawer(printer_name: String) -> Result<String, String> {
+/// Internal helper to resolve printer and send ESC/POS kick pulse
+pub async fn kick_cash_drawer_with_pool(
+    pool: Option<&sqlx::SqlitePool>,
+    printer_name: Option<String>,
+) -> Result<String, String> {
+    let mut resolved_printer = printer_name.unwrap_or_default();
+    if resolved_printer.trim().is_empty() || resolved_printer.starts_with("LAN") || resolved_printer.starts_with("[LAN]") {
+        if let Some(p) = pool {
+            if let Ok(Some(saved)) = sqlx::query_scalar::<_, String>("SELECT value FROM global_settings WHERE key = 'printer_name'")
+                .fetch_optional(p)
+                .await
+            {
+                if !saved.trim().is_empty() {
+                    resolved_printer = saved;
+                }
+            }
+        }
+    }
+
     #[cfg(target_os = "windows")]
     {
         // Standard ESC/POS cash drawer kick pulses:
@@ -232,7 +248,7 @@ pub async fn kick_cash_drawer(printer_name: String) -> Result<String, String> {
             27, 112, 1, 25, 250,
         ];
         unsafe {
-            winspool::send_bytes_to_printer(&printer_name, &kick_bytes, "Cash Drawer Kick")?;
+            winspool::send_bytes_to_printer(&resolved_printer, &kick_bytes, "Cash Drawer Kick")?;
         }
         Ok("Cash drawer kick pulse sent instantly!".to_string())
     }
@@ -246,7 +262,7 @@ pub async fn kick_cash_drawer(printer_name: String) -> Result<String, String> {
                 "-c",
                 &format!(
                     r#"printf '\x1b\x70\x00\x19\xfa\x1b\x70\x01\x19\xfa' > {}"#,
-                    printer_name
+                    resolved_printer
                 ),
             ])
             .output()
@@ -260,13 +276,22 @@ pub async fn kick_cash_drawer(printer_name: String) -> Result<String, String> {
     }
 }
 
+/// Send ESC/POS cash drawer kick pulse natively via Windows Spooler C-FFI (Instant <1ms execution)
+#[tauri::command]
+pub async fn kick_cash_drawer(
+    printer_name: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    kick_cash_drawer_with_pool(Some(&state.db_pool), printer_name).await
+}
+
 /// Send raw byte array directly to printer via Windows Spooler C-FFI
 #[tauri::command]
 pub async fn print_raw_receipt(printer_name: String, bytes: Vec<u8>) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         unsafe {
-            winspool::send_bytes_to_printer(&printer_name, &bytes, "ChiraSys POS Receipt")?;
+            winspool::send_bytes_to_printer(&printer_name, &bytes, "Kivo POS Receipt")?;
         }
         Ok("Print job sent instantly!".to_string())
     }

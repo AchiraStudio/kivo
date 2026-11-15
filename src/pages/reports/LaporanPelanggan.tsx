@@ -8,28 +8,28 @@ interface Props { onBack: () => void; }
 
 const TIER: Record<string, { label: string; color: string; icon?: any }> = {
   regular: { label: 'Regular', color: 'bg-muted text-body dark:bg-muted dark:text-body' },
-  member:  { label: 'Member',  color: 'bg-accent-soft text-accent dark:bg-accent/30 dark:text-accent' },
-  vip:     { label: 'VIP',     color: 'bg-warning-soft text-warning dark:bg-warning/30 dark:text-warning', icon: Crown },
+  member:  { label: 'Member',  color: 'bg-accent-soft text-accent ' },
+  vip:     { label: 'VIP',     color: 'bg-warning-soft text-warning ', icon: Crown },
 };
 
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 0) {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/15 text-amber-500 font-bold" title="Peringkat 1">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning/15 text-warning font-bold" title="Peringkat 1">
         <Trophy size={13} />
       </span>
     );
   }
   if (rank === 1) {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-400/20 text-slate-500 dark:text-slate-300 font-bold" title="Peringkat 2">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-dim/20 text-dim font-bold" title="Peringkat 2">
         <Medal size={13} />
       </span>
     );
   }
   if (rank === 2) {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-700/15 text-amber-700 dark:text-amber-500 font-bold" title="Peringkat 3">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning/15 text-warning font-bold" title="Peringkat 3">
         <Medal size={13} />
       </span>
     );
@@ -87,7 +87,7 @@ export default function LaporanPelanggan({ onBack }: Props) {
                 const tier = TIER[r.customer_tier] || TIER.regular;
                 const avg = r.transaction_count > 0 ? r.total_spent / r.transaction_count : 0;
                 return (
-                  <tr key={`${r.customer_name}-${i}`} className={`hover:bg-muted/30 ${i < 3 ? 'bg-warning-soft/30 dark:bg-warning/5' : ''}`}>
+                  <tr key={`${r.customer_name}-${i}`} className={`hover:bg-muted/30 ${i < 3 ? 'bg-warning-soft/30 ' : ''}`}>
                     <td className="py-3 px-6"><RankBadge rank={i} /></td>
                     <td className="py-3 px-6 font-bold text-heading">{r.customer_name}</td>
                     <td className="py-3 px-6">
