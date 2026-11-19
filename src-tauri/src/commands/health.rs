@@ -158,8 +158,8 @@ pub async fn save_health_record_pool(pool: &SqlitePool, input: HealthRecordInput
         || input.systolic.is_some()
         || input.weight.is_some()
         || input.height.is_some();
-    if !has_measure && input.medicines.is_empty() {
-        return Err("Isi minimal satu hasil pemeriksaan atau satu obat.".to_string());
+    if !has_measure && input.medicines.is_empty() && clean(&input.notes).is_none() {
+        return Err("Isi minimal satu hasil pemeriksaan, obat, atau catatan.".to_string());
     }
 
     let customer_exists: Option<i64> = sqlx::query_scalar("SELECT 1 FROM customers WHERE id = ?")
@@ -498,11 +498,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn any_single_reading_medicine_or_note_is_enough() {
+        let pool = test_pool().await;
+        let only = |f: fn(&mut HealthRecordInput)| {
+            let mut r = base_input();
+            r.blood_sugar = None; r.cholesterol_total = None; r.systolic = None; r.diastolic = None;
+            r.notes = None; r.medicines = vec![];
+            f(&mut r);
+            r
+        };
+        for r in [
+            only(|r| r.blood_sugar = Some(110.0)),
+            only(|r| r.cholesterol_total = Some(190.0)),
+            only(|r| { r.systolic = Some(120); r.diastolic = Some(80); }),
+            only(|r| r.uric_acid = Some(5.5)),
+            only(|r| r.medicines = vec![med("Paracetamol", 1.0, 5000.0)]),
+            only(|r| r.notes = Some("hanya catatan".into())),
+        ] {
+            assert!(save_health_record_pool(&pool, r).await.is_ok());
+        }
+    }
+
+    #[tokio::test]
     async fn rejects_invalid_records() {
         let pool = test_pool().await;
 
         let mut empty = base_input();
         empty.blood_sugar = None; empty.cholesterol_total = None; empty.systolic = None; empty.diastolic = None; empty.medicines = vec![];
+        empty.notes = Some("   ".into());
         assert!(save_health_record_pool(&pool, empty).await.is_err());
 
         let mut half_bp = base_input();
