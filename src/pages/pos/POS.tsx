@@ -97,8 +97,13 @@ export default function POS() {
   const totalEditInputRef = useRef<HTMLInputElement>(null);
   const priceEditInputRef = useRef<HTMLInputElement>(null);
   const subtotalEditInputRef = useRef<HTMLInputElement>(null);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const itemRefs = useRef<(HTMLElement | null)[]>([]);
   const cartItemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const cartListRef = useRef<HTMLDivElement>(null);
+
+  // Highlighted search result. The search box keeps focus, so the cashier can
+  // keep typing while moving through results with the arrow keys.
+  const [activeItemIdx, setActiveItemIdx] = useState<number>(-1);
 
   // Modals
   const [showPayment, setShowPayment] = useState(false);
@@ -392,8 +397,10 @@ export default function POS() {
           if (showHistory) setShowHistory(false);
           if (receiptSaleId) setReceiptSaleId(null);
           break;
+        // Up/Down belong to the search results unless focus is already in the
+        // cart list, or Alt is held to jump into it from anywhere.
         case 'ArrowDown':
-          if (search.length < 2 && cart.length > 0 && !isInModal) {
+          if (!e.defaultPrevented && cart.length > 0 && !isInModal && (e.altKey || cartListRef.current?.contains(document.activeElement))) {
             e.preventDefault();
             const next = Math.min(selectedCartIdx + 1, cart.length - 1);
             setSelectedCartIdx(next);
@@ -401,7 +408,7 @@ export default function POS() {
           }
           break;
         case 'ArrowUp':
-          if (search.length < 2 && cart.length > 0 && !isInModal) {
+          if (!e.defaultPrevented && cart.length > 0 && !isInModal && (e.altKey || cartListRef.current?.contains(document.activeElement))) {
             e.preventDefault();
             const prev = Math.max(selectedCartIdx - 1, 0);
             setSelectedCartIdx(prev);
@@ -510,23 +517,67 @@ export default function POS() {
     });
   }, [cart.map(l => `${l.item_id}-${l.qty}-${l.price}`).join('|'), selectedCustomer?.customer_tier]);
 
+  // Number of cards per row in grid view, read from the rendered layout.
+  const getGridColumns = () => {
+    if (viewMode !== 'grid') return 1;
+    const first = itemRefs.current[0];
+    if (!first) return 1;
+    let cols = 0;
+    for (const el of itemRefs.current) {
+      if (!el || el.offsetTop !== first.offsetTop) break;
+      cols++;
+    }
+    return Math.max(1, cols);
+  };
+
   const handleBarcodeEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && search) {
-      if (items.length === 1) { 
-        addToCart(items[0]); 
-        setSearch(''); 
-      } else {
-        const exact = items.find(i => i.sku === search || i.barcode === search);
-        if (exact) { 
-          addToCart(exact); 
-          setSearch(''); 
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (items.length === 0) return;
+      e.preventDefault();
+      const step = getGridColumns();
+      setActiveItemIdx(prev => {
+        if (e.key === 'ArrowDown') return prev < 0 ? 0 : Math.min(prev + step, items.length - 1);
+        return prev < 0 ? 0 : Math.max(prev - step, 0);
+      });
+    } else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && activeItemIdx >= 0 && viewMode === 'grid') {
+      // Once a result is highlighted, Left/Right move sideways within the grid.
+      e.preventDefault();
+      setActiveItemIdx(prev => e.key === 'ArrowRight' ? Math.min(prev + 1, items.length - 1) : Math.max(prev - 1, 0));
+    } else if (e.key === 'Escape' && activeItemIdx >= 0) {
+      e.preventDefault();
+      setActiveItemIdx(-1);
+    } else if (e.key === 'Enter') {
+      const highlighted = activeItemIdx >= 0 ? items[activeItemIdx] : undefined;
+      if (highlighted) {
+        e.preventDefault();
+        addToCart(highlighted);
+        setSearch('');
+        setActiveItemIdx(-1);
+      } else if (search) {
+        if (items.length === 1) {
+          addToCart(items[0]);
+          setSearch('');
+        } else {
+          const exact = items.find(i => i.sku === search || i.barcode === search);
+          if (exact) {
+            addToCart(exact);
+            setSearch('');
+          }
         }
       }
-    } else if (e.key === 'ArrowDown' && items.length > 0) {
-      e.preventDefault();
-      itemRefs.current[0]?.focus();
     }
   };
+
+  // Drop the highlight when the result set changes under it, and keep it in view.
+  useEffect(() => {
+    setActiveItemIdx(prev => (prev >= items.length ? -1 : prev));
+  }, [items]);
+
+  useEffect(() => {
+    if (activeItemIdx >= 0) itemRefs.current[activeItemIdx]?.scrollIntoView({ block: 'nearest' });
+  }, [activeItemIdx]);
 
   const addToCart = (item: Item) => {
     setCart(prev => {
@@ -706,7 +757,7 @@ export default function POS() {
               ref={searchInputRef}
               type="text"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setActiveItemIdx(-1); }}
               onKeyDown={handleBarcodeEnter}
               placeholder="Cari obat atau scan barcode..."
               className="w-full pl-9 pr-9 py-2 sm:py-2.5 bg-card border border-line/80 rounded-xl text-xs font-semibold focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-heading placeholder:text-dim transition-all shadow-xs"
@@ -849,6 +900,7 @@ export default function POS() {
                     ref={el => { itemRefs.current[idx] = el; }}
                     onClick={() => addToCart(item)}
                     className={`group relative flex flex-col justify-between text-left rounded-2xl p-3 sm:p-3.5 transition-all duration-200 cursor-pointer select-none border ${
+ activeItemIdx === idx ? 'outline-2 outline-offset-2 outline-primary bg-primary/[0.08] ' : ''}${
  inCartQty > 0
  ? 'bg-primary/[0.04] /[0.08] border-primary shadow-sm ring-2 ring-primary/25'
  : 'bg-card border-line/90 dark:border-line hover:border-primary/50 hover:shadow-md active:scale-[0.98] shadow-2xs'
@@ -960,7 +1012,7 @@ export default function POS() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line dark:divide-line">
-                  {items.map((item) => {
+                  {items.map((item, idx) => {
                     const activePrice = priceType === 'wholesale' && item.wholesale_price ? item.wholesale_price : (item.price || 0);
                     const inCartQty = cartQtyMap[item.id] || 0;
                     const isOutOfStock = item.current_stock !== undefined && item.current_stock <= 0;
@@ -968,10 +1020,12 @@ export default function POS() {
                     const { Icon: CatIcon, avatarClass } = getCategoryAvatar(item.category_name);
 
                     return (
-                      <tr 
-                        key={item.id} 
+                      <tr
+                        key={item.id}
+                        ref={el => { itemRefs.current[idx] = el; }}
                         onClick={() => addToCart(item)}
                         className={`hover:bg-primary-soft/60 dark:hover:bg-primary-soft/20 transition-colors cursor-pointer ${
+ activeItemIdx === idx ? 'bg-primary/15 outline-2 -outline-offset-2 outline-primary ' : ''}${
  inCartQty > 0 ? 'bg-primary/[0.03] /[0.06]' : ''
  }`}
                       >
@@ -1047,6 +1101,8 @@ export default function POS() {
         <div className="py-2.5 px-4 bg-muted/90 dark:bg-input/80 border-t border-line hidden lg:flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-dim font-medium shrink-0">
           {[
             ['F1', 'Cari Barang'],
+            ['↑ ↓ Enter', 'Pilih Hasil'],
+            ['Alt+↑↓', 'Keranjang'],
             ['F2', 'Buka Laci'],
             ['F3', 'Pilih Pelanggan'],
             ['F4', 'Tahan Nota'],
@@ -1142,7 +1198,7 @@ export default function POS() {
         </div>
 
         {/* Cart Item List */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2.5 tour-pos-cart">
+        <div ref={cartListRef} className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2.5 tour-pos-cart">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-dim p-6 text-center select-none">
               <div className="w-16 h-16 rounded-xl bg-muted/80 flex items-center justify-center text-dim mb-3 border border-line/80 dark:border-line-strong/80">
