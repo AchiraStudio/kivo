@@ -238,19 +238,41 @@ pub async fn handle_lan_poll(
 ) -> Json<serde_json::Value> {
     let client_version = q.version.unwrap_or(0);
     let timeout_secs = q.timeout.unwrap_or(20).min(30);
+    let rx = LAN_MUTATION_WATCH.1.clone();
+    Json(poll_watch_channel(rx, &LAST_MUTATED_TABLE, client_version, timeout_secs).await)
+}
 
-    let mut rx = LAN_MUTATION_WATCH.1.clone();
-    let current_version = *rx.borrow();
+async fn poll_watch_channel(
+    mut rx: tokio::sync::watch::Receiver<i64>,
+    last_table_lock: &Arc<RwLock<String>>,
+    client_version: i64,
+    timeout_secs: u64,
+) -> serde_json::Value {
+    // Mark the current value as seen on this cloned receiver so rx.changed()
+    // genuinely waits for a future mutation instead of returning immediately.
+    let current_version = *rx.borrow_and_update();
+
+    // First poll handshake: tell the client our baseline version right away
+    // without triggering a redundant reload.
+    if client_version == 0 {
+        let last_table = last_table_lock.read().await.clone();
+        return serde_json::json!({
+            "changed": false,
+            "version": current_version,
+            "table": last_table,
+            "immediate": true
+        });
+    }
 
     // If client is behind current server version, respond immediately
-    if client_version > 0 && current_version > client_version {
-        let last_table = LAST_MUTATED_TABLE.read().await.clone();
-        return Json(serde_json::json!({
+    if current_version > client_version {
+        let last_table = last_table_lock.read().await.clone();
+        return serde_json::json!({
             "changed": true,
             "version": current_version,
             "table": last_table,
             "immediate": true
-        }));
+        });
     }
 
     // Otherwise wait for next mutation or timeout
@@ -260,28 +282,28 @@ pub async fn handle_lan_poll(
     tokio::select! {
         res = rx.changed() => {
             if res.is_ok() {
-                let updated_version = *rx.borrow();
-                let last_table = LAST_MUTATED_TABLE.read().await.clone();
-                Json(serde_json::json!({
-                    "changed": true,
+                let updated_version = *rx.borrow_and_update();
+                let last_table = last_table_lock.read().await.clone();
+                serde_json::json!({
+                    "changed": updated_version > client_version,
                     "version": updated_version,
                     "table": last_table,
                     "immediate": false
-                }))
+                })
             } else {
-                Json(serde_json::json!({
+                serde_json::json!({
                     "changed": false,
                     "version": current_version,
                     "error": "channel_closed"
-                }))
+                })
             }
         }
         _ = &mut sleep => {
-            Json(serde_json::json!({
+            serde_json::json!({
                 "changed": false,
                 "version": current_version,
                 "timeout": true
-            }))
+            })
         }
     }
 }
@@ -1215,21 +1237,8 @@ async fn handle_lan_rpc(
         unknown => Err(format!("Perintah RPC '{}' tidak didukung oleh Server Induk", unknown)),
     };
 
-    // Broadcast to all connected devices if this was a mutating RPC call
-    let is_mutation = !matches!(cmd,
-        "get_items_filtered" | "get_item" | "get_categories" | "get_brands" | "get_banks" | "get_settings" |
-        "get_units_for_item" | "get_prices_for_item" | "get_price_tiers_for_item" |
-        "get_customers" | "get_customer_tiers" | "get_health_records" | "get_medicine_presets" | "get_suppliers" | "get_purchases" | "get_purchase_orders" |
-        "get_sales" | "get_sale_detail" | "get_sales_summary" | "get_top_selling_items" | "get_sales_by_payment_method" |
-        "get_low_stock_alerts" | "get_expiring_items" | "get_stock_valuation" | "get_stock_opnames" | "get_stock_opname_detail" |
-        "get_accounts" | "get_journal_entries" | "get_general_ledger" | "get_income_statement" | "get_balance_sheet" |
-        "get_trial_balance" | "get_cash_flow_summary" | "get_promos" | "get_users" | "get_current_user" |
-        "get_permission_definitions" | "get_role_default_permissions" | "get_user_permissions" |
-        "get_sync_status" | "get_available_workspaces" | "sysadmin_get_workspaces" | "get_lan_status" | "get_lan_peers" | "list_printers" | "send_ai_chat_request" |
-        "login" | "logout" | "receive_cloud_sync"
-    );
-
-    if is_mutation && res.is_ok() {
+    // Broadcast to all connected devices only for genuinely mutating RPC calls
+    if is_mutating_rpc(cmd) && res.is_ok() {
         notify_mutation(cmd);
     }
 
@@ -1237,6 +1246,34 @@ async fn handle_lan_rpc(
         Ok(data) => (StatusCode::OK, Json(LanRpcResponse { success: true, data: Some(data), error: None })),
         Err(err) => (StatusCode::OK, Json(LanRpcResponse { success: false, data: None, error: Some(err) })),
     }
+}
+
+fn is_mutating_rpc(cmd: &str) -> bool {
+    if cmd.starts_with("get_")
+        || cmd.starts_with("list_")
+        || cmd.starts_with("check_")
+        || cmd.starts_with("test_")
+        || cmd.starts_with("export_")
+        || cmd.starts_with("discover_")
+        || cmd.starts_with("search_")
+    {
+        return false;
+    }
+
+    !matches!(
+        cmd,
+        "calculate_discounts"
+            | "login"
+            | "logout"
+            | "receive_cloud_sync"
+            | "send_ai_chat_request"
+            | "sysadmin_get_workspaces"
+            | "kick_cash_drawer"
+            | "print_escpos"
+            | "print_raw_escpos"
+            | "open_devtools"
+            | "open_browser_url"
+    )
 }
 
 async fn handle_export_snapshot(
@@ -2652,4 +2689,48 @@ pub async fn lan_remote_print_receipt(
 
     // Fallback to local
     crate::commands::maintenance::print_raw_receipt(printer_name.unwrap_or_default(), bytes).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read_only_rpcs_do_not_trigger_lan_mutations() {
+        assert!(!is_mutating_rpc("calculate_discounts"));
+        assert!(!is_mutating_rpc("get_items_filtered"));
+        assert!(!is_mutating_rpc("get_sales_summary"));
+        assert!(!is_mutating_rpc("list_printers"));
+        assert!(!is_mutating_rpc("check_for_updates"));
+        assert!(!is_mutating_rpc("kick_cash_drawer"));
+        assert!(!is_mutating_rpc("login"));
+
+        assert!(is_mutating_rpc("create_sale"));
+        assert!(is_mutating_rpc("save_item"));
+        assert!(is_mutating_rpc("delete_promo"));
+        assert!(is_mutating_rpc("save_health_record"));
+    }
+
+    #[tokio::test]
+    async fn poll_marks_current_version_seen_and_does_not_spin() {
+        let (tx, rx_root) = tokio::sync::watch::channel(1i64);
+        let last_table = Arc::new(RwLock::new("sales".to_string()));
+        // Advance watch value so root receiver has an unseen value (reproducing the original bug)
+        let _ = tx.send(5);
+
+        // First handshake (version=0) returns immediately with changed=false
+        let first = poll_watch_channel(rx_root.clone(), &last_table, 0, 1).await;
+        assert_eq!(first["changed"], serde_json::json!(false));
+        assert_eq!(first["version"].as_i64(), Some(5));
+
+        // Polling with the already-seen version must wait (timeout) instead of spinning
+        let wait = poll_watch_channel(rx_root.clone(), &last_table, 5, 1).await;
+        assert_eq!(wait["changed"], serde_json::json!(false));
+        assert_eq!(wait["timeout"], serde_json::json!(true));
+
+        // Polling with a stale version returns changed=true immediately
+        let behind = poll_watch_channel(rx_root.clone(), &last_table, 4, 1).await;
+        assert_eq!(behind["changed"], serde_json::json!(true));
+        assert_eq!(behind["version"].as_i64(), Some(5));
+    }
 }
