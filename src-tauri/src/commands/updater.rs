@@ -67,6 +67,18 @@ fn is_version_newer(latest: &str, current: &str) -> bool {
     false
 }
 
+fn pick_windows_installer(assets: &[GithubAsset]) -> Option<&GithubAsset> {
+    let is_valid = |name: &str, ext: &str| {
+        let lower = name.to_lowercase();
+        lower.ends_with(ext) && !lower.contains(".sig") && !lower.contains(".sha256")
+    };
+
+    assets
+        .iter()
+        .find(|a| is_valid(&a.name, ".exe"))
+        .or_else(|| assets.iter().find(|a| is_valid(&a.name, ".msi")))
+}
+
 #[tauri::command]
 pub async fn check_for_updates() -> Result<UpdateCheckResult, String> {
     let current_version = env!("CARGO_PKG_VERSION").to_string();
@@ -97,13 +109,8 @@ pub async fn check_for_updates() -> Result<UpdateCheckResult, String> {
     let latest_version = release.tag_name.trim_start_matches('v').trim_start_matches('V').to_string();
     let has_update = is_version_newer(&latest_version, &current_version);
 
-    // Look for Windows installer asset (.exe / .msi)
-    let best_asset = release.assets.iter().find(|a| {
-        let lower = a.name.to_lowercase();
-        (lower.ends_with(".exe") || lower.ends_with(".msi"))
-            && !lower.contains(".sig")
-            && !lower.contains(".sha256")
-    });
+    // Prefer NSIS .exe installer on Windows, with .msi fallback
+    let best_asset = pick_windows_installer(&release.assets);
 
     let (download_url, asset_name, asset_size) = if let Some(asset) = best_asset {
         (Some(asset.browser_download_url.clone()), Some(asset.name.clone()), asset.size)
@@ -199,9 +206,17 @@ pub async fn download_and_install_update(
     // Launch the downloaded installer
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new(&file_path)
-            .spawn()
-            .map_err(|e| format!("Gagal menjalankan installer: {}", e))?;
+        if asset_name.to_lowercase().ends_with(".msi") {
+            std::process::Command::new("msiexec")
+                .arg("/i")
+                .arg(&file_path)
+                .spawn()
+                .map_err(|e| format!("Gagal menjalankan installer MSI: {}", e))?;
+        } else {
+            std::process::Command::new(&file_path)
+                .spawn()
+                .map_err(|e| format!("Gagal menjalankan installer: {}", e))?;
+        }
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -220,4 +235,52 @@ pub async fn download_and_install_update(
     });
 
     Ok(format!("Installer {} berhasil dijalankan!", asset_name))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn semver_comparison_handles_v_prefix_and_bumps() {
+        assert!(is_version_newer("v1.5.2", "1.5.0"));
+        assert!(is_version_newer("1.5.2", "1.5.1"));
+        assert!(!is_version_newer("v1.5.2", "1.5.2"));
+        assert!(!is_version_newer("1.5.0", "1.5.2"));
+        assert!(is_version_newer("2.0.0", "1.9.9"));
+    }
+
+    #[test]
+    fn installer_picker_prefers_exe_and_ignores_signatures() {
+        let assets = vec![
+            GithubAsset {
+                name: "Kivo_1.5.2_x64-setup.exe.sig".to_string(),
+                browser_download_url: "https://example.com/sig".to_string(),
+                size: 128,
+            },
+            GithubAsset {
+                name: "Kivo_1.5.2_x64_en-US.msi".to_string(),
+                browser_download_url: "https://example.com/msi".to_string(),
+                size: 12000,
+            },
+            GithubAsset {
+                name: "Kivo_1.5.2_x64-setup.exe".to_string(),
+                browser_download_url: "https://example.com/exe".to_string(),
+                size: 8000,
+            },
+        ];
+        let picked = pick_windows_installer(&assets).expect("should find installer");
+        assert_eq!(picked.name, "Kivo_1.5.2_x64-setup.exe");
+
+        let msi_only = vec![assets[0].name.clone(), assets[1].name.clone()]
+            .into_iter()
+            .map(|name| GithubAsset {
+                name,
+                browser_download_url: "https://example.com/x".to_string(),
+                size: 100,
+            })
+            .collect::<Vec<_>>();
+        let fallback = pick_windows_installer(&msi_only).expect("should fall back to msi");
+        assert_eq!(fallback.name, "Kivo_1.5.2_x64_en-US.msi");
+    }
 }
