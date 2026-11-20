@@ -376,7 +376,15 @@ export default function App() {
   return (
     <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-background">
       <ContextMenu />
-      <TitleBar />
+      {/* Unified Desktop TitleBar + Topbar (hidden on mobile < 768px) */}
+      <Topbar
+        activeMenu={activeMenu}
+        setActiveMenu={setActiveMenu}
+        onOpenAIChat={() => setIsAIChatOpen(true)}
+        onOpenHostQr={() => setIsHostQrOpen(true)}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={toggleSidebar}
+      />
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar
           activeMenu={activeMenu}
@@ -385,15 +393,8 @@ export default function App() {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
         />
-        <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-background">
-          <Topbar 
-            activeMenu={activeMenu} 
-            setActiveMenu={setActiveMenu} 
-            onOpenAIChat={() => setIsAIChatOpen(true)}
-            onOpenHostQr={() => setIsHostQrOpen(true)}
-            onOpenMenuDrawer={() => setIsMobileMenuOpen(true)}
-          />
-          <div className={`flex-1 min-h-0 overflow-hidden relative flex flex-col ${activeMenu === 'pos' ? 'p-0 pb-16 md:pb-0' : 'p-2 sm:p-3 md:p-4 lg:p-5 pb-20 md:pb-0'}`}>
+        <main className="flex-1 flex flex-col h-full min-h-0 relative overflow-hidden bg-background">
+          <div className={`flex-1 min-h-0 overflow-hidden relative flex flex-col ${activeMenu === 'pos' ? 'p-0' : 'p-2.5 sm:p-3.5 md:p-4 lg:p-5'}`}>
             <MainContent
               activeMenu={activeMenu}
               setActiveMenu={setActiveMenu}
@@ -402,6 +403,14 @@ export default function App() {
               setIsDrawerOpen={setIsDrawerOpen}
             />
           </div>
+
+          {/* Mobile Bottom Navigation Bar (< 768px) in normal flex flow so it never covers content */}
+          <MobileNav
+            activeMenu={activeMenu}
+            setActiveMenu={setActiveMenu}
+            onOpenMenuDrawer={() => setIsMobileMenuOpen(true)}
+          />
+
           <ItemDrawer
             isOpen={isDrawerOpen}
             onClose={() => {
@@ -417,30 +426,21 @@ export default function App() {
             branchId={user.branch_id || 'branch_001'}
           />
 
-          {/* Mobile Bottom Navigation Bar (< 768px) */}
-          <MobileNav
-            activeMenu={activeMenu}
-            setActiveMenu={setActiveMenu}
-            onOpenMenuDrawer={() => setIsMobileMenuOpen(true)}
-          />
-
-          {/* Mobile Slide-Over Menu Drawer */}
           <MobileMenuDrawer
             isOpen={isMobileMenuOpen}
             onClose={() => setIsMobileMenuOpen(false)}
             activeMenu={activeMenu}
             setActiveMenu={setActiveMenu}
             onOpenHostQr={() => setIsHostQrOpen(true)}
+            onOpenAIChat={() => setIsAIChatOpen(true)}
             onLogout={handleLogout}
           />
 
-          {/* Host Server & Mobile QR Code Modal */}
           <HostQrModal
             isOpen={isHostQrOpen}
             onClose={() => setIsHostQrOpen(false)}
           />
 
-          {/* GitHub Release In-App Updater Modal */}
           <UpdateModal
             isOpen={isModalOpen}
             onClose={closeModal}

@@ -105,7 +105,7 @@ export default function Modal({
 
   const modalContent = (
     <div
-      className={`fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-5 overflow-x-hidden ${backdropClassName}`}
+      className={`fixed inset-0 z-[1000] flex items-center justify-center p-2.5 sm:p-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-x-hidden ${backdropClassName}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? titleId : undefined}
@@ -121,7 +121,7 @@ export default function Modal({
       />
 
       <div
-        className={`relative z-10 w-[calc(100vw-1.5rem)] sm:w-full ${SIZE_CLASSES[size]} bg-elevated text-heading rounded-xl border border-line shadow-lg shadow-black/15 dark:shadow-black/45 flex flex-col max-h-[90dvh] overflow-hidden animate-pop-in ${className}`}
+        className={`relative z-10 w-full ${SIZE_CLASSES[size]} bg-elevated text-heading rounded-xl border border-line shadow-lg shadow-black/15 dark:shadow-black/45 flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90dvh] overflow-hidden animate-pop-in ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {hasHeader && (

@@ -1,5 +1,5 @@
 ---
-version: 1.5.2
+version: 1.5.3
 name: Kivo Calm Utility
 description: Neutral graphite and paper surfaces with Kivo brand magenta restrained as a single primary accent. Designed for fast retail, clinic, and POS operations.
 colors:

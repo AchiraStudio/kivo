@@ -191,10 +191,10 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
   const totalAlerts = lowStockAlerts.length + expiringAlerts.length;
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0 flex flex-col gap-4 w-full pb-6 pr-0.5">
-      {/* Toolbar: Period Switcher & Primary Quick Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 shrink-0">
-        <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0 flex flex-col gap-3 sm:gap-4 w-full pb-4 pr-0.5">
+      {/* Toolbar: Period Switcher & Desktop Quick Actions */}
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="hidden md:flex items-center gap-2 flex-wrap">
           <Button variant="primary" size="sm" onClick={() => setActiveMenu('pos')}>
             <ShoppingCart size={14} strokeWidth={1.75} />
             Kasir
@@ -213,7 +213,7 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto shrink-0">
           <div className="bg-muted p-0.5 rounded-lg flex items-center border border-line" role="tablist" aria-label="Periode">
             {(
               [
@@ -244,7 +244,7 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
             onClick={() => fetchDashboardData(true)}
             disabled={refreshing}
             aria-label="Muat ulang data"
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-line bg-card hover:bg-muted text-dim hover:text-heading transition-colors disabled:opacity-50 cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-line bg-card hover:bg-muted text-dim hover:text-heading transition-colors disabled:opacity-50 cursor-pointer shrink-0"
             title="Muat ulang"
           >
             <RefreshCw size={14} className={refreshing ? 'animate-spin text-primary' : ''} />
@@ -261,41 +261,41 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
         </div>
       )}
 
-      {/* Key Operational Strip (Unified Flat Bar, Single Focal Revenue Metric) */}
-      <div className="bg-card border border-line rounded-xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-line">
-        <div className="p-4 flex flex-col justify-between gap-1.5">
-          <span className="text-xs font-medium text-dim">Pendapatan</span>
-          <p className="text-2xl font-bold text-heading tracking-tight tnum">
+      {/* Key Operational Strip (Compact 2x2 on mobile, 4-col on desktop) */}
+      <div className="bg-card border border-line rounded-xl grid grid-cols-2 xl:grid-cols-4 overflow-hidden">
+        <div className="p-3 sm:p-4 flex flex-col justify-between gap-1 border-b xl:border-b-0 border-r border-line">
+          <span className="text-[11px] sm:text-xs font-medium text-dim">Pendapatan</span>
+          <p className="text-base sm:text-xl font-bold text-heading tracking-tight tnum truncate">
             {loading ? '...' : `Rp ${totalRevenue.toLocaleString('id-ID')}`}
           </p>
-          <span className="text-xs text-dim tnum">
-            {transactionCount} transaksi · rata-rata Rp {avgBasket.toLocaleString('id-ID')}
+          <span className="text-[11px] text-dim tnum truncate">
+            {transactionCount} trx · avg Rp {avgBasket.toLocaleString('id-ID')}
           </span>
         </div>
 
-        <div className="p-4 flex flex-col justify-between gap-1.5">
-          <span className="text-xs font-medium text-dim">Laba Kotor</span>
-          <p className="text-xl font-bold text-heading tracking-tight tnum">
+        <div className="p-3 sm:p-4 flex flex-col justify-between gap-1 border-b xl:border-b-0 xl:border-r border-line">
+          <span className="text-[11px] sm:text-xs font-medium text-dim">Laba Kotor</span>
+          <p className="text-base sm:text-xl font-bold text-heading tracking-tight tnum truncate">
             {loading ? '...' : `Rp ${grossProfit.toLocaleString('id-ID')}`}
           </p>
-          <span className="text-xs text-success font-medium tnum">Margin {profitMargin}%</span>
+          <span className="text-[11px] text-success font-medium tnum">Margin {profitMargin}%</span>
         </div>
 
-        <div className="p-4 flex flex-col justify-between gap-1.5">
-          <span className="text-xs font-medium text-dim">Valuasi Stok</span>
-          <p className="text-xl font-bold text-heading tracking-tight tnum">
+        <div className="p-3 sm:p-4 flex flex-col justify-between gap-1 border-r border-line">
+          <span className="text-[11px] sm:text-xs font-medium text-dim">Valuasi Stok</span>
+          <p className="text-base sm:text-xl font-bold text-heading tracking-tight tnum truncate">
             {loading ? '...' : `Rp ${totalStockValuation.toLocaleString('id-ID')}`}
           </p>
-          <span className="text-xs text-dim">Modal persediaan aktif</span>
+          <span className="text-[11px] text-dim truncate">Modal aktif</span>
         </div>
 
-        <div className="p-4 flex flex-col justify-between gap-1.5">
-          <span className="text-xs font-medium text-dim">Peringatan Stok</span>
-          <p className={`text-xl font-bold tracking-tight tnum ${totalAlerts > 0 ? 'text-danger' : 'text-heading'}`}>
+        <div className="p-3 sm:p-4 flex flex-col justify-between gap-1">
+          <span className="text-[11px] sm:text-xs font-medium text-dim">Peringatan</span>
+          <p className={`text-base sm:text-xl font-bold tracking-tight tnum ${totalAlerts > 0 ? 'text-danger' : 'text-heading'}`}>
             {loading ? '...' : totalAlerts}
           </p>
-          <span className="text-xs text-dim tnum">
-            {lowStockAlerts.length} menipis · {expiringAlerts.length} kadaluarsa
+          <span className="text-[11px] text-dim tnum truncate">
+            {lowStockAlerts.length} tipis · {expiringAlerts.length} exp
           </span>
         </div>
       </div>

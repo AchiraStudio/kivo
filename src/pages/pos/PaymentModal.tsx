@@ -252,8 +252,46 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
             size="5xl"
             title="Pembayaran"
             noPadding={true}
+            footer={
+                <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+                    <Button
+                        variant="outline"
+                        size="md"
+                        type="button"
+                        onClick={onClose}
+                        disabled={loading}
+                    >
+                        Batal
+                    </Button>
+                    <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
+                        <Button
+                            variant="secondary"
+                            size="md"
+                            type="button"
+                            onClick={() => handlePay(false)}
+                            disabled={!isReady || loading}
+                            className="flex-1 sm:flex-none"
+                        >
+                            <span>Simpan</span>
+                            <kbd className="hidden sm:inline font-mono text-[11px] text-dim">(End)</kbd>
+                        </Button>
+                        <Button
+                            variant="primary"
+                            size="md"
+                            type="button"
+                            onClick={() => handlePay(true)}
+                            disabled={!isReady}
+                            loading={loading}
+                            className="flex-1 sm:flex-none"
+                        >
+                            <span>{loading ? 'Memproses...' : 'Simpan & Cetak'}</span>
+                            {!loading && <kbd className="hidden sm:inline font-mono text-[11px] opacity-80">(c+End)</kbd>}
+                        </Button>
+                    </div>
+                </div>
+            }
         >
-            <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5">
+            <div className="p-3.5 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-5">
                 {/* Left Column: Payment Methods & Inputs */}
                 <div className="lg:col-span-7 space-y-4">
                     <div>
@@ -561,45 +599,6 @@ export default function PaymentModal({ branchId, cart, total, priceType, custome
                                 );
                             })}
                         </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="space-y-2 pt-1">
-                        <Button
-                            variant="primary"
-                            size="lg"
-                            fullWidth
-                            type="button"
-                            onClick={() => handlePay(true)}
-                            disabled={!isReady}
-                            loading={loading}
-                        >
-                            <span>{loading ? 'Memproses...' : 'Simpan & Cetak'}</span>
-                            {!loading && <kbd className="font-mono text-[11px] opacity-80">(c+End)</kbd>}
-                        </Button>
-
-                        <Button
-                            variant="secondary"
-                            size="lg"
-                            fullWidth
-                            type="button"
-                            onClick={() => handlePay(false)}
-                            disabled={!isReady || loading}
-                        >
-                            <span>Simpan</span>
-                            <kbd className="font-mono text-[11px] text-dim">(End)</kbd>
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            size="md"
-                            fullWidth
-                            type="button"
-                            onClick={onClose}
-                            disabled={loading}
-                        >
-                            Batal (Esc)
-                        </Button>
                     </div>
                 </div>
             </div>

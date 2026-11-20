@@ -1,15 +1,30 @@
 import { useState, useEffect } from 'react';
 import {
-  LayoutDashboard, Package, ShoppingCart, Users, Settings,
-  FileText, LogOut, Truck, RefreshCw, PanelLeftClose, PanelLeftOpen,
-  CheckCircle2, AlertTriangle, LucideIcon
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
+  Settings,
+  FileText,
+  LogOut,
+  Truck,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  LucideIcon,
 } from 'lucide-react';
 import { listen } from '../../lib/events';
-import { getLowStockAlerts, logoutUser, getSyncStatus, getSettings, SyncStatus, LanSyncProgress, getLanStatus } from '../../lib/api';
+import {
+  getLowStockAlerts,
+  logoutUser,
+  getSyncStatus,
+  SyncStatus,
+  LanSyncProgress,
+  getLanStatus,
+} from '../../lib/api';
 import { useAuthStore } from '../../store/AuthStore';
 import ConfirmModal from '../ui/ConfirmModal';
 import { usePermissions } from '../../lib/permissions';
-import KivoLogo from '../common/KivoLogo';
 
 interface SidebarProps {
   activeMenu: string;
@@ -32,12 +47,10 @@ interface MenuItem {
   badge?: number | null;
 }
 
-export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false, onToggleCollapse }: SidebarProps) {
+export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false }: SidebarProps) {
   const { can } = usePermissions();
   const [lowStockCount, setLowStockCount] = useState(0);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
-  const [companyName, setCompanyName] = useState('Kivo');
-  const [branchName, setBranchName] = useState('Cabang Utama');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [lanSyncProgress, setLanSyncProgress] = useState<LanSyncProgress | null>(null);
   const [lanParentInfo, setLanParentInfo] = useState<{ ip: string; name?: string } | null>(null);
@@ -50,15 +63,6 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
   const { user, token, clearAuth } = useAuthStore();
 
   useEffect(() => {
-    getSettings()
-      .then((settings) => {
-        const co = settings.find(s => s.key === 'company_name');
-        const br = settings.find(s => s.key === 'branch_name');
-        if (co?.value) setCompanyName(co.value);
-        if (br?.value) setBranchName(br.value);
-      })
-      .catch(() => {});
-
     getLowStockAlerts('main')
       .then((alerts) => setLowStockCount(alerts.length))
       .catch(() => {});
@@ -86,7 +90,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
     let unlistenLanStatus: () => void;
 
     listen('kivo:lan_status_updated', () => checkLan())
-      .then(fn => { unlistenLanStatus = fn; });
+      .then((fn) => { unlistenLanStatus = fn; });
 
     const handleProgress = (type: 'push' | 'pull', payload: SyncEventPayload) => {
       const rounded = Math.round(payload.percent);
@@ -94,7 +98,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
         active: rounded < 100,
         type,
         percent: rounded,
-        table_name: payload.table_name
+        table_name: payload.table_name,
       });
       if (rounded >= 100) {
         setTimeout(() => setBgSyncProgress(null), 2500);
@@ -102,10 +106,10 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
     };
 
     listen<SyncEventPayload>('sync-push-progress', (e) => handleProgress('push', e.payload))
-      .then(fn => { unlistenPush = fn; });
+      .then((fn) => { unlistenPush = fn; });
 
     listen<SyncEventPayload>('sync-pull-progress', (e) => handleProgress('pull', e.payload))
-      .then(fn => { unlistenPull = fn; });
+      .then((fn) => { unlistenPull = fn; });
 
     let unlistenLanProgress: () => void;
     listen<LanSyncProgress>('kivo:lan_sync_progress', (e) => {
@@ -113,10 +117,10 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
       setLanSyncProgress(p);
       if (!p.active && (p.stage === 'complete' || p.percent >= 100)) {
         setTimeout(() => {
-          setLanSyncProgress(prev => (prev?.stage === 'complete' ? null : prev));
+          setLanSyncProgress((prev) => (prev?.stage === 'complete' ? null : prev));
         }, 4000);
       }
-    }).then(fn => { unlistenLanProgress = fn; });
+    }).then((fn) => { unlistenLanProgress = fn; });
 
     return () => {
       clearInterval(lanInterval);
@@ -140,22 +144,15 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
     { id: 'customers',  icon: Users,           label: 'Pelanggan',  show: can('crm.customers') || can('promos.manage') },
     { id: 'reports',    icon: FileText,        label: 'Laporan',    show: can('reports.view') || can('accounting.manage') },
     { id: 'settings',   icon: Settings,        label: 'Pengaturan', show: can('settings.general') || can('settings.hardware') || can('settings.users') || can('settings.database') || can('settings.lan') },
-  ].filter(item => item.show);
+  ].filter((item) => item.show);
 
   return (
     <>
       <aside
         className={`hidden md:flex ${
-          isCollapsed ? 'w-16' : 'w-56'
+          isCollapsed ? 'w-14' : 'w-52'
         } bg-sidebar flex-col h-full shrink-0 border-r border-sidebar-line z-20 transition-[width] duration-200 select-none`}
       >
-        <SidebarBrand
-          isCollapsed={isCollapsed}
-          companyName={companyName}
-          branchName={branchName}
-          onToggleCollapse={onToggleCollapse}
-        />
-
         <SidebarNav
           isCollapsed={isCollapsed}
           menuItems={menuItems}
@@ -195,62 +192,6 @@ export default function Sidebar({ activeMenu, setActiveMenu, isCollapsed = false
   );
 }
 
-function SidebarBrand({
-  isCollapsed,
-  companyName,
-  branchName,
-  onToggleCollapse,
-}: {
-  isCollapsed: boolean;
-  companyName: string;
-  branchName: string;
-  onToggleCollapse?: () => void;
-}) {
-  if (isCollapsed) {
-    return (
-      <div className="h-13 flex items-center justify-center px-2 border-b border-sidebar-line">
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          title="Buka sidebar (Ctrl+B)"
-          aria-label="Buka sidebar"
-          className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-muted transition-colors relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <div className="flex items-center justify-center group-hover:opacity-0 transition-opacity">
-            <KivoLogo size={24} />
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-heading">
-            <PanelLeftOpen size={17} strokeWidth={1.75} />
-          </div>
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-13 flex items-center px-3.5 justify-between border-b border-sidebar-line">
-      <div className="flex items-center min-w-0 gap-2.5">
-        <KivoLogo size={24} />
-        <div className="min-w-0">
-          <p className="text-sm leading-tight text-heading font-bold truncate">{companyName}</p>
-          <p className="text-[11px] text-dim truncate">{branchName}</p>
-        </div>
-      </div>
-      {onToggleCollapse && (
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          title="Kecilkan sidebar (Ctrl+B)"
-          aria-label="Kecilkan sidebar"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-dim hover:text-heading hover:bg-muted transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <PanelLeftClose size={15} strokeWidth={1.75} />
-        </button>
-      )}
-    </div>
-  );
-}
-
 function SidebarNav({
   isCollapsed,
   menuItems,
@@ -279,7 +220,7 @@ function SidebarNav({
             title={isCollapsed ? item.label : undefined}
             aria-current={isActive ? 'page' : undefined}
             className={`relative flex items-center ${
-              isCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full px-3 h-9 text-left'
+              isCollapsed ? 'w-9 h-9 justify-center p-0' : 'w-full px-2.5 h-9 text-left'
             } rounded-lg transition-colors duration-150 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               isActive
                 ? 'bg-primary-soft text-primary font-semibold'
@@ -287,7 +228,7 @@ function SidebarNav({
             }`}
           >
             <Icon
-              size={17}
+              size={16}
               strokeWidth={isActive ? 2 : 1.75}
               className={`shrink-0 ${isCollapsed ? '' : 'mr-2.5'} ${
                 isActive ? 'text-primary' : 'text-dim group-hover:text-heading'
@@ -299,13 +240,13 @@ function SidebarNav({
 
             {item.badge !== null && item.badge !== undefined && (
               isCollapsed ? (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-danger ring-2 ring-sidebar" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger ring-2 ring-sidebar" />
               ) : (
-                <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full tnum ${
-                  isActive
-                    ? 'bg-primary text-white'
-                    : 'bg-danger-soft text-danger'
-                }`}>
+                <span
+                  className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full tnum ${
+                    isActive ? 'bg-primary text-white' : 'bg-danger-soft text-danger'
+                  }`}
+                >
                   {item.badge}
                 </span>
               )
@@ -328,9 +269,9 @@ function CloudSyncProgressBar({
     return (
       <div
         title={`Cloud (${bgSyncProgress.type === 'push' ? 'Push' : 'Pull'}): ${bgSyncProgress.percent}%`}
-        className="w-10 h-10 justify-center bg-success-soft border border-success/20 rounded-lg flex items-center"
+        className="w-9 h-9 justify-center bg-success-soft border border-success/20 rounded-lg flex items-center"
       >
-        <RefreshCw size={15} className="animate-spin text-success" />
+        <RefreshCw size={14} className="animate-spin text-success" />
       </div>
     );
   }
@@ -379,14 +320,14 @@ function LanSyncProgressBar({
     return (
       <div
         title={`LAN: ${lanSyncProgress.message} (${lanSyncProgress.percent}%)`}
-        className={`w-10 h-10 justify-center border rounded-lg flex items-center ${toneClass}`}
+        className={`w-9 h-9 justify-center border rounded-lg flex items-center ${toneClass}`}
       >
         {lanSyncProgress.active ? (
-          <RefreshCw size={15} className="animate-spin" />
+          <RefreshCw size={14} className="animate-spin" />
         ) : isError ? (
-          <AlertTriangle size={15} />
+          <AlertTriangle size={14} />
         ) : (
-          <CheckCircle2 size={15} />
+          <CheckCircle2 size={14} />
         )}
       </div>
     );
@@ -431,7 +372,7 @@ function LanParentBadge({
     <div
       title={`Terhubung ke host: ${lanParentInfo.name || lanParentInfo.ip}`}
       className={`bg-success-soft border border-success/20 rounded-lg flex items-center ${
-        isCollapsed ? 'w-10 h-10 justify-center' : 'px-2.5 py-1.5 justify-between'
+        isCollapsed ? 'w-9 h-9 justify-center' : 'px-2.5 py-1.5 justify-between'
       }`}
     >
       <div className="flex items-center gap-1.5 truncate">
@@ -462,7 +403,9 @@ function SidebarSyncStatus({
   lanParentInfo: { ip: string; name?: string } | null;
   syncStatus: SyncStatus | null;
 }) {
-  const showLan = lanSyncProgress && (lanSyncProgress.active || lanSyncProgress.stage === 'complete' || lanSyncProgress.stage === 'error');
+  const showLan =
+    lanSyncProgress &&
+    (lanSyncProgress.active || lanSyncProgress.stage === 'complete' || lanSyncProgress.stage === 'error');
 
   return (
     <>
@@ -511,7 +454,7 @@ function SidebarUserProfile({
         onClick={onClick}
         title={`${user?.name} (${roleLabel()}) - Keluar`}
         aria-label="Keluar akun"
-        className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-danger-soft transition-colors cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-danger-soft transition-colors cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <div
           className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[11px]"
@@ -520,7 +463,7 @@ function SidebarUserProfile({
           {user?.name?.substring(0, 2).toUpperCase() || 'U'}
         </div>
         <div className="absolute inset-0 rounded-lg bg-danger text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <LogOut size={15} strokeWidth={1.75} />
+          <LogOut size={14} strokeWidth={1.75} />
         </div>
       </button>
     );
@@ -533,7 +476,7 @@ function SidebarUserProfile({
       title={`${user?.name} (${roleLabel()}) - Keluar`}
       className="w-full p-2 rounded-lg border border-transparent hover:bg-danger-soft hover:border-danger/25 flex items-center justify-between group transition-colors cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
         <div
           className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[11px] shrink-0"
           style={{ backgroundColor: user?.avatar_color || '#3f434c' }}

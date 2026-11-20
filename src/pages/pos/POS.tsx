@@ -157,8 +157,8 @@ export default function POS() {
   }, []);
 
   // Fetch Items based on Search query or Selected Category
-  const fetchItems = useCallback(async () => {
-    setLoading(true);
+  const fetchItems = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setFetchError(null);
     try {
       const catFilter = selectedCategory === 'all' ? '' : selectedCategory;
@@ -166,25 +166,34 @@ export default function POS() {
       setItems(res.items);
     } catch (e) {
       console.error(e);
-      setFetchError('Gagal memuat daftar produk.');
+      if (!silent) setFetchError('Gagal memuat daftar produk.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [search, selectedCategory]);
 
   useEffect(() => {
-    const timer = setTimeout(fetchItems, 250);
+    const timer = setTimeout(() => fetchItems(false), 250);
     return () => clearTimeout(timer);
   }, [fetchItems]);
 
-  // Real-time synchronization listener (updates items without page reload)
+  // Real-time synchronization listener (debounced & silent so POS never flickers/reloads)
   useEffect(() => {
-    const handleSync = () => {
-      fetchItems();
-      getCategories().then(setCategories).catch(console.error);
+    let syncTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleSync = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ table?: string }>).detail;
+      if (detail?.table === 'calculate_discounts') return;
+      if (syncTimer) clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => {
+        fetchItems(true);
+        getCategories().then(setCategories).catch(console.error);
+      }, 350);
     };
     window.addEventListener('kivo:sync', handleSync);
-    return () => window.removeEventListener('kivo:sync', handleSync);
+    return () => {
+      if (syncTimer) clearTimeout(syncTimer);
+      window.removeEventListener('kivo:sync', handleSync);
+    };
   }, [fetchItems]);
 
   // Hardware Barcode Scanner Hook
@@ -702,35 +711,35 @@ export default function POS() {
   }, {});
 
   return (
-    <div className="flex flex-col lg:flex-row h-full w-full bg-background p-2 sm:p-3 gap-2.5 sm:gap-3 select-none relative">
+    <div className="flex flex-col lg:flex-row h-full min-h-0 w-full bg-background p-2 sm:p-3 gap-2 sm:gap-3 select-none relative overflow-hidden">
       {/* Mobile Top Segmented Control (< 1024px) */}
-      <div className="lg:hidden bg-muted border border-line rounded-lg p-1 shrink-0 grid grid-cols-2 gap-1">
+      <div className="lg:hidden bg-muted border border-line rounded-lg p-0.5 shrink-0 grid grid-cols-2 gap-1">
         <button
           type="button"
           onClick={() => setMobilePosTab('catalog')}
-          className={`flex items-center justify-center gap-2 h-9 px-3 rounded-md text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          className={`flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
             mobilePosTab === 'catalog'
               ? 'bg-card text-heading border border-line'
               : 'text-dim hover:text-heading border border-transparent'
           }`}
         >
-          <Search size={14} className="shrink-0" />
+          <Search size={13} className="shrink-0" />
           <span className="truncate">Katalog</span>
         </button>
 
         <button
           type="button"
           onClick={() => setMobilePosTab('cart')}
-          className={`flex items-center justify-center gap-2 h-9 px-3 rounded-md text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          className={`flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
             mobilePosTab === 'cart'
               ? 'bg-card text-heading border border-line'
               : 'text-dim hover:text-heading border border-transparent'
           }`}
         >
-          <ShoppingCart size={14} className="shrink-0" />
+          <ShoppingCart size={13} className="shrink-0" />
           <span className="truncate">Keranjang</span>
           {cart.length > 0 && (
-            <span className="px-1.5 min-w-[20px] h-5 inline-flex items-center justify-center rounded-full text-[11px] font-bold tnum bg-primary-soft text-primary shrink-0">
+            <span className="px-1.5 min-w-[18px] h-4 inline-flex items-center justify-center rounded-full text-[10px] font-bold tnum bg-primary-soft text-primary shrink-0">
               {cart.reduce((sum, item) => sum + item.qty, 0)}
             </span>
           )}
@@ -738,7 +747,7 @@ export default function POS() {
       </div>
 
       {/* Left: Catalog & Search */}
-      <div className={`flex-1 flex-col bg-card rounded-xl border border-line overflow-hidden min-w-0 ${
+      <div className={`flex-1 min-h-0 flex-col bg-card rounded-xl border border-line overflow-hidden min-w-0 ${
         mobilePosTab === 'catalog' ? 'flex' : 'hidden lg:flex'
       }`}>
         {/* Top Control Bar */}
@@ -872,7 +881,7 @@ export default function POS() {
         </div>
 
         {/* Catalog Items Stream */}
-        <div className={`flex-1 overflow-y-auto p-2.5 sm:p-3 custom-scrollbar tour-pos-catalog ${cart.length > 0 && mobilePosTab === 'catalog' ? 'pb-24 lg:pb-3' : ''}`}>
+        <div className="flex-1 min-h-0 overflow-y-auto p-2.5 sm:p-3 custom-scrollbar tour-pos-catalog">
           {loading ? (
             <div className="h-full flex flex-col justify-center items-center gap-2">
               <Loader2 className="animate-spin text-primary" size={24} />
@@ -881,7 +890,7 @@ export default function POS() {
           ) : fetchError ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
               <p className="text-sm text-danger">{fetchError}</p>
-              <Button variant="outline" size="sm" onClick={fetchItems}>
+              <Button variant="outline" size="sm" onClick={() => fetchItems(false)}>
                 Coba Lagi
               </Button>
             </div>
@@ -1122,26 +1131,36 @@ export default function POS() {
             </span>
           ))}
         </div>
+
+        {/* In-flow Mobile Cart Summary Bar (never overlaps MobileNav) */}
+        {cart.length > 0 && mobilePosTab === 'catalog' && (
+          <div className="lg:hidden p-2 border-t border-line bg-card shrink-0">
+            <button
+              type="button"
+              onClick={() => setMobilePosTab('cart')}
+              className="w-full bg-primary hover:bg-primary-hover text-white px-3.5 py-2.5 rounded-lg flex items-center justify-between cursor-pointer active:scale-[0.99] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="flex items-center gap-2">
+                <span className="min-w-5 h-5 px-1.5 rounded-full bg-white/20 flex items-center justify-center text-[11px] font-bold tnum">
+                  {cart.reduce((sum, item) => sum + item.qty, 0)}
+                </span>
+                <span className="text-sm font-bold tnum">
+                  Rp {finalPayableTotal.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-xs font-semibold">
+                <span>Keranjang</span>
+                <ArrowRight size={14} />
+              </div>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Right: Cart & Checkout Panel */}
-      <div className={`flex-col bg-card rounded-xl border border-line overflow-hidden w-full lg:w-96 2xl:w-[410px] shrink-0 ${
+      <div className={`flex-1 min-h-0 lg:flex-none flex-col bg-card rounded-xl border border-line overflow-hidden w-full lg:w-96 2xl:w-[410px] lg:shrink-0 ${
         mobilePosTab === 'cart' ? 'flex' : 'hidden lg:flex'
       }`}>
-        {/* Mobile Back Bar */}
-        <div className="lg:hidden px-3.5 py-2 border-b border-line bg-muted/40 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setMobilePosTab('catalog')}
-            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1"
-          >
-            <RotateCcw size={13} />
-            <span>Kembali ke Katalog</span>
-          </button>
-          <span className="text-xs font-bold text-heading tnum">
-            Rp {finalPayableTotal.toLocaleString('id-ID')}
-          </span>
-        </div>
 
         {/* Customer Header Button */}
         <button
@@ -1407,7 +1426,7 @@ export default function POS() {
         </div>
 
         {/* Cart Footer & Total Override */}
-        <div className="p-3.5 bg-muted/40 border-t border-line shrink-0 space-y-3">
+        <div className="p-2.5 sm:p-3.5 bg-muted/40 border-t border-line shrink-0 space-y-2 sm:space-y-3">
           {(cartDiscount > 0 || currentTierDiscountPercent > 0 || taxRate > 0) && (
             <div className="space-y-1.5 pb-2 text-xs border-b border-line">
               {cartDiscount > 0 && (
@@ -1609,28 +1628,6 @@ export default function POS() {
         run={runTour}
         onFinish={() => setRunTour(false)}
       />
-
-      {/* Mobile Floating Bottom Cart Bar (Catalog tab only) */}
-      {cart.length > 0 && mobilePosTab === 'catalog' && (
-        <button
-          type="button"
-          onClick={() => setMobilePosTab('cart')}
-          className="lg:hidden fixed bottom-18 left-3 right-3 z-30 bg-primary hover:bg-primary-hover text-white px-4 py-3 rounded-xl shadow-lg shadow-black/15 dark:shadow-black/45 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold tnum">
-              {cart.reduce((sum, item) => sum + item.qty, 0)}
-            </span>
-            <span className="text-sm font-bold tnum">
-              Rp {finalPayableTotal.toLocaleString('id-ID')}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold">
-            <span>Keranjang</span>
-            <ArrowRight size={14} />
-          </div>
-        </button>
-      )}
     </div>
   );
 }
