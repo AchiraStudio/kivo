@@ -6,9 +6,6 @@ interface KivoLogoProps {
   variant?: 'gradient' | 'white' | 'monochrome';
 }
 
-/**
- * Official Kivo App Logo
- */
 export default function KivoLogo({
   size = 32,
   className = '',
@@ -22,21 +19,14 @@ export default function KivoLogo({
         alt="Kivo"
         width={size}
         height={size}
-        className="shrink-0 object-contain rounded-xl shadow-xs transition-transform duration-200"
+        className="shrink-0 object-contain rounded-lg"
         style={{ width: size, height: size }}
       />
 
       {showText && (
-        <div className="flex items-baseline gap-1.5 min-w-0">
-          <span
-            className={`font-black tracking-tight text-heading ${textClassName || 'text-xl'}`}
-          >
-            Kivo
-          </span>
-          <span className="text-[10px] font-semibold text-primary tracking-widest uppercase opacity-90">
-            Platform
-          </span>
-        </div>
+        <span className={`font-bold tracking-tight text-heading ${textClassName || 'text-lg'}`}>
+          Kivo
+        </span>
       )}
     </div>
   );

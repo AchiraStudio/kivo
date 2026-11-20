@@ -1,13 +1,18 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { getPromos, deletePromo, togglePromoActive, Promo } from '../../lib/api';
-import { Plus, Edit2, Trash2, Tag, Percent, Gift, Package, Layers, Search, Coins, ToggleLeft, ToggleRight, Filter } from 'lucide-react';
+import {
+  Plus, Edit2, Trash2, Tag, Percent, Gift, Package, Layers, Search, Coins,
+  ToggleLeft, ToggleRight, Loader2, RefreshCw,
+} from 'lucide-react';
 import PromoDrawer from './PromoDrawer';
-import ConfirmModal from '../../components/common/ConfirmModal';
-
+import ConfirmModal from '../../components/ui/ConfirmModal';
+import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
+
 export default function PromoList() {
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeOnly, setActiveOnly] = useState(false);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,21 +21,23 @@ export default function PromoList() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchPromos = async () => {
+  const fetchPromos = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getPromos(activeOnly);
       setPromos(data);
     } catch (error) {
       console.error(error);
+      setLoadError(String(error));
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeOnly]);
 
   useEffect(() => {
     fetchPromos();
-  }, [activeOnly]);
+  }, [fetchPromos]);
 
   const handleToggleActive = async (id: string) => {
     try {
@@ -68,318 +75,304 @@ export default function PromoList() {
     });
   }, [promos, selectedType, searchQuery]);
 
-  // Statistics
   const totalPromos = promos.length;
   const activeCount = promos.filter(p => p.active === 1).length;
   const bundleCount = promos.filter(p => p.promo_type === 'bundle' || p.promo_type === 'bogo').length;
   const memberOnlyCount = promos.filter(p => p.member_only === 1 || p.member_tier).length;
 
+  const hasFilters = Boolean(searchQuery.trim() || selectedType !== 'all' || activeOnly);
+
   const getPromoBadge = (type: string) => {
     switch (type) {
       case 'percentage':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-success-soft text-success border border-success/30 ">
-            <Percent size={12} /> Diskon %
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-success-soft text-success border border-success/30">
+            <Percent size={11} /> Diskon %
           </span>
         );
       case 'fixed_amount':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-accent-soft text-accent border border-accent/30 ">
-            <Coins size={12} /> Potongan Rp
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-accent-soft text-accent border border-accent/30">
+            <Coins size={11} /> Potongan Rp
           </span>
         );
       case 'bogo':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-warning-soft text-warning border border-warning/30 ">
-            <Gift size={12} /> BOGO
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-warning-soft text-warning border border-warning/30">
+            <Gift size={11} /> BOGO
           </span>
         );
       case 'tiered':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-primary-soft text-primary border border-primary/30">
-            <Layers size={12} /> Bertingkat
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-muted text-heading border border-line">
+            <Layers size={11} /> Bertingkat
           </span>
         );
       case 'bundle':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-primary-soft text-primary-hover dark:text-primary border border-primary/30 ">
-            <Package size={12} /> Paket Bundle
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-muted text-heading border border-line">
+            <Package size={11} /> Bundle
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-muted text-body dark:bg-muted dark:text-body">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-muted text-body border border-line">
             {type}
           </span>
         );
     }
   };
 
-  const getTargetBadge = (appliesTo: string) => {
+  const getTargetLabel = (appliesTo: string) => {
     switch (appliesTo) {
       case 'item':
-        return <span className="text-xs font-semibold text-heading">Item Tertentu</span>;
+        return 'Item tertentu';
       case 'category':
-        return <span className="text-xs font-semibold text-primary ">Kategori</span>;
+        return 'Kategori';
       case 'transaction':
-        return <span className="text-xs font-semibold text-accent ">Total Transaksi</span>;
+        return 'Total transaksi';
       default:
-        return <span className="text-xs font-semibold text-dim">{appliesTo}</span>;
+        return appliesTo;
     }
   };
 
   return (
-    <div className="flex flex-col h-full gap-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
-              <Tag size={20} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-heading">
-                Promosi & Diskon
-              </h1>
-              <p className="text-xs text-dim mt-0.5">
-                Kelola aturan diskon harga, voucher, paket bundle, dan promo kasir
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="flex flex-col h-full gap-4 animate-fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <h1 className="text-lg font-bold tracking-tight text-heading">Promosi & Diskon</h1>
+        <Button
+          onClick={() => {
+            setEditPromoId(null);
+            setIsDrawerOpen(true);
+          }}
+        >
+          <Plus size={15} /> Buat Promo
+        </Button>
+      </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => {
-              setEditPromoId(null);
-              setIsDrawerOpen(true);
-            }}
-            className="px-4 py-2.5 bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <Plus size={15} /> Buat Promo Baru
-          </button>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
+        <div className="bg-card px-4 py-3 rounded-xl border border-line">
+          <div className="text-xs font-medium text-dim">Total promo</div>
+          <div className="text-xl font-bold text-heading mt-1 tnum">{totalPromos}</div>
+        </div>
+        <div className="bg-card px-4 py-3 rounded-xl border border-line">
+          <div className="text-xs font-medium text-dim">Aktif</div>
+          <div className="text-xl font-bold text-success mt-1 tnum">{activeCount}</div>
+        </div>
+        <div className="bg-card px-4 py-3 rounded-xl border border-line">
+          <div className="text-xs font-medium text-dim">Bundle & BOGO</div>
+          <div className="text-xl font-bold text-heading mt-1 tnum">{bundleCount}</div>
+        </div>
+        <div className="bg-card px-4 py-3 rounded-xl border border-line">
+          <div className="text-xs font-medium text-dim">Khusus member</div>
+          <div className="text-xl font-bold text-heading mt-1 tnum">{memberOnlyCount}</div>
         </div>
       </div>
 
-      {/* KPI Metric Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-card p-4 rounded-xl border border-line shadow-sm flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold uppercase text-dim">Total Promo</div>
-            <div className="text-xl font-extrabold text-heading mt-1">{totalPromos}</div>
+      <div className="flex-1 min-h-0 bg-card rounded-xl border border-line overflow-hidden flex flex-col">
+        <div className="p-3 border-b border-line flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="flex-1 flex items-center h-9 bg-input border border-line rounded-lg px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 transition-colors">
+            <Search size={15} className="text-dim mr-2 shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Cari nama atau deskripsi promo"
+              aria-label="Cari promo"
+              className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim"
+            />
           </div>
-          <div className="w-9 h-9 rounded-xl bg-muted text-body flex items-center justify-center">
-            <Tag size={16} />
-          </div>
-        </div>
 
-        <div className="bg-card p-4 rounded-xl border border-line shadow-sm flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold uppercase text-dim">Promo Aktif</div>
-            <div className="text-xl font-extrabold text-success mt-1">{activeCount}</div>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-success-soft text-success flex items-center justify-center">
-            <Tag size={16} />
-          </div>
-        </div>
-
-        <div className="bg-card p-4 rounded-xl border border-line shadow-sm flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold uppercase text-dim">Bundle & BOGO</div>
-            <div className="text-xl font-extrabold text-primary mt-1">{bundleCount}</div>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
-            <Package size={16} />
-          </div>
-        </div>
-
-        <div className="bg-card p-4 rounded-xl border border-line shadow-sm flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold uppercase text-dim">Khusus Member</div>
-            <div className="text-xl font-extrabold text-primary mt-1">{memberOnlyCount}</div>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
-            <Gift size={16} />
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3.5 rounded-xl border border-line shadow-sm">
-        <div className="relative flex-1 w-full sm:w-auto">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Cari promo berdasarkan nama atau deskripsi..."
-            className="w-full pl-9 pr-4 py-2 bg-muted border border-line/80 rounded-xl text-heading placeholder:text-dim text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <Search className="absolute left-3 top-2.5 text-dim" size={14} />
-        </div>
-
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center gap-2">
-            <Filter size={14} className="text-dim" />
             <Select
               value={selectedType}
               onChange={v => setSelectedType(v)}
-              className="bg-muted border border-line/80 text-body dark:text-heading text-xs font-semibold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
+              ariaLabel="Filter tipe promo"
+              className="flex-1 sm:w-48"
             >
-              <option value="all">Semua Tipe Promo</option>
-              <option value="percentage">Diskon Persen (%)</option>
-              <option value="fixed_amount">Potongan Nominal (Rp)</option>
-              <option value="bogo">Beli X Gratis Y (BOGO)</option>
-              <option value="tiered">Diskon Bertingkat (Tier)</option>
-              <option value="bundle">Paket Bundle</option>
+              <option value="all">Semua tipe</option>
+              <option value="percentage">Diskon %</option>
+              <option value="fixed_amount">Potongan Rp</option>
+              <option value="bogo">Beli X Gratis Y</option>
+              <option value="tiered">Diskon bertingkat</option>
+              <option value="bundle">Paket bundle</option>
             </Select>
+
+            <label className="h-9 px-3 inline-flex items-center gap-2 text-xs font-semibold text-body cursor-pointer bg-input border border-line rounded-lg shrink-0 hover:border-line-strong transition-colors">
+              <input
+                type="checkbox"
+                checked={activeOnly}
+                onChange={e => setActiveOnly(e.target.checked)}
+                className="rounded border-line-strong text-primary focus:ring-primary accent-primary"
+              />
+              <span>Hanya aktif</span>
+            </label>
           </div>
-
-          <label className="flex items-center gap-2 text-xs font-semibold text-body cursor-pointer bg-muted border border-line/80 px-3 py-2 rounded-xl">
-            <input
-              type="checkbox"
-              checked={activeOnly}
-              onChange={e => setActiveOnly(e.target.checked)}
-              className="rounded border-line-strong text-primary focus:ring-primary accent-primary"
-            />
-            <span>Hanya Aktif</span>
-          </label>
         </div>
-      </div>
 
-      {/* Table List */}
-      <div className="flex-1 bg-card rounded-xl border border-line shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-auto flex-1 custom-scrollbar relative">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-muted/60 border-b border-line text-[11px] uppercase text-dim font-bold sticky top-0 z-10">
-              <tr>
-                <th className="py-3.5 px-5">Nama Promo</th>
-                <th className="py-3.5 px-4">Tipe Promo</th>
-                <th className="py-3.5 px-4">Target</th>
-                <th className="py-3.5 px-4">Nilai Diskon / Aturan</th>
-                <th className="py-3.5 px-4">Masa Berlaku</th>
-                <th className="py-3.5 px-4 text-center">Status</th>
-                <th className="py-3.5 px-5 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line dark:divide-line/60">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-16 text-dim font-medium">
-                    Memuat daftar promo...
-                  </td>
-                </tr>
-              ) : filteredPromos.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-16">
-                    <Tag className="mx-auto text-dim dark:text-body mb-2" size={32} />
-                    <p className="text-sm font-bold text-heading">Belum ada promo ditemukan</p>
-                    <p className="text-xs text-dim mt-1">Buat program promosi baru untuk menarik lebih banyak transaksi.</p>
-                  </td>
-                </tr>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-2" role="status" aria-label="Memuat promo">
+            <Loader2 className="animate-spin text-primary" size={24} />
+            <span className="text-xs text-dim">Memuat daftar promo</span>
+          </div>
+        ) : loadError ? (
+          <div className="py-16 text-center px-4">
+            <p className="text-sm font-semibold text-danger">Daftar promo gagal dimuat</p>
+            <p className="text-xs text-dim mt-1 break-words max-w-md mx-auto">{loadError}</p>
+            <div className="mt-3">
+              <Button variant="outline" size="sm" onClick={fetchPromos}>
+                <RefreshCw size={14} /> Coba lagi
+              </Button>
+            </div>
+          </div>
+        ) : filteredPromos.length === 0 ? (
+          <div className="py-16 text-center px-4">
+            <Tag className="mx-auto text-dim mb-2" size={28} />
+            <p className="text-sm font-semibold text-heading">
+              {hasFilters ? 'Promo tidak ditemukan' : 'Belum ada promo'}
+            </p>
+            <p className="text-xs text-dim mt-1">
+              {hasFilters
+                ? 'Ubah filter atau kata kunci pencarian.'
+                : 'Buat promo baru untuk diskon, bundle, atau BOGO di kasir.'}
+            </p>
+            <div className="mt-3">
+              {hasFilters ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedType('all');
+                    setActiveOnly(false);
+                  }}
+                >
+                  Reset filter
+                </Button>
               ) : (
-                filteredPromos.map(promo => {
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditPromoId(null);
+                    setIsDrawerOpen(true);
+                  }}
+                >
+                  <Plus size={14} /> Buat Promo
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-auto flex-1 custom-scrollbar relative">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-muted/60 border-b border-line text-xs text-dim font-semibold sticky top-0 z-10">
+                <tr>
+                  <th className="py-2.5 px-4">Nama promo</th>
+                  <th className="py-2.5 px-3">Tipe</th>
+                  <th className="py-2.5 px-3 hidden lg:table-cell">Target</th>
+                  <th className="py-2.5 px-3">Nilai</th>
+                  <th className="py-2.5 px-3 hidden md:table-cell">Periode</th>
+                  <th className="py-2.5 px-3 text-center">Status</th>
+                  <th className="py-2.5 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {filteredPromos.map(promo => {
                   const isExpired = promo.end_date && new Date(promo.end_date) < new Date();
                   return (
-                    <tr 
-                      key={promo.id} 
-                      className="hover:bg-muted/70 dark:hover:bg-card/40 transition-colors"
-                    >
-                      <td className="py-3.5 px-5">
-                        <div className="font-bold text-heading text-xs">
-                          {promo.name}
-                        </div>
+                    <tr key={promo.id} className="hover:bg-muted/40 transition-colors fast-render-row">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-heading text-sm">{promo.name}</div>
                         {promo.description && (
-                          <div className="text-[11px] text-dim line-clamp-1 mt-0.5">
-                            {promo.description}
-                          </div>
+                          <div className="text-xs text-dim line-clamp-1 mt-0.5">{promo.description}</div>
                         )}
-                        <div className="flex items-center gap-1.5 mt-1">
-                          {promo.member_tier && (
-                            <span className="text-[10px] font-bold bg-primary-soft text-primary px-2 py-0.5 rounded-full">
-                              Member {promo.member_tier.toUpperCase()}
-                            </span>
-                          )}
-                          {promo.min_qty > 1 && (
-                            <span className="text-[10px] font-medium text-dim">
-                              Min. Beli: {promo.min_qty}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        {getPromoBadge(promo.promo_type)}
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        {getTargetBadge(promo.applies_to)}
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-heading text-xs">
-                          {promo.promo_type === 'percentage' && `${promo.discount_percent}%`}
-                          {promo.promo_type === 'fixed_amount' && `Rp ${(promo.discount_value || 0).toLocaleString('id-ID')}`}
-                          {promo.promo_type === 'bogo' && 'Gratis Produk Spesifik'}
-                          {promo.promo_type === 'tiered' && 'Diskon Kuantitas Bertingkat'}
-                          {promo.promo_type === 'bundle' && (
-                            promo.discount_percent > 0 
-                              ? `Diskon ${promo.discount_percent}%` 
-                              : `Potongan Rp ${(promo.discount_value || 0).toLocaleString('id-ID')}`
-                          )}
-                        </div>
-                        {promo.max_discount_amount && (
-                          <div className="text-[10px] text-dim mt-0.5">
-                            Maks: Rp {promo.max_discount_amount.toLocaleString('id-ID')}
-                          </div>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        {promo.start_date || promo.end_date ? (
-                          <div className="text-[11px] text-body">
-                            {promo.start_date ? promo.start_date.split('T')[0] : 'Kapan saja'} s/d {promo.end_date ? promo.end_date.split('T')[0] : 'Seterusnya'}
-                            {isExpired && (
-                              <span className="block text-[10px] font-bold text-danger mt-0.5">Kadaluarsa</span>
+                        {(promo.member_tier || promo.min_qty > 1) && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            {promo.member_tier && (
+                              <span className="text-[11px] font-semibold bg-muted text-body border border-line px-1.5 py-0.5 rounded-md">
+                                Member {promo.member_tier.toUpperCase()}
+                              </span>
+                            )}
+                            {promo.min_qty > 1 && (
+                              <span className="text-[11px] text-dim tnum">Min. beli {promo.min_qty}</span>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-dim text-xs">Tanpa Batas Waktu</span>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3 px-3 whitespace-nowrap">{getPromoBadge(promo.promo_type)}</td>
+
+                      <td className="py-3 px-3 text-body font-medium whitespace-nowrap hidden lg:table-cell">
+                        {getTargetLabel(promo.applies_to)}
+                      </td>
+
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <div className="font-semibold text-heading tnum">
+                          {promo.promo_type === 'percentage' && `${promo.discount_percent}%`}
+                          {promo.promo_type === 'fixed_amount' && `Rp ${(promo.discount_value || 0).toLocaleString('id-ID')}`}
+                          {promo.promo_type === 'bogo' && 'Gratis produk'}
+                          {promo.promo_type === 'tiered' && 'Bertingkat'}
+                          {promo.promo_type === 'bundle' &&
+                            (promo.discount_percent > 0
+                              ? `Diskon ${promo.discount_percent}%`
+                              : `Potongan Rp ${(promo.discount_value || 0).toLocaleString('id-ID')}`)}
+                        </div>
+                        {promo.max_discount_amount && (
+                          <div className="text-[11px] text-dim mt-0.5 tnum">
+                            Maks Rp {promo.max_discount_amount.toLocaleString('id-ID')}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-3 whitespace-nowrap hidden md:table-cell">
+                        {promo.start_date || promo.end_date ? (
+                          <div className="text-xs text-body tnum">
+                            {promo.start_date ? promo.start_date.split('T')[0] : 'Mulai'} s/d{' '}
+                            {promo.end_date ? promo.end_date.split('T')[0] : 'Seterusnya'}
+                            {isExpired && <span className="block text-[11px] font-semibold text-danger mt-0.5">Kadaluarsa</span>}
+                          </div>
+                        ) : (
+                          <span className="text-dim">Tanpa batas</span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
                         <button
+                          type="button"
                           onClick={() => handleToggleActive(promo.id)}
-                          className="inline-flex items-center gap-1.5 cursor-pointer text-xs font-bold transition-all"
-                          title="Klik untuk mengubah status aktif"
+                          aria-label={`Ubah status ${promo.name}`}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                            promo.active
+                              ? 'bg-success-soft text-success border border-success/30'
+                              : 'bg-muted text-dim border border-line hover:text-heading'
+                          }`}
+                          title="Ubah status aktif"
                         >
-                          {promo.active ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-success-soft text-success ">
-                              <ToggleRight size={15} className="text-success" /> Aktif
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-muted text-dim dark:bg-muted dark:text-body">
-                              <ToggleLeft size={15} className="text-dim" /> Nonaktif
-                            </span>
-                          )}
+                          {promo.active ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                          {promo.active ? 'Aktif' : 'Nonaktif'}
                         </button>
                       </td>
 
-                      <td className="py-3.5 px-5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
                           <button
+                            type="button"
                             onClick={() => {
                               setEditPromoId(promo.id);
                               setIsDrawerOpen(true);
                             }}
-                            className="p-1.5 text-dim hover:text-primary hover:bg-primary-soft rounded-xl transition-all"
+                            aria-label={`Edit promo ${promo.name}`}
+                            className="p-1.5 text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                             title="Edit Promo"
                           >
                             <Edit2 size={15} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => setDeleteConfirmId(promo.id)}
-                            className="p-1.5 text-dim hover:text-danger hover:bg-danger-soft dark:hover:bg-danger/20 rounded-xl transition-all"
+                            aria-label={`Hapus promo ${promo.name}`}
+                            className="p-1.5 text-dim hover:text-danger hover:bg-danger-soft rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                             title="Hapus Promo"
                           >
                             <Trash2 size={15} />
@@ -388,31 +381,30 @@ export default function PromoList() {
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Promo Drawer Modal */}
-      <PromoDrawer 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)} 
-        onSaved={fetchPromos} 
-        editPromoId={editPromoId} 
+      <PromoDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onSaved={fetchPromos}
+        editPromoId={editPromoId}
       />
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={deleteConfirmId !== null}
-        onClose={() => setDeleteConfirmId(null)}
-        onConfirm={handleDelete}
-        title="Hapus Promosi?"
-        message="Apakah Anda yakin ingin menghapus aturan promosi ini secara permanen? Tindakan ini tidak dapat dibatalkan."
-        confirmText="Ya, Hapus Promo"
-        loading={deleting}
-      />
+      {deleteConfirmId !== null && (
+        <ConfirmModal
+          title="Hapus promo?"
+          message="Aturan promosi ini akan dihapus permanen dan tidak lagi berlaku di kasir."
+          confirmLabel="Hapus Promo"
+          loading={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteConfirmId(null)}
+        />
+      )}
     </div>
   );
 }

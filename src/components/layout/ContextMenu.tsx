@@ -9,83 +9,103 @@ export default function ContextMenu() {
 
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
-      // Allow native context menu (including Inspect) when Shift is held
       if (e.shiftKey) return;
-
-      // In dev mode, allow F12 and native devtools shortcuts to still work
-      // Don't intercept if target is an input/textarea
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
 
       e.preventDefault();
       setShow(true);
 
-      // Keep menu within viewport
-      const x = Math.min(e.clientX, window.innerWidth - 220);
-      const y = Math.min(e.clientY, window.innerHeight - 250);
-      setPosition({ x, y });
+      const x = Math.min(e.clientX, window.innerWidth - 208);
+      const y = Math.min(e.clientY, window.innerHeight - 220);
+      setPosition({ x: Math.max(8, x), y: Math.max(8, y) });
     };
 
-    const handleClick = () => setShow(false);
+    const handleClose = () => setShow(false);
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShow(false);
+    };
 
     window.addEventListener('contextmenu', handleContextMenu);
-    window.addEventListener('click', handleClick);
+    window.addEventListener('click', handleClose);
+    window.addEventListener('keydown', handleKey);
 
     return () => {
       window.removeEventListener('contextmenu', handleContextMenu);
-      window.removeEventListener('click', handleClick);
+      window.removeEventListener('click', handleClose);
+      window.removeEventListener('keydown', handleKey);
     };
   }, []);
 
   if (!show) return null;
 
+  const itemClass =
+    'w-full px-2.5 py-1.5 rounded-md flex items-center gap-2.5 text-xs sm:text-sm font-medium text-heading hover:bg-muted transition-colors cursor-pointer text-left';
+
   return (
     <div
-      className="fixed z-[9999] w-52 bg-card border border-line rounded-xl shadow-xl py-1.5 overflow-hidden animate-pop-in duration-150 origin-top-left"
+      role="menu"
+      className="fixed z-[1300] w-48 bg-elevated border border-line rounded-lg shadow-lg shadow-black/15 dark:shadow-black/45 p-1 animate-pop-in origin-top-left"
       style={{ top: position.y, left: position.x }}
     >
-      <div className="px-3 py-1.5 border-b border-line mb-1">
-        <span className="text-[10px] font-bold text-dim uppercase tracking-wider">Kivo Actions</span>
-      </div>
-
       <button
-        onClick={() => { navigator.clipboard.writeText(window.getSelection()?.toString() || ''); setShow(false); }}
-        className="w-full px-3 py-2 flex items-center gap-3 text-sm font-medium text-heading hover:bg-muted transition-colors"
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          navigator.clipboard.writeText(window.getSelection()?.toString() || '');
+          setShow(false);
+        }}
+        className={itemClass}
       >
-        <Copy size={14} className="text-dim" /> Copy
+        <Copy size={14} strokeWidth={1.75} className="text-dim" />
+        <span>Salin</span>
       </button>
 
       <button
-        onClick={() => { document.execCommand('paste'); setShow(false); }}
-        className="w-full px-3 py-2 flex items-center gap-3 text-sm font-medium text-heading hover:bg-muted transition-colors"
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          document.execCommand('paste');
+          setShow(false);
+        }}
+        className={itemClass}
       >
-        <ClipboardPaste size={14} className="text-dim" /> Paste
+        <ClipboardPaste size={14} strokeWidth={1.75} className="text-dim" />
+        <span>Tempel</span>
       </button>
 
-      <div className="h-px bg-muted my-1"></div>
+      <div className="h-px bg-line my-1" />
 
       <button
+        type="button"
+        role="menuitem"
         onClick={() => window.location.reload()}
-        className="w-full px-3 py-2 flex items-center gap-3 text-sm font-medium text-heading hover:bg-muted transition-colors"
+        className={itemClass}
       >
-        <RefreshCw size={14} className="text-primary" /> Reload App
+        <RefreshCw size={14} strokeWidth={1.75} className="text-dim" />
+        <span>Muat Ulang</span>
       </button>
-      
+
       <button
-        onClick={() => { window.history.back(); setShow(false); }}
-        className="w-full px-3 py-2 flex items-center gap-3 text-sm font-medium text-heading hover:bg-muted transition-colors"
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          window.history.back();
+          setShow(false);
+        }}
+        className={itemClass}
       >
-        <Navigation size={14} className="text-dim -rotate-90" /> Go Back
+        <Navigation size={14} strokeWidth={1.75} className="text-dim -rotate-90" />
+        <span>Kembali</span>
       </button>
 
       {isTauri() && (
         <>
-          <div className="h-px bg-muted my-1"></div>
+          <div className="h-px bg-line my-1" />
           <button
+            type="button"
+            role="menuitem"
             onClick={async () => {
               setShow(false);
               try {
@@ -94,9 +114,10 @@ export default function ContextMenu() {
                 console.error('Failed to open devtools:', err);
               }
             }}
-            className="w-full px-3 py-2 flex items-center gap-3 text-sm font-medium text-warning hover:bg-warning-soft dark:hover:bg-warning/20 transition-colors cursor-pointer"
+            className="w-full px-2.5 py-1.5 rounded-md flex items-center gap-2.5 text-xs sm:text-sm font-medium text-warning hover:bg-warning-soft transition-colors cursor-pointer text-left"
           >
-            <Code2 size={14} /> Inspect Element
+            <Code2 size={14} strokeWidth={1.75} />
+            <span>Inspeksi</span>
           </button>
         </>
       )}

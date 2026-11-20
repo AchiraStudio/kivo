@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Shield, Loader2, Check, RotateCcw, Search, CheckSquare, Square, AlertCircle, X, ShieldCheck } from 'lucide-react';
-import { 
-  getPermissionDefinitions, 
-  getUserPermissions, 
+import {
+  getPermissionDefinitions,
+  getUserPermissions,
   updateUserPermissions,
   PermissionDef,
   UserPermissionsPayload
 } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
+import Button from '../../components/ui/Button';
 import PermissionCategoryList from './PermissionCategoryList';
 
 interface UserPermissionsModalProps {
@@ -21,7 +22,7 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
   const [saving, setSaving] = useState(false);
   const [definitions, setDefinitions] = useState<PermissionDef[]>([]);
   const [userData, setUserData] = useState<UserPermissionsPayload | null>(null);
-  
+
   const [isCustom, setIsCustom] = useState(false);
   const [selectedPerms, setSelectedPerms] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,7 +41,7 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
         setDefinitions(defs);
         setUserData(userPerms);
         setIsCustom(userPerms.is_custom);
-        
+
         if (userPerms.role.toLowerCase() === 'owner') {
           setSelectedPerms(new Set(defs.map((d: PermissionDef) => d.key)));
         } else {
@@ -101,7 +102,7 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
     setErrorMsg('');
     try {
       await updateUserPermissions(userId, isCustom, Array.from(selectedPerms));
-      setSuccessMsg('Hak akses berhasil disimpan!');
+      setSuccessMsg('Hak akses tersimpan.');
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -120,130 +121,120 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
       isOpen={true}
       onClose={onClose}
       size="3xl"
-      title="Pengaturan Hak Akses Pengguna"
+      title="Hak Akses Pengguna"
       subtitle={userData ? `${userData.user_name} (@${userData.username})` : 'Memuat data...'}
       icon={Shield}
       badge={
         userData ? (
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
- isOwner 
- ? 'bg-primary-soft text-primary ' 
- : userData.role === 'admin' 
- ? 'bg-primary-soft text-primary' 
- : 'bg-success-soft text-success '
- }`}>
+          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold capitalize ${
+            isOwner
+              ? 'bg-primary-soft text-primary'
+              : userData.role === 'admin'
+              ? 'bg-info-soft text-info'
+              : 'bg-success-soft text-success'
+          }`}>
             {userData.role}
           </span>
         ) : null
       }
       footer={
-        <div className="flex items-center justify-between w-full">
-          <div className="text-xs text-dim">
+        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+          <div className="text-xs text-dim tnum">
             {successMsg ? (
-              <span className="text-success font-bold flex items-center gap-1.5">
-                <Check size={15} /> {successMsg}
+              <span className="text-success font-semibold flex items-center gap-1.5">
+                <Check size={14} /> {successMsg}
               </span>
             ) : (
               <span>
-                Total <strong>{selectedPerms.size}</strong> dari <strong>{definitions.length}</strong> izin aktif
+                <strong className="text-heading">{selectedPerms.size}</strong> dari <strong className="text-heading">{definitions.length}</strong> izin aktif
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 border border-line rounded-xl text-sm font-bold text-heading hover:bg-muted transition-colors cursor-pointer"
-            >
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="md" onClick={onClose}>
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              disabled={loading || saving || isOwner}
+              variant="primary"
+              size="md"
+              disabled={loading || isOwner}
+              loading={saving}
               onClick={handleSave}
-              className="px-6 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
             >
-              {saving ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Menyimpan...</span>
-                </>
-              ) : (
-                <>
-                  <Check size={16} />
-                  <span>Simpan Hak Akses</span>
-                </>
-              )}
-            </button>
+              {!saving && <Check size={15} />}
+              <span>{saving ? 'Menyimpan...' : 'Simpan'}</span>
+            </Button>
           </div>
         </div>
       }
     >
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3 text-dim">
-          <Loader2 className="animate-spin text-primary" size={32} />
-          <p className="text-sm font-semibold">Memuat konfigurasi hak akses...</p>
+        <div className="py-16 flex flex-col items-center justify-center gap-2.5 text-dim">
+          <Loader2 className="animate-spin text-primary" size={24} />
+          <p className="text-xs font-medium">Memuat hak akses...</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Owner Notice or Mode Banner */}
           {isOwner ? (
-            <div className="p-4 bg-primary-soft border border-primary/30 rounded-xl flex items-center gap-3 text-primary">
-              <ShieldCheck size={20} className="shrink-0 text-primary" />
-              <p className="text-xs leading-relaxed">
-                Pengguna dengan peran <strong>Owner</strong> memiliki akses penuh tanpa batasan pada semua fitur sistem.
+            <div className="p-3.5 bg-primary-soft border border-primary/25 rounded-lg flex items-center gap-2.5 text-primary">
+              <ShieldCheck size={18} className="shrink-0" />
+              <p className="text-xs font-medium">
+                Peran <strong>Owner</strong> memiliki akses penuh pada semua fitur.
               </p>
             </div>
           ) : (
-            <div className="p-4 bg-muted/60 border border-line rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 bg-muted/50 border border-line rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-heading">
-                    Mode Hak Akses:
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
- isCustom 
- ? 'bg-warning-soft text-warning ' 
- : 'bg-accent-soft text-accent '
- }`}>
-                    {isCustom ? 'Kustom (Khusus)' : 'Bawaan Peran (Default)'}
+                  <span className="text-xs font-semibold text-heading">Mode:</span>
+                  <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                    isCustom
+                      ? 'bg-warning-soft text-warning'
+                      : 'bg-info-soft text-info'
+                  }`}>
+                    {isCustom ? 'Kustom' : `Default ${userData?.role}`}
                   </span>
                 </div>
-                <p className="text-xs text-dim mt-1">
-                  {isCustom 
-                    ? 'Pengguna ini memiliki izin yang disesuaikan secara manual.'
-                    : `Mengikuti izin standar untuk peran "${userData?.role}".`}
+                <p className="text-xs text-dim mt-0.5">
+                  {isCustom
+                    ? 'Izin disesuaikan khusus untuk pengguna ini.'
+                    : 'Mengikuti aturan baku peran.'}
                 </p>
               </div>
 
               {isCustom && (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={handleResetToDefault}
-                  className="px-3.5 py-2 rounded-xl bg-card dark:bg-muted border border-line text-heading hover:text-primary hover:border-primary/40 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer shrink-0"
                 >
-                  <RotateCcw size={13} /> Reset ke Default Peran
-                </button>
+                  <RotateCcw size={13} /> Reset ke Default
+                </Button>
               )}
             </div>
           )}
 
           {/* Search & Bulk Toolbar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="relative flex-1">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dim" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-dim" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari izin akses..."
-                className="w-full pl-9 pr-4 py-2 bg-muted/60 border border-line rounded-xl text-xs text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full h-9 pl-9 pr-8 bg-input border border-line rounded-lg text-xs text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-colors"
               />
               {searchQuery && (
-                <button 
+                <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-body text-xs font-bold"
+                  aria-label="Hapus pencarian"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dim hover:text-heading p-0.5 rounded cursor-pointer"
                 >
                   <X size={13} />
                 </button>
@@ -252,32 +243,23 @@ export default function UserPermissionsModal({ userId, onClose, onSuccess }: Use
 
             {!isOwner && (
               <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleSelectAll}
-                  className="px-3 py-2 rounded-xl bg-muted/80 hover:bg-line dark:hover:bg-line-strong text-heading text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
+                <Button type="button" variant="secondary" size="sm" onClick={handleSelectAll}>
                   <CheckSquare size={13} /> Pilih Semua
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeselectAll}
-                  className="px-3 py-2 rounded-xl bg-muted/80 hover:bg-line dark:hover:bg-line-strong text-heading text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
+                </Button>
+                <Button type="button" variant="secondary" size="sm" onClick={handleDeselectAll}>
                   <Square size={13} /> Matikan Semua
-                </button>
+                </Button>
               </div>
             )}
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 bg-danger-soft border border-danger/30 rounded-xl text-xs text-danger flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0" />
+            <div className="p-3 bg-danger-soft border border-danger/30 rounded-lg text-xs text-danger flex items-center gap-2">
+              <AlertCircle size={15} className="shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Clean Permission Category List */}
           <PermissionCategoryList
             definitions={definitions}
             selectedPerms={selectedPerms}

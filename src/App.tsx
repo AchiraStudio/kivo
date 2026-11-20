@@ -70,6 +70,7 @@ function MainContent({
     case 'customers':
       return <CustomerPromoPage />;
     case 'reports':
+    case 'accounting':
     case 'laporan-penjualan':
     case 'laporan-item':
     case 'laporan-metode-pembayaran':
@@ -78,14 +79,10 @@ function MainContent({
       return <Settings />;
     default:
       return (
-        <div className="bg-card border border-line rounded-xl p-16 text-center h-full flex flex-col items-center justify-center">
-          <div className="p-6 bg-muted rounded-full mb-6">
-            <Package size={48} className="text-dim" />
-          </div>
-          <h3 className="text-2xl font-bold tracking-tight text-heading">
-            {activeMenu.charAt(0).toUpperCase() + activeMenu.slice(1)} Module
-          </h3>
-          <p className="text-body">Sedang dalam pengembangan.</p>
+        <div className="bg-card border border-line rounded-xl p-10 text-center h-full flex flex-col items-center justify-center gap-2">
+          <Package size={28} className="text-dim" />
+          <h3 className="text-base font-bold text-heading">Halaman tidak ditemukan</h3>
+          <p className="text-xs text-dim">Pilih menu di sidebar untuk melanjutkan.</p>
         </div>
       );
   }
@@ -347,8 +344,8 @@ export default function App() {
 
   if (isVerifying || hasCompletedSetup === null) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div className="flex h-[100dvh] w-full items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={28} />
       </div>
     );
   }
@@ -367,7 +364,7 @@ export default function App() {
 
   if (!token || !user) {
     return (
-      <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
+      <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-background">
         <TitleBar />
         <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative">
           <LoginPage onOpenSetupWizard={() => setShowSetupWizard(true)} />
@@ -377,7 +374,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-background transition-colors duration-300">
+    <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-background">
       <ContextMenu />
       <TitleBar />
       <div className="flex flex-1 min-h-0 overflow-hidden">

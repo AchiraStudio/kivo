@@ -1,154 +1,180 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getSuppliers, Supplier } from '../../lib/api';
-import { Loader2, Plus, Building2, Edit2, Search, Phone, CreditCard } from 'lucide-react';
+import { Loader2, Plus, Building2, Edit2, Search, Phone, AlertCircle } from 'lucide-react';
 import SupplierDrawer from './SupplierDrawer';
+import Button from '../../components/ui/Button';
 
 export default function SupplierList() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [supplierToEdit, setSupplierToEdit] = useState<Supplier | null>(null);
 
-  const loadData = () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
-    getSuppliers().then(data => { setSuppliers(data); setLoading(false); }).catch(() => setLoading(false));
+    setError(null);
+    try {
+      const data = await getSuppliers();
+      setSuppliers(data);
+    } catch (e: any) {
+      setError(e?.message || String(e) || 'Gagal memuat data pemasok.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const openAdd = () => {
+    setSupplierToEdit(null);
+    setIsDrawerOpen(true);
   };
 
-  useEffect(() => { loadData(); }, []);
+  const openEdit = (s: Supplier) => {
+    setSupplierToEdit(s);
+    setIsDrawerOpen(true);
+  };
 
-  const openAdd = () => { setSupplierToEdit(null); setIsDrawerOpen(true); };
-  const openEdit = (s: Supplier) => { setSupplierToEdit(s); setIsDrawerOpen(true); };
-
-  const filteredSuppliers = suppliers.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) || 
-    (s.contact_person || '').toLowerCase().includes(search.toLowerCase()) ||
-    (s.phone || '').includes(search) ||
-    (s.email || '').toLowerCase().includes(search.toLowerCase())
+  const query = search.trim().toLowerCase();
+  const filteredSuppliers = suppliers.filter(
+    (s) =>
+      !query ||
+      s.name.toLowerCase().includes(query) ||
+      (s.contact_person || '').toLowerCase().includes(query) ||
+      (s.phone || '').includes(search.trim()) ||
+      (s.email || '').toLowerCase().includes(query),
   );
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in h-full">
-      
-      {/* Top Header & Actions */}
+    <div className="flex flex-col gap-4 h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-heading">
-            Data Pemasok & Distributor
-          </h1>
-          <p className="text-xs text-dim mt-0.5">
-            Kelola vendor resmi pengadaan obat, alkes, dan syarat tempo pembayaran.
-          </p>
-        </div>
-        
-        <button 
-          onClick={openAdd} 
-          className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white px-3.5 py-1.5 rounded-lg font-semibold text-xs shadow-xs active:scale-[0.98] transition-all cursor-pointer"
-        >
-          <Plus size={15} /> Tambah Pemasok
-        </button>
+        <h1 className="text-lg font-bold tracking-tight text-heading">Pemasok</h1>
+        <Button variant="primary" size="md" onClick={openAdd}>
+          <Plus size={15} />
+          Tambah Pemasok
+        </Button>
       </div>
 
-      {/* Main Container */}
-      <div className="bg-card rounded-xl border border-line shadow-xs flex-1 overflow-hidden flex flex-col">
-        
-        {/* Search & Filter Bar */}
-        <div className="p-4 border-b border-line flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/50 dark:bg-card/30">
-          <div className="flex-1 w-full flex items-center bg-card border border-line rounded-xl px-3.5 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-            <Search size={16} className="text-dim mr-2 shrink-0" />
-            <input 
-              type="text" 
+      <div className="bg-card rounded-xl border border-line flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="p-3 sm:px-4 border-b border-line bg-muted/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
+          <div className="flex-1 w-full sm:max-w-md h-9 flex items-center bg-input border border-line rounded-lg px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-colors">
+            <Search size={15} className="text-dim mr-2 shrink-0" />
+            <input
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari pemasok berdasarkan nama, PIC, no. telepon, atau email..." 
-              className="bg-transparent border-none outline-none text-xs w-full text-heading placeholder:text-dim" 
+              placeholder="Cari nama, PIC, telepon, atau email..."
+              className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim"
             />
           </div>
 
-          <div className="text-xs font-bold text-dim shrink-0 px-2">
-            Total: <span className="text-heading font-mono">{filteredSuppliers.length}</span> Pemasok
-          </div>
+          <span className="text-xs font-medium text-dim tnum shrink-0">
+            {filteredSuppliers.length} pemasok
+          </span>
         </div>
 
-        {/* Content Table */}
         {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-20 text-dim gap-3">
-            <Loader2 className="animate-spin text-primary" size={32} />
-            <p className="text-xs font-semibold">Memuat data pemasok...</p>
+          <div className="flex-1 flex flex-col items-center justify-center py-16 text-dim gap-2">
+            <Loader2 className="animate-spin text-primary" size={24} />
+            <span className="text-xs">Memuat data pemasok...</span>
+          </div>
+        ) : error ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center gap-3">
+            <AlertCircle size={24} className="text-danger" />
+            <p className="text-sm text-body max-w-md">{error}</p>
+            <Button variant="outline" size="sm" onClick={loadData}>
+              Muat Ulang
+            </Button>
           </div>
         ) : filteredSuppliers.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-20 text-dim p-6 text-center">
-            <div className="p-4 bg-muted rounded-xl mb-3 text-dim">
-              <Building2 size={36} />
+          <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center gap-2">
+            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-dim mb-1">
+              <Building2 size={20} />
             </div>
-            <h3 className="font-bold text-sm text-heading">Pemasok Tidak Ditemukan</h3>
-            <p className="text-xs text-dim mt-1 max-w-xs">
-              {search ? 'Tidak ada hasil yang sesuai dengan kata kunci pencarian.' : 'Belum ada pemasok terdaftar. Klik tombol di atas untuk menambahkan pemasok baru.'}
+            <p className="text-sm font-semibold text-heading">
+              {search ? 'Pemasok tidak ditemukan' : 'Belum ada pemasok'}
             </p>
+            <p className="text-xs text-dim">
+              {search
+                ? 'Coba kata kunci pencarian lain.'
+                : 'Tambahkan pemasok untuk mencatat penerimaan barang.'}
+            </p>
+            <div className="mt-2">
+              {search ? (
+                <Button variant="outline" size="sm" onClick={() => setSearch('')}>
+                  Reset Pencarian
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={openAdd}>
+                  <Plus size={14} />
+                  Tambah Pemasok
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-            <table className="w-full text-left text-xs">
-              <thead className="sticky top-0 bg-muted/90 dark:bg-card/90 border-b border-line text-dim font-bold uppercase tracking-wider z-10">
+          <div className="flex-1 overflow-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead className="sticky top-0 bg-muted border-b border-line text-xs text-dim font-semibold z-10">
                 <tr>
-                  <th className="py-3.5 px-6">Nama Perusahaan / Vendor</th>
-                  <th className="py-3.5 px-6">Contact Person (PIC)</th>
-                  <th className="py-3.5 px-6">Kontak & Telepon</th>
-                  <th className="py-3.5 px-6">Syarat Bayar (TOP)</th>
-                  <th className="py-3.5 px-6">Alamat</th>
-                  <th className="py-3.5 px-6 text-right">Aksi</th>
+                  <th className="py-3 px-4">Pemasok</th>
+                  <th className="py-3 px-4">PIC</th>
+                  <th className="py-3 px-4">Kontak</th>
+                  <th className="py-3 px-4">Tempo</th>
+                  <th className="py-3 px-4">Alamat</th>
+                  <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line dark:divide-line/60 text-xs">
-                {filteredSuppliers.map(s => (
-                  <tr key={s.id} className="hover:bg-muted/80 dark:hover:bg-muted/40 group transition-colors">
-                    <td className="py-3.5 px-6 font-extrabold text-heading">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary-soft text-primary rounded-xl shrink-0">
-                          <Building2 size={16} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold">{s.name}</p>
-                          {s.notes && <p className="text-[10px] text-dim font-normal mt-0.5 line-clamp-1">{s.notes}</p>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-6 font-medium text-heading">
-                      {s.contact_person ? s.contact_person : <span className="text-dim italic">-</span>}
-                    </td>
-                    <td className="py-3.5 px-6 font-mono">
-                      {s.phone ? (
-                        <div className="flex items-center gap-2">
-                          <a 
-                            href={`https://wa.me/${s.phone.replace(/[^0-9]/g, '')}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-success hover:underline flex items-center gap-1 text-[11px] font-bold"
-                          >
-                            <Phone size={12} /> {s.phone}
-                          </a>
-                        </div>
-                      ) : (
-                        <span className="text-dim">-</span>
+              <tbody className="divide-y divide-line text-sm">
+                {filteredSuppliers.map((s) => (
+                  <tr key={s.id} className="hover:bg-muted/50 transition-colors">
+                    <td className="py-3 px-4">
+                      <p className="font-semibold text-heading">{s.name}</p>
+                      {s.notes && (
+                        <p className="text-xs text-dim mt-0.5 line-clamp-1">{s.notes}</p>
                       )}
-                      {s.email && <p className="text-[10px] text-dim font-sans mt-0.5">{s.email}</p>}
                     </td>
-                    <td className="py-3.5 px-6">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent-soft text-primary text-[10px] font-extrabold uppercase tracking-wide border border-accent-soft ">
-                        <CreditCard size={11} /> {s.payment_terms || 'NET 30'}
+                    <td className="py-3 px-4 text-body">
+                      {s.contact_person || <span className="text-dim">-</span>}
+                    </td>
+                    <td className="py-3 px-4">
+                      {s.phone ? (
+                        <a
+                          href={`https://wa.me/${s.phone.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 font-mono text-xs text-heading hover:text-primary hover:underline"
+                        >
+                          <Phone size={12} className="text-dim shrink-0" />
+                          {s.phone}
+                        </a>
+                      ) : (
+                        <span className="text-dim text-xs">-</span>
+                      )}
+                      {s.email && <p className="text-xs text-dim mt-0.5">{s.email}</p>}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-body border border-line text-xs font-medium">
+                        {s.payment_terms || 'NET 30'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6 text-dim max-w-xs truncate">
-                      {s.address ? s.address : <span className="text-dim">-</span>}
+                    <td className="py-3 px-4 text-body text-xs max-w-xs truncate">
+                      {s.address || <span className="text-dim">-</span>}
                     </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <button 
-                        onClick={() => openEdit(s)} 
-                        className="p-2 text-dim hover:text-primary bg-muted hover:bg-primary-soft rounded-xl transition-all cursor-pointer shadow-xs"
-                        title="Edit Data Pemasok"
+                    <td className="py-3 px-4 text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEdit(s)}
+                        aria-label={`Edit ${s.name}`}
                       >
-                        <Edit2 size={14} />
-                      </button>
+                        <Edit2 size={13} />
+                        Edit
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -158,11 +184,11 @@ export default function SupplierList() {
         )}
       </div>
 
-      <SupplierDrawer 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)} 
-        onSuccess={loadData} 
-        supplierToEdit={supplierToEdit} 
+      <SupplierDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onSuccess={loadData}
+        supplierToEdit={supplierToEdit}
       />
     </div>
   );

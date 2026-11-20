@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { 
+import {
   Sliders, Loader2, Check, Search, CheckSquare, Square, AlertCircle, X
 } from 'lucide-react';
-import { 
-  getPermissionDefinitions, 
-  getRoleDefaultPermissions, 
+import {
+  getPermissionDefinitions,
+  getRoleDefaultPermissions,
   updateRoleDefaultPermissions,
   PermissionDef,
   RolePermissionItem
 } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
+import Button from '../../components/ui/Button';
 import PermissionCategoryList from './PermissionCategoryList';
 
 interface RoleDefaultsModalProps {
@@ -18,8 +19,8 @@ interface RoleDefaultsModalProps {
 }
 
 const EDITABLE_ROLES = [
-  { value: 'staff', label: 'Staff', desc: 'Kasir, operasional gudang, dan staf penjualan harian' },
-  { value: 'admin', label: 'Admin', desc: 'Supervisi cabang, manajer operasional, dan kasir senior' },
+  { value: 'staff', label: 'Staff', desc: 'Kasir dan operasional harian' },
+  { value: 'admin', label: 'Admin', desc: 'Supervisi cabang dan operasional' },
 ];
 
 export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsModalProps) {
@@ -28,7 +29,7 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
   const [definitions, setDefinitions] = useState<PermissionDef[]>([]);
   const [roleDefaults, setRoleDefaults] = useState<Record<string, Set<string>>>({});
   const [activeRole, setActiveRole] = useState<'staff' | 'admin'>('staff');
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -81,16 +82,16 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
   };
 
   const handleSelectAll = () => {
-    setRoleDefaults(prev => ({ 
-      ...prev, 
-      [activeRole]: new Set(definitions.map(d => d.key)) 
+    setRoleDefaults(prev => ({
+      ...prev,
+      [activeRole]: new Set(definitions.map(d => d.key))
     }));
   };
 
   const handleDeselectAll = () => {
-    setRoleDefaults(prev => ({ 
-      ...prev, 
-      [activeRole]: new Set() 
+    setRoleDefaults(prev => ({
+      ...prev,
+      [activeRole]: new Set()
     }));
   };
 
@@ -99,7 +100,7 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
     setErrorMsg('');
     try {
       await updateRoleDefaultPermissions(activeRole, Array.from(currentPerms));
-      setSuccessMsg(`Hak akses baku peran "${activeRole.toUpperCase()}" berhasil disimpan!`);
+      setSuccessMsg(`Hak akses peran "${activeRole}" tersimpan.`);
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -116,62 +117,51 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
       isOpen={true}
       onClose={onClose}
       size="3xl"
-      title="Hak Akses Baku Peran (Role Defaults)"
-      subtitle="Tentukan hak akses standar yang otomatis berlaku bagi pengguna yang memakai default role."
+      title="Hak Akses Baku Peran"
+      subtitle="Izin bawaan untuk pengguna dengan peran standar"
       icon={Sliders}
       footer={
-        <div className="flex items-center justify-between w-full">
-          <div className="text-xs text-dim">
+        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+          <div className="text-xs text-dim tnum">
             {successMsg ? (
-              <span className="text-success font-bold flex items-center gap-1.5">
-                <Check size={15} /> {successMsg}
+              <span className="text-success font-semibold flex items-center gap-1.5">
+                <Check size={14} /> {successMsg}
               </span>
             ) : (
               <span>
-                Peran <strong>{activeRole}</strong> memiliki <strong>{currentPerms.size}</strong> izin aktif
+                Peran <strong className="text-heading capitalize">{activeRole}</strong>: <strong className="text-heading">{currentPerms.size}</strong> izin aktif
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 border border-line rounded-xl text-sm font-bold text-heading hover:bg-muted transition-colors"
-            >
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="md" onClick={onClose}>
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              disabled={loading || saving}
+              variant="primary"
+              size="md"
+              disabled={loading}
+              loading={saving}
               onClick={handleSave}
-              className="px-6 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
             >
-              {saving ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Menyimpan...</span>
-                </>
-              ) : (
-                <>
-                  <Check size={16} />
-                  <span>Simpan Perubahan</span>
-                </>
-              )}
-            </button>
+              {!saving && <Check size={15} />}
+              <span>{saving ? 'Menyimpan...' : 'Simpan'}</span>
+            </Button>
           </div>
         </div>
       }
     >
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3 text-dim">
-          <Loader2 className="animate-spin text-primary" size={32} />
-          <p className="text-sm font-semibold">Memuat aturan baku hak akses...</p>
+        <div className="py-16 flex flex-col items-center justify-center gap-2.5 text-dim">
+          <Loader2 className="animate-spin text-primary" size={24} />
+          <p className="text-xs font-medium">Memuat hak akses peran...</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Role Tabs */}
-          <div className="grid grid-cols-2 gap-3 p-1.5 bg-muted rounded-xl border border-line">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-1 bg-muted rounded-lg border border-line">
             {EDITABLE_ROLES.map((role) => {
               const isSelected = activeRole === role.value;
               const count = (roleDefaults[role.value] || new Set()).size;
@@ -180,24 +170,24 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
                 <button
                   key={role.value}
                   type="button"
-                  onClick={() => setActiveRole(role.value as any)}
-                  className={`p-4 rounded-xl text-left transition-all ${
+                  onClick={() => setActiveRole(role.value as 'staff' | 'admin')}
+                  className={`p-3 rounded-md text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     isSelected
-                      ? 'bg-card shadow-sm border border-line/80 dark:border-line-strong text-heading'
-                      : 'text-dim hover:text-heading dark:hover:text-dim'
+                      ? 'bg-card border border-line text-heading'
+                      : 'border border-transparent text-dim hover:text-heading'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-extrabold text-sm capitalize">{role.label}</span>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
- isSelected 
- ? 'bg-primary-soft text-primary' 
- : 'bg-line dark:bg-muted text-dim'
- }`}>
-                      {count} Izin
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <span className="font-bold text-sm">{role.label}</span>
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md tnum ${
+                      isSelected
+                        ? 'bg-primary-soft text-primary'
+                        : 'bg-card/70 text-dim'
+                    }`}>
+                      {count} izin
                     </span>
                   </div>
-                  <p className="text-xs text-dim line-clamp-1">
+                  <p className="text-xs text-dim truncate">
                     {role.desc}
                   </p>
                 </button>
@@ -206,20 +196,22 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
           </div>
 
           {/* Search & Bulk Selection Toolbar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="relative flex-1">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dim" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-dim" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari izin akses (contoh: harga, hapus, pos)..."
-                className="w-full pl-9 pr-4 py-2 bg-muted/60 border border-line rounded-xl text-xs text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                placeholder="Cari izin akses..."
+                className="w-full h-9 pl-9 pr-8 bg-input border border-line rounded-lg text-xs text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-colors"
               />
               {searchQuery && (
-                <button 
+                <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-body text-xs font-bold"
+                  aria-label="Hapus pencarian"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dim hover:text-heading p-0.5 rounded cursor-pointer"
                 >
                   <X size={13} />
                 </button>
@@ -227,31 +219,22 @@ export default function RoleDefaultsModal({ onClose, onSuccess }: RoleDefaultsMo
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleSelectAll}
-                className="px-3 py-2 rounded-xl bg-muted/80 hover:bg-line dark:hover:bg-line-strong text-heading text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
+              <Button type="button" variant="secondary" size="sm" onClick={handleSelectAll}>
                 <CheckSquare size={13} /> Pilih Semua
-              </button>
-              <button
-                type="button"
-                onClick={handleDeselectAll}
-                className="px-3 py-2 rounded-xl bg-muted/80 hover:bg-line dark:hover:bg-line-strong text-heading text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={handleDeselectAll}>
                 <Square size={13} /> Matikan Semua
-              </button>
+              </Button>
             </div>
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 bg-danger-soft border border-danger/30 rounded-xl text-xs text-danger flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0" />
+            <div className="p-3 bg-danger-soft border border-danger/30 rounded-lg text-xs text-danger flex items-center gap-2">
+              <AlertCircle size={15} className="shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Clean Reusable Category List */}
           <PermissionCategoryList
             definitions={definitions}
             selectedPerms={currentPerms}

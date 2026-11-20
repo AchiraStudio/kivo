@@ -1,16 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Percent, Coins, Gift, Layers, Package, Calendar, Search, Tag, AlertCircle, ShoppingBag, Check } from 'lucide-react';
-import { CreatePromoInput, getPromoDetail, createPromo, updatePromo, getItemsFiltered, getCategories, Category, Item, getItem } from '../../lib/api';
+import {
+  Save, Plus, Trash2, Percent, Coins, Gift, Layers, Package, Calendar, Search,
+  Tag, AlertCircle, ShoppingBag, Check, Loader2,
+} from 'lucide-react';
+import {
+  CreatePromoInput, getPromoDetail, createPromo, updatePromo,
+  getItemsFiltered, getCategories, Category, Item, getItem,
+} from '../../lib/api';
 import { useDebounce } from '../../lib/hooks/useDebounce';
-import Modal from '../../components/ui/Modal';
-
+import Drawer from '../../components/ui/Drawer';
+import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
+
 interface PromoDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved: () => void;
   editPromoId: string | null;
 }
+
+const fieldCls =
+  'w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors';
+
+const labelCls = 'block text-xs font-semibold text-heading mb-1.5';
+
+const PROMO_TYPES = [
+  { id: 'percentage', label: 'Diskon Persen', sub: 'Diskon 20%', icon: Percent },
+  { id: 'fixed_amount', label: 'Potongan Nominal', sub: 'Potongan Rp 10.000', icon: Coins },
+  { id: 'bogo', label: 'Beli X Gratis Y', sub: 'Beli 2 Gratis 1', icon: Gift },
+  { id: 'tiered', label: 'Diskon Bertingkat', sub: 'Diskon per jumlah beli', icon: Layers },
+  { id: 'bundle', label: 'Paket Bundle', sub: 'Paket hemat beberapa item', icon: Package },
+] as const;
+
+const APPLIES_TO_OPTIONS = [
+  { id: 'item', label: 'Per Item', desc: 'Produk tertentu', icon: Tag },
+  { id: 'category', label: 'Per Kategori', desc: 'Semua item kategori', icon: Layers },
+  { id: 'transaction', label: 'Total Transaksi', desc: 'Total keranjang', icon: ShoppingBag },
+] as const;
+
+const MEMBER_TIERS = [
+  { id: '', label: 'Semua Pelanggan' },
+  { id: 'regular', label: 'Reguler' },
+  { id: 'member', label: 'Member' },
+  { id: 'vip', label: 'VIP' },
+] as const;
 
 export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: PromoDrawerProps) {
   const [formData, setFormData] = useState<CreatePromoInput>({
@@ -25,13 +58,14 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
     priority: 1,
     bogo_rules: [],
     tiers: [],
-    bundle_items: []
+    bundle_items: [],
   });
-  
-  const [loading, setLoading] = useState(false);
+
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  
+
   // Single Item Search
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   const debouncedItemSearch = useDebounce(itemSearchQuery, 250);
@@ -119,16 +153,17 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
         priority: 1,
         bogo_rules: [],
         tiers: [],
-        bundle_items: []
+        bundle_items: [],
       });
       setItemSearchQuery('');
       setSelectedItem(null);
+      setBundleSearchQuery('');
       setBundleItemDetails({});
     }
   }, [editPromoId, isOpen]);
 
   const loadPromoDetails = async (id: string) => {
-    setLoading(true);
+    setLoadingDetail(true);
     try {
       const promoDetail = await getPromoDetail(id);
       const { promo, bogo_rules, tiers, bundle_items } = promoDetail;
@@ -153,16 +188,16 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
           buy_qty: r.buy_qty,
           get_qty: r.get_qty,
           free_item_id: r.free_item_id,
-          free_item_discount_percent: r.free_item_discount_percent
+          free_item_discount_percent: r.free_item_discount_percent,
         })),
         tiers: tiers.map(t => ({
           min_qty: t.min_qty,
-          discount_percent: t.discount_percent
+          discount_percent: t.discount_percent,
         })),
         bundle_items: bundle_items.map(b => ({
           item_id: b.item_id,
-          qty: b.qty
-        }))
+          qty: b.qty,
+        })),
       });
 
       if (promo.item_id) {
@@ -173,6 +208,9 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
         } catch (e) {
           console.error(e);
         }
+      } else {
+        setSelectedItem(null);
+        setItemSearchQuery('');
       }
 
       if (bundle_items && bundle_items.length > 0) {
@@ -186,26 +224,31 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
           }
         }
         setBundleItemDetails(detailsMap);
+      } else {
+        setBundleItemDetails({});
       }
     } catch (e) {
       console.error(e);
       setErrorMessage('Gagal memuat detail promo.');
     } finally {
-      setLoading(false);
+      setLoadingDetail(false);
     }
   };
 
   const handleAddTier = () => {
     setFormData(prev => ({
       ...prev,
-      tiers: [...prev.tiers, { min_qty: prev.tiers.length ? prev.tiers[prev.tiers.length - 1].min_qty + 2 : 2, discount_percent: 10 }]
+      tiers: [
+        ...prev.tiers,
+        { min_qty: prev.tiers.length ? prev.tiers[prev.tiers.length - 1].min_qty + 2 : 2, discount_percent: 10 },
+      ],
     }));
   };
 
   const handleRemoveTier = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      tiers: prev.tiers.filter((_, i) => i !== index)
+      tiers: prev.tiers.filter((_, i) => i !== index),
     }));
   };
 
@@ -213,40 +256,38 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
     e.preventDefault();
     setErrorMessage(null);
 
-    // Client-side guard checks
     if (!formData.name.trim()) {
-      setErrorMessage('Silakan masukkan nama promo.');
+      setErrorMessage('Nama promo wajib diisi.');
       return;
     }
 
     if (formData.applies_to === 'item' && formData.promo_type !== 'bundle' && !formData.item_id) {
-      setErrorMessage('Silakan cari dan pilih item target promo.');
+      setErrorMessage('Pilih item target promo.');
       return;
     }
 
     if (formData.applies_to === 'category' && !formData.category_id) {
-      setErrorMessage('Silakan pilih kategori produk target promo.');
+      setErrorMessage('Pilih kategori target promo.');
       return;
     }
 
     if (formData.promo_type === 'bundle' && (!formData.bundle_items || formData.bundle_items.length === 0)) {
-      setErrorMessage('Silakan tambahkan setidaknya 1 item ke dalam paket bundle.');
+      setErrorMessage('Tambahkan minimal 1 item ke paket bundle.');
       return;
     }
 
     if (formData.promo_type === 'bogo' && (!formData.bogo_rules || formData.bogo_rules.length === 0)) {
-      setErrorMessage('Silakan tentukan aturan BOGO (Beli X Gratis Y).');
+      setErrorMessage('Tentukan aturan BOGO (Beli X Gratis Y).');
       return;
     }
 
     if (formData.promo_type === 'tiered' && (!formData.tiers || formData.tiers.length === 0)) {
-      setErrorMessage('Silakan tambahkan setidaknya 1 tingkatan diskon berjenjang (Tier).');
+      setErrorMessage('Tambahkan minimal 1 tingkatan diskon.');
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
-      // Normalize payload
       const payload: CreatePromoInput = {
         ...formData,
         name: formData.name.trim(),
@@ -271,711 +312,730 @@ export default function PromoDrawer({ isOpen, onClose, onSaved, editPromoId }: P
       onClose();
     } catch (error: any) {
       console.error(error);
-      const msg = typeof error === 'string' ? error : error?.message || 'Gagal menyimpan promo. Silakan periksa kembali data Anda.';
+      const msg = typeof error === 'string' ? error : error?.message || 'Gagal menyimpan promo. Periksa kembali data.';
       setErrorMessage(msg);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const PROMO_TYPES = [
-    { id: 'percentage', label: 'Diskon Persen', sub: 'Contoh: Diskon 20%', icon: Percent, color: 'text-success bg-success-soft border-success/30 ' },
-    { id: 'fixed_amount', label: 'Potongan Nominal', sub: 'Contoh: Potongan Rp 10.000', icon: Coins, color: 'text-accent bg-accent-soft border-accent/30 ' },
-    { id: 'bogo', label: 'Beli X Gratis Y', sub: 'Contoh: Beli 2 Gratis 1', icon: Gift, color: 'text-warning bg-warning-soft border-warning/30 ' },
-    { id: 'tiered', label: 'Diskon Bertingkat', sub: 'Contoh: Beli 5 diskon 10%, beli 10 diskon 20%', icon: Layers, color: 'text-primary bg-primary-soft border-primary/30' },
-    { id: 'bundle', label: 'Paket Bundle', sub: 'Contoh: Paket Hemat 3 Produk', icon: Package, color: 'text-primary bg-primary-soft border-primary/30 ' },
-  ];
-
-  const APPLIES_TO_OPTIONS = [
-    { id: 'item', label: 'Per Item Spesifik', desc: 'Berlaku pada obat/produk terpilih', icon: Tag },
-    { id: 'category', label: 'Per Kategori', desc: 'Berlaku untuk semua item dalam kategori', icon: Layers },
-    { id: 'transaction', label: 'Total Transaksi', desc: 'Diskon pada total keranjang kasir', icon: ShoppingBag },
-  ];
+  const isPercentMode =
+    formData.promo_type === 'percentage' || (formData.promo_type === 'bundle' && formData.discount_percent > 0);
 
   return (
-    <Modal
+    <Drawer
       isOpen={isOpen}
       onClose={onClose}
-      size="3xl"
-      title={editPromoId ? 'Edit Promosi & Diskon' : 'Buat Promosi Baru'}
-      subtitle="Atur strategi potongan harga, bundle, program BOGO, dan diskon kuantitas"
+      size="lg"
+      title={editPromoId ? 'Edit Promo' : 'Buat Promo Baru'}
       icon={Tag}
       footer={
-        <div className="flex items-center justify-between w-full">
-          <div className="text-xs text-dim font-medium">
-            * Pastikan semua parameter diskon telah terisi dengan benar.
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl font-bold text-xs text-body hover:bg-muted transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              form="promo-form"
-              disabled={loading}
-              className="px-6 py-2.5 bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl font-bold text-xs transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              <Save size={15} />
-              {loading ? 'Menyimpan...' : editPromoId ? 'Simpan Perubahan' : 'Buat Promo'}
-            </button>
-          </div>
-        </div>
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            Batal
+          </Button>
+          <Button type="submit" form="promo-form" loading={saving} disabled={loadingDetail}>
+            {!saving && <Save size={15} />}
+            {editPromoId ? 'Simpan Perubahan' : 'Buat Promo'}
+          </Button>
+        </>
       }
     >
-      <form id="promo-form" onSubmit={handleSubmit} className="space-y-6">
-        {/* Error Alert */}
-        {errorMessage && (
-          <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex items-start gap-3 text-danger animate-fade-in">
-            <AlertCircle size={18} className="shrink-0 mt-0.5" />
-            <div className="flex-1 text-xs font-semibold leading-relaxed">
-              <span className="font-bold block">Gagal Menyimpan:</span>
-              {errorMessage}
+      {loadingDetail ? (
+        <div className="py-16 flex flex-col items-center justify-center gap-2" role="status" aria-label="Memuat detail promo">
+          <Loader2 className="animate-spin text-primary" size={24} />
+          <span className="text-xs text-dim">Memuat detail promo</span>
+        </div>
+      ) : (
+        <form id="promo-form" onSubmit={handleSubmit} className="space-y-5">
+          {errorMessage && (
+            <div className="p-3.5 bg-danger-soft border border-danger/30 rounded-xl flex items-start gap-2.5 text-danger">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
+              <div className="flex-1 text-xs font-medium leading-relaxed">{errorMessage}</div>
+            </div>
+          )}
+
+          {/* 1. Basic Info */}
+          <div className="space-y-3.5">
+            <div>
+              <label className={labelCls}>
+                Nama Promo <span className="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                className={fieldCls}
+                placeholder="Mis. Diskon Gajian 20%"
+              />
+            </div>
+
+            <div>
+              <label className={labelCls}>Deskripsi</label>
+              <textarea
+                value={formData.description || ''}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                className="w-full bg-input border border-line rounded-lg px-3 py-2 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors resize-none"
+                rows={2}
+                placeholder="Syarat atau catatan singkat promo"
+              />
             </div>
           </div>
-        )}
 
-        {/* 1. Basic Info */}
-        <div className="space-y-4">
+          {/* 2. Promo Strategy Type */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">
-              Nama Promo <span className="text-danger">*</span>
-            </label>
-            <input 
-              type="text" 
-              required 
-              value={formData.name} 
-              onChange={e => setFormData({...formData, name: e.target.value})} 
-              className="w-full px-4 py-3 bg-muted/60 border border-line rounded-xl text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary font-semibold text-sm" 
-              placeholder="Contoh: Flash Sale Gajian 20% atau Promo Paracetamol Beli 2 Gratis 1" 
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">
-              Deskripsi & Syarat Ketentuan
-            </label>
-            <textarea 
-              value={formData.description || ''} 
-              onChange={e => setFormData({...formData, description: e.target.value})} 
-              className="w-full px-4 py-2.5 bg-muted/60 border border-line rounded-xl text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary text-xs font-medium resize-none" 
-              rows={2} 
-              placeholder="Keterangan singkat tentang mekanisme atau syarat promo ini..." 
-            />
-          </div>
-        </div>
-
-        {/* 2. Promo Strategy Type Cards */}
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-2">
-            Pilih Jenis / Tipe Promo <span className="text-danger">*</span>
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            {PROMO_TYPES.map(type => {
-              const Icon = type.icon;
-              const isSelected = formData.promo_type === type.id;
-              return (
-                <button
-                  key={type.id}
-                  type="button"
-                  onClick={() => {
-                    const newAppliesTo = type.id === 'bundle' ? 'item' : formData.applies_to;
-                    setFormData({
-                      ...formData,
-                      promo_type: type.id as any,
-                      applies_to: newAppliesTo,
-                      bogo_rules: type.id === 'bogo' && formData.bogo_rules.length === 0 ? [{ buy_qty: 2, get_qty: 1, free_item_discount_percent: 100 }] : formData.bogo_rules,
-                      tiers: type.id === 'tiered' && formData.tiers.length === 0 ? [{ min_qty: 3, discount_percent: 10 }] : formData.tiers
-                    });
-                  }}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
- isSelected 
- ? 'border-primary bg-primary-soft ring-2 ring-primary/30 shadow-sm' 
- : 'border-line hover:bg-muted/50'
- }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`p-2 rounded-xl border ${type.color}`}>
-                      <Icon size={16} />
-                    </div>
-                    {isSelected && <span className="w-2 h-2 rounded-full bg-primary"></span>}
-                  </div>
-                  <div className="font-bold text-xs text-heading">{type.label}</div>
-                  <div className="text-[11px] text-dim mt-0.5">{type.sub}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 3. Applies To Selection (Disabled when bundle) */}
-        {formData.promo_type !== 'bundle' && (
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-2">
-              Berlaku Untuk (Target Promo) <span className="text-danger">*</span>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {APPLIES_TO_OPTIONS.map(opt => {
-                const Icon = opt.icon;
-                const isSelected = formData.applies_to === opt.id;
+            <span className={labelCls}>
+              Tipe Promo <span className="text-danger">*</span>
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {PROMO_TYPES.map(type => {
+                const Icon = type.icon;
+                const isSelected = formData.promo_type === type.id;
                 return (
                   <button
-                    key={opt.id}
+                    key={type.id}
                     type="button"
-                    onClick={() => setFormData({ ...formData, applies_to: opt.id as any })}
-                    className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
- isSelected 
- ? 'border-primary bg-primary-soft ring-2 ring-primary/30' 
- : 'border-line hover:bg-muted/50'
- }`}
+                    onClick={() => {
+                      const newAppliesTo = type.id === 'bundle' ? 'item' : formData.applies_to;
+                      setFormData({
+                        ...formData,
+                        promo_type: type.id as any,
+                        applies_to: newAppliesTo,
+                        bogo_rules:
+                          type.id === 'bogo' && formData.bogo_rules.length === 0
+                            ? [{ buy_qty: 2, get_qty: 1, free_item_discount_percent: 100 }]
+                            : formData.bogo_rules,
+                        tiers:
+                          type.id === 'tiered' && formData.tiers.length === 0
+                            ? [{ min_qty: 3, discount_percent: 10 }]
+                            : formData.tiers,
+                      });
+                    }}
+                    className={`flex items-start gap-2.5 text-left p-3 rounded-xl border transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      isSelected
+                        ? 'border-primary bg-primary-soft'
+                        : 'border-line bg-card hover:border-line-strong'
+                    }`}
                   >
-                    <div className={`p-2 rounded-xl ${isSelected ? 'bg-primary text-white' : 'bg-muted text-body'}`}>
-                      <Icon size={16} />
+                    <div
+                      className={`p-1.5 rounded-lg border shrink-0 ${
+                        isSelected
+                          ? 'bg-card text-primary border-primary/30'
+                          : 'bg-muted text-dim border-line'
+                      }`}
+                    >
+                      <Icon size={15} />
                     </div>
-                    <div>
-                      <div className="font-bold text-xs text-heading">{opt.label}</div>
-                      <div className="text-[10px] text-dim mt-0.5">{opt.desc}</div>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-xs text-heading">{type.label}</div>
+                      <div className="text-[11px] text-dim mt-0.5">{type.sub}</div>
                     </div>
                   </button>
                 );
               })}
             </div>
           </div>
-        )}
 
-        {/* Target Item Search (if applies_to == 'item') */}
-        {formData.applies_to === 'item' && formData.promo_type !== 'bundle' && (
-          <div className="p-4 bg-muted/40 rounded-xl border border-line space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-body">
-              Pilih Item / Produk Target <span className="text-danger">*</span>
-            </label>
+          {/* 3. Applies To Selection */}
+          {formData.promo_type !== 'bundle' && (
+            <div>
+              <span className={labelCls}>
+                Target Promo <span className="text-danger">*</span>
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {APPLIES_TO_OPTIONS.map(opt => {
+                  const Icon = opt.icon;
+                  const isSelected = formData.applies_to === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, applies_to: opt.id as any })}
+                      className={`flex items-start gap-2.5 p-3 rounded-xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        isSelected
+                          ? 'border-primary bg-primary-soft'
+                          : 'border-line bg-card hover:border-line-strong'
+                      }`}
+                    >
+                      <div
+                        className={`p-1.5 rounded-lg border shrink-0 ${
+                          isSelected
+                            ? 'bg-card text-primary border-primary/30'
+                            : 'bg-muted text-dim border-line'
+                        }`}
+                      >
+                        <Icon size={15} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-xs text-heading">{opt.label}</div>
+                        <div className="text-[11px] text-dim mt-0.5">{opt.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-            {selectedItem ? (
-              <div className="flex items-center justify-between p-3.5 bg-card rounded-xl border border-success/30 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-success-soft text-success flex items-center justify-center font-bold text-xs">
-                    <Check size={16} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-xs text-heading">{selectedItem.name}</div>
-                    <div className="text-[10px] font-semibold text-dim mt-0.5">
-                      SKU: {selectedItem.sku} {selectedItem.category_name && `· Kategori: ${selectedItem.category_name}`}
+          {/* Target Item Search */}
+          {formData.applies_to === 'item' && formData.promo_type !== 'bundle' && (
+            <div className="p-4 bg-muted/40 rounded-xl border border-line space-y-2.5">
+              <label className="block text-xs font-semibold text-heading">
+                Produk Target <span className="text-danger">*</span>
+              </label>
+
+              {selectedItem ? (
+                <div className="flex items-center justify-between gap-3 p-3 bg-card rounded-xl border border-line">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0">
+                      <Check size={15} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm text-heading truncate">{selectedItem.name}</div>
+                      <div className="text-[11px] text-dim font-mono truncate">
+                        {selectedItem.sku}
+                        {selectedItem.category_name ? ` · ${selectedItem.category_name}` : ''}
+                      </div>
                     </div>
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedItem(null);
+                      setFormData({ ...formData, item_id: undefined });
+                      setItemSearchQuery('');
+                    }}
+                  >
+                    Ganti
+                  </Button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedItem(null);
-                    setFormData({ ...formData, item_id: undefined });
-                    setItemSearchQuery('');
-                  }}
-                  className="px-3 py-1.5 text-xs font-bold text-danger hover:bg-danger-soft dark:hover:bg-danger/20 rounded-lg transition-colors"
-                >
-                  Ganti Item
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
+              ) : (
                 <div className="relative">
-                  <input 
-                    type="text" 
-                    value={itemSearchQuery} 
+                  <div className="flex items-center h-9 bg-input border border-line rounded-lg px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 transition-colors">
+                    <Search className="text-dim mr-2 shrink-0" size={15} />
+                    <input
+                      type="text"
+                      value={itemSearchQuery}
+                      onChange={e => {
+                        setItemSearchQuery(e.target.value);
+                        setShowItemDropdown(true);
+                      }}
+                      onFocus={() => setShowItemDropdown(true)}
+                      onBlur={() => setShowItemDropdown(false)}
+                      className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim"
+                      placeholder="Cari nama produk, SKU, atau barcode"
+                    />
+                    {isSearchingItem && <Loader2 size={14} className="animate-spin text-dim shrink-0" />}
+                  </div>
+
+                  {showItemDropdown && itemSearchQuery.trim() && (
+                    <div className="absolute z-50 w-full mt-1 bg-elevated border border-line rounded-lg shadow-lg shadow-black/15 dark:shadow-black/45 p-1 max-h-56 overflow-y-auto custom-scrollbar">
+                      {isSearchingItem ? (
+                        <div className="px-2.5 py-3 text-xs text-dim text-center">Mencari produk</div>
+                      ) : searchResults.length > 0 ? (
+                        searchResults.map(item => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => {
+                              setFormData({ ...formData, item_id: item.id });
+                              setSelectedItem(item);
+                              setItemSearchQuery(item.name);
+                              setShowItemDropdown(false);
+                            }}
+                            className="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted focus-visible:bg-muted focus-visible:outline-none transition-colors cursor-pointer"
+                          >
+                            <div className="font-semibold text-heading text-xs">{item.name}</div>
+                            <div className="text-[11px] font-mono text-dim mt-0.5">{item.sku}</div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-2.5 py-3 text-xs text-dim text-center">Produk tidak ditemukan</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Target Category Selection */}
+          {formData.applies_to === 'category' && formData.promo_type !== 'bundle' && (
+            <div className="p-4 bg-muted/40 rounded-xl border border-line space-y-2">
+              <label className="block text-xs font-semibold text-heading">
+                Kategori Produk <span className="text-danger">*</span>
+              </label>
+              <Select
+                value={formData.category_id || ''}
+                onChange={v => setFormData({ ...formData, category_id: v || undefined })}
+                placeholder="Pilih kategori"
+                className="w-full"
+                ariaLabel="Kategori produk"
+              >
+                <option value="">Pilih kategori</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
+
+          {/* Bundle Items Builder */}
+          {formData.promo_type === 'bundle' && (
+            <div className="p-4 bg-muted/40 rounded-xl border border-line space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Package size={16} className="text-dim" />
+                  <h3 className="font-bold text-sm text-heading">Item Paket Bundle</h3>
+                </div>
+                <span className="text-[11px] font-semibold text-body bg-card border border-line px-2 py-0.5 rounded-full tnum">
+                  {formData.bundle_items?.length || 0} item
+                </span>
+              </div>
+
+              <div className="relative">
+                <div className="flex items-center h-9 bg-input border border-line rounded-lg px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 transition-colors">
+                  <Search className="text-dim mr-2 shrink-0" size={15} />
+                  <input
+                    type="text"
+                    value={bundleSearchQuery}
                     onChange={e => {
-                      setItemSearchQuery(e.target.value);
-                      setShowItemDropdown(true);
-                    }} 
-                    onFocus={() => setShowItemDropdown(true)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-card border border-line rounded-xl text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary text-xs font-medium" 
-                    placeholder="Ketik nama obat / produk atau barcode..." 
+                      setBundleSearchQuery(e.target.value);
+                      setShowBundleDropdown(true);
+                    }}
+                    onFocus={() => setShowBundleDropdown(true)}
+                    onBlur={() => setShowBundleDropdown(false)}
+                    className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim"
+                    placeholder="Cari produk untuk ditambahkan ke bundle"
                   />
-                  <Search className="absolute left-3.5 top-3 text-dim" size={15} />
+                  {isSearchingBundle && <Loader2 size={14} className="animate-spin text-dim shrink-0" />}
                 </div>
 
-                {showItemDropdown && itemSearchQuery && (
-                  <div className="absolute z-50 w-full mt-1.5 bg-card dark:bg-input border border-line rounded-xl shadow-xl max-h-56 overflow-y-auto custom-scrollbar">
-                    {isSearchingItem ? (
-                      <div className="p-4 text-xs text-dim text-center font-medium">Mencari item...</div>
-                    ) : searchResults.length > 0 ? (
-                      searchResults.map(item => (
-                        <div 
+                {showBundleDropdown && bundleSearchQuery.trim() && (
+                  <div className="absolute z-50 w-full mt-1 bg-elevated border border-line rounded-lg shadow-lg shadow-black/15 dark:shadow-black/45 p-1 max-h-48 overflow-y-auto custom-scrollbar">
+                    {isSearchingBundle ? (
+                      <div className="px-2.5 py-3 text-xs text-dim text-center">Mencari produk</div>
+                    ) : bundleSearchResults.length > 0 ? (
+                      bundleSearchResults.map(item => (
+                        <button
                           key={item.id}
-                          className="p-3 hover:bg-muted cursor-pointer border-b border-line/40 last:border-0 transition-colors"
+                          type="button"
+                          onMouseDown={e => e.preventDefault()}
                           onClick={() => {
-                            setFormData({...formData, item_id: item.id});
-                            setSelectedItem(item);
-                            setItemSearchQuery(item.name);
-                            setShowItemDropdown(false);
+                            const exists = formData.bundle_items?.some(bi => bi.item_id === item.id);
+                            if (!exists) {
+                              setBundleItemDetails(prev => ({ ...prev, [item.id]: item }));
+                              setFormData(prev => ({
+                                ...prev,
+                                bundle_items: [...(prev.bundle_items || []), { item_id: item.id, qty: 1 }],
+                              }));
+                            }
+                            setBundleSearchQuery('');
+                            setShowBundleDropdown(false);
                           }}
+                          className="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted focus-visible:bg-muted focus-visible:outline-none transition-colors flex items-center justify-between gap-2 cursor-pointer"
                         >
-                          <div className="font-bold text-heading text-xs">{item.name}</div>
-                          <div className="text-[10px] font-semibold text-dim mt-0.5">SKU: {item.sku}</div>
-                        </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-heading text-xs truncate">{item.name}</div>
+                            <div className="text-[11px] font-mono text-dim mt-0.5">{item.sku}</div>
+                          </div>
+                          <span className="text-[11px] font-semibold text-primary shrink-0">Tambah</span>
+                        </button>
                       ))
                     ) : (
-                      <div className="p-4 text-xs text-dim text-center font-medium">Produk tidak ditemukan</div>
+                      <div className="px-2.5 py-3 text-xs text-dim text-center">Item tidak ditemukan</div>
                     )}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {!formData.bundle_items || formData.bundle_items.length === 0 ? (
+                  <div className="text-center py-6 border border-dashed border-line-strong rounded-xl bg-card/50">
+                    <Package size={22} className="mx-auto text-dim mb-1.5" />
+                    <p className="text-xs font-medium text-dim">Belum ada item dalam bundle.</p>
+                  </div>
+                ) : (
+                  formData.bundle_items.map(bi => {
+                    const itemInfo = bundleItemDetails[bi.item_id];
+                    return (
+                      <div
+                        key={bi.item_id}
+                        className="flex items-center justify-between gap-3 px-3 py-2.5 bg-card rounded-lg border border-line"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-heading truncate">
+                            {itemInfo?.name || `Item ID: ${bi.item_id}`}
+                          </p>
+                          <p className="text-[11px] font-mono text-dim truncate mt-0.5">
+                            {itemInfo?.sku || '-'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-0.5 bg-muted p-0.5 border border-line rounded-lg">
+                            <button
+                              type="button"
+                              aria-label="Kurangi jumlah"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  bundle_items: (prev.bundle_items || []).map(b =>
+                                    b.item_id === bi.item_id ? { ...b, qty: Math.max(1, b.qty - 1) } : b
+                                  ),
+                                }));
+                              }}
+                              className="w-6 h-6 flex items-center justify-center text-body hover:bg-card rounded-md text-xs font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              aria-label="Jumlah item bundle"
+                              value={bi.qty}
+                              onChange={e => {
+                                const val = parseInt(e.target.value) || 1;
+                                setFormData(prev => ({
+                                  ...prev,
+                                  bundle_items: (prev.bundle_items || []).map(b =>
+                                    b.item_id === bi.item_id ? { ...b, qty: Math.max(1, val) } : b
+                                  ),
+                                }));
+                              }}
+                              className="w-10 bg-transparent text-center text-xs font-semibold text-heading focus:outline-none tnum"
+                            />
+                            <button
+                              type="button"
+                              aria-label="Tambah jumlah"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  bundle_items: (prev.bundle_items || []).map(b =>
+                                    b.item_id === bi.item_id ? { ...b, qty: b.qty + 1 } : b
+                                  ),
+                                }));
+                              }}
+                              className="w-6 h-6 flex items-center justify-center text-body hover:bg-card rounded-md text-xs font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            aria-label={`Hapus ${itemInfo?.name || 'item'} dari bundle`}
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                bundle_items: (prev.bundle_items || []).filter(b => b.item_id !== bi.item_id),
+                              }));
+                            }}
+                            className="p-1.5 text-dim hover:text-danger hover:bg-danger-soft rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Strategy Config */}
+          <div className="p-4 bg-muted/40 rounded-xl border border-line space-y-4">
+            {(formData.promo_type === 'percentage' ||
+              formData.promo_type === 'fixed_amount' ||
+              formData.promo_type === 'bundle') && (
+              <div className="space-y-3.5">
+                <div className="flex items-center gap-2">
+                  {formData.promo_type === 'percentage' ? (
+                    <Percent size={16} className="text-dim" />
+                  ) : (
+                    <Coins size={16} className="text-dim" />
+                  )}
+                  <h3 className="font-bold text-sm text-heading">Nilai Diskon</h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {formData.promo_type === 'bundle' && (
+                    <div>
+                      <label className={labelCls}>Jenis Diskon Bundle</label>
+                      <Select
+                        value={formData.discount_percent > 0 ? 'percent' : 'fixed'}
+                        onChange={v => {
+                          if (v === 'percent') {
+                            setFormData({ ...formData, discount_percent: 10, discount_value: undefined });
+                          } else {
+                            setFormData({ ...formData, discount_value: 5000, discount_percent: 0 });
+                          }
+                        }}
+                        className="w-full"
+                        ariaLabel="Jenis diskon bundle"
+                      >
+                        <option value="percent">Persentase (%)</option>
+                        <option value="fixed">Nominal (Rp)</option>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className={labelCls}>
+                      Nilai Diskon {isPercentMode ? '(%)' : '(Rp)'} <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.01"
+                      required
+                      value={isPercentMode ? formData.discount_percent : formData.discount_value || ''}
+                      onChange={e => {
+                        const val = parseFloat(e.target.value) || 0;
+                        if (formData.promo_type === 'percentage') {
+                          setFormData({ ...formData, discount_percent: val, discount_value: undefined });
+                        } else if (formData.promo_type === 'bundle') {
+                          if (formData.discount_percent > 0) {
+                            setFormData({ ...formData, discount_percent: val, discount_value: undefined });
+                          } else {
+                            setFormData({ ...formData, discount_value: val, discount_percent: 0 });
+                          }
+                        } else {
+                          setFormData({ ...formData, discount_value: val, discount_percent: 0 });
+                        }
+                      }}
+                      className={`${fieldCls} tnum font-semibold`}
+                      placeholder={isPercentMode ? '15' : '10000'}
+                    />
+                  </div>
+
+                  {isPercentMode && (
+                    <div>
+                      <label className={labelCls}>Maksimal Diskon (Rp)</label>
+                      <input
+                        type="number"
+                        value={formData.max_discount_amount || ''}
+                        onChange={e =>
+                          setFormData({
+                            ...formData,
+                            max_discount_amount: e.target.value ? parseFloat(e.target.value) : undefined,
+                          })
+                        }
+                        className={`${fieldCls} tnum`}
+                        placeholder="Opsional, mis. 50000"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tiered Discount Configuration */}
+            {formData.promo_type === 'tiered' && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <Layers size={16} className="text-dim" />
+                    <h3 className="font-bold text-sm text-heading">Tingkatan Diskon</h3>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={handleAddTier}>
+                    <Plus size={14} /> Tambah Tier
+                  </Button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {formData.tiers.map((tier, idx) => (
+                    <div key={idx} className="flex gap-2.5 items-end">
+                      <div className="flex-1 grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-dim mb-1">Min. beli (Qty)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={tier.min_qty}
+                            onChange={e => {
+                              const newTiers = [...formData.tiers];
+                              newTiers[idx].min_qty = parseFloat(e.target.value) || 1;
+                              setFormData({ ...formData, tiers: newTiers });
+                            }}
+                            className={`${fieldCls} tnum`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-dim mb-1">Diskon (%)</label>
+                          <input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            value={tier.discount_percent}
+                            onChange={e => {
+                              const newTiers = [...formData.tiers];
+                              newTiers[idx].discount_percent = parseFloat(e.target.value) || 0;
+                              setFormData({ ...formData, tiers: newTiers });
+                            }}
+                            className={`${fieldCls} tnum font-semibold`}
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Hapus tier ${idx + 1}`}
+                        onClick={() => handleRemoveTier(idx)}
+                        className="h-9 w-9 inline-flex items-center justify-center text-dim hover:text-danger hover:bg-danger-soft rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* BOGO Configuration */}
+            {formData.promo_type === 'bogo' && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Gift size={16} className="text-dim" />
+                  <h3 className="font-bold text-sm text-heading">Aturan Beli X Gratis Y</h3>
+                </div>
+
+                {formData.bogo_rules.length === 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    fullWidth
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        bogo_rules: [{ buy_qty: 2, get_qty: 1, free_item_discount_percent: 100 }],
+                      });
+                    }}
+                  >
+                    Aktifkan Aturan BOGO
+                  </Button>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 bg-card p-3.5 rounded-xl border border-line">
+                    <div>
+                      <label className={labelCls}>Beli (Qty)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.bogo_rules[0].buy_qty}
+                        onChange={e => {
+                          const rules = [...formData.bogo_rules];
+                          rules[0].buy_qty = parseInt(e.target.value) || 1;
+                          setFormData({ ...formData, bogo_rules: rules });
+                        }}
+                        className={`${fieldCls} tnum font-semibold`}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Gratis (Qty)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.bogo_rules[0].get_qty}
+                        onChange={e => {
+                          const rules = [...formData.bogo_rules];
+                          rules[0].get_qty = parseInt(e.target.value) || 1;
+                          setFormData({ ...formData, bogo_rules: rules });
+                        }}
+                        className={`${fieldCls} tnum font-semibold`}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
             )}
           </div>
-        )}
 
-        {/* Target Category Selection (if applies_to == 'category') */}
-        {formData.applies_to === 'category' && (
-          <div className="p-4 bg-muted/40 rounded-xl border border-line space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-body">
-              Pilih Kategori Produk <span className="text-danger">*</span>
-            </label>
-            <Select 
-              value={formData.category_id || ''} 
-              onChange={v => setFormData({...formData, category_id: v || undefined})} 
-              className="w-full px-4 py-2.5 bg-card border border-line rounded-xl text-heading text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">-- Pilih Kategori --</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </Select>
-          </div>
-        )}
-
-        {/* Bundle Items Builder (if promo_type == 'bundle') */}
-        {formData.promo_type === 'bundle' && (
-          <div className="p-5 bg-primary-soft/40 rounded-xl border border-primary-soft space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-primary ">
-                <Package size={18} />
-                <h3 className="font-extrabold text-xs uppercase tracking-wide">Komposisi Paket Bundle</h3>
-              </div>
-              <span className="text-[11px] font-bold text-primary bg-primary-soft/70 px-2.5 py-0.5 rounded-full">
-                {formData.bundle_items?.length || 0} Item Terpilih
-              </span>
+          {/* 5. Validation Rules & Membership */}
+          <div className="p-4 bg-muted/40 rounded-xl border border-line space-y-4">
+            <div className="flex items-center gap-2">
+              <Calendar size={16} className="text-dim" />
+              <h3 className="font-bold text-sm text-heading">Periode & Member</h3>
             </div>
 
-            {/* Bundle Item Search Input */}
-            <div className="relative">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  value={bundleSearchQuery} 
-                  onChange={e => {
-                    setBundleSearchQuery(e.target.value);
-                    setShowBundleDropdown(true);
-                  }} 
-                  onFocus={() => setShowBundleDropdown(true)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-card border border-line rounded-xl text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary text-xs font-medium" 
-                  placeholder="Cari item untuk dimasukkan ke dalam paket bundle..." 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>Minimal Beli (Qty)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.min_qty}
+                  onChange={e => setFormData({ ...formData, min_qty: parseFloat(e.target.value) || 1 })}
+                  className={`${fieldCls} tnum`}
                 />
-                <Search className="absolute left-3 top-3 text-dim" size={15} />
               </div>
 
-              {showBundleDropdown && bundleSearchQuery && (
-                <div className="absolute z-50 w-full mt-1.5 bg-card dark:bg-input border border-line rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
-                  {isSearchingBundle ? (
-                    <div className="p-3 text-xs text-dim text-center font-medium">Mencari...</div>
-                  ) : bundleSearchResults.length > 0 ? (
-                    bundleSearchResults.map(item => (
-                      <div 
-                        key={item.id}
-                        className="p-3 hover:bg-muted cursor-pointer border-b border-line/40 last:border-0 transition-colors flex items-center justify-between"
-                        onClick={() => {
-                          const exists = formData.bundle_items?.some(bi => bi.item_id === item.id);
-                          if (!exists) {
-                            setBundleItemDetails(prev => ({ ...prev, [item.id]: item }));
-                            setFormData(prev => ({
-                              ...prev,
-                              bundle_items: [...(prev.bundle_items || []), { item_id: item.id, qty: 1 }]
-                            }));
-                          }
-                          setBundleSearchQuery('');
-                          setShowBundleDropdown(false);
-                        }}
-                      >
-                        <div>
-                          <div className="font-bold text-heading text-xs">{item.name}</div>
-                          <div className="text-[10px] font-semibold text-dim mt-0.5">SKU: {item.sku}</div>
-                        </div>
-                        <span className="text-[10px] font-bold text-primary">+ Tambah</span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-xs text-dim text-center font-medium">Item tidak ditemukan</div>
-                  )}
-                </div>
-              )}
+              <div>
+                <label className={labelCls}>Prioritas</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.priority}
+                  onChange={e => setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })}
+                  className={`${fieldCls} tnum`}
+                />
+              </div>
+
+              <div>
+                <label className={labelCls}>Tanggal Mulai</label>
+                <input
+                  type="date"
+                  value={formData.start_date || ''}
+                  onChange={e => setFormData({ ...formData, start_date: e.target.value || undefined })}
+                  className={`${fieldCls} tnum`}
+                />
+              </div>
+
+              <div>
+                <label className={labelCls}>Tanggal Berakhir</label>
+                <input
+                  type="date"
+                  value={formData.end_date || ''}
+                  onChange={e => setFormData({ ...formData, end_date: e.target.value || undefined })}
+                  className={`${fieldCls} tnum`}
+                />
+              </div>
             </div>
 
-            {/* Bundle Items List */}
-            <div className="space-y-2">
-              {(!formData.bundle_items || formData.bundle_items.length === 0) ? (
-                <div className="text-center py-6 border-2 border-dashed border-line rounded-xl bg-card/50 dark:bg-card/30">
-                  <Package size={24} className="mx-auto text-dim dark:text-body mb-1.5" />
-                  <p className="text-xs font-semibold text-dim">Belum ada item dalam bundle. Cari dan pilih produk di atas.</p>
-                </div>
-              ) : (
-                formData.bundle_items.map((bi) => {
-                  const itemInfo = bundleItemDetails[bi.item_id];
+            <div className="pt-3 border-t border-line">
+              <span className={labelCls}>Target Member</span>
+              <div className="flex flex-wrap gap-2">
+                {MEMBER_TIERS.map(tier => {
+                  const isSelected = (formData.member_tier || '') === tier.id;
                   return (
-                    <div 
-                      key={bi.item_id} 
-                      className="flex items-center justify-between p-3 bg-card rounded-xl border border-line shadow-sm"
-                    >
-                      <div className="min-w-0 flex-1 pr-4">
-                        <p className="text-xs font-bold text-heading truncate">
-                          {itemInfo?.name || `Item ID: ${bi.item_id}`}
-                        </p>
-                        <p className="text-[10px] font-semibold text-dim truncate mt-0.5">
-                          SKU: {itemInfo?.sku || '-'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 bg-muted p-1 border border-line rounded-lg">
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                bundle_items: (prev.bundle_items || []).map(b => b.item_id === bi.item_id ? { ...b, qty: Math.max(1, b.qty - 1) } : b)
-                              }));
-                            }}
-                            className="w-6 h-6 flex items-center justify-center text-dim hover:bg-line dark:hover:bg-muted rounded text-xs font-bold"
-                          >
-                            -
-                          </button>
-                          <input 
-                            type="number"
-                            min="1"
-                            value={bi.qty}
-                            onChange={e => {
-                              const val = parseInt(e.target.value) || 1;
-                              setFormData(prev => ({
-                                ...prev,
-                                bundle_items: (prev.bundle_items || []).map(b => b.item_id === bi.item_id ? { ...b, qty: Math.max(1, val) } : b)
-                              }));
-                            }}
-                            className="w-10 bg-transparent text-center text-xs font-bold text-heading focus:outline-none"
-                          />
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                bundle_items: (prev.bundle_items || []).map(b => b.item_id === bi.item_id ? { ...b, qty: b.qty + 1 } : b)
-                              }));
-                            }}
-                            className="w-6 h-6 flex items-center justify-center text-dim hover:bg-line dark:hover:bg-muted rounded text-xs font-bold"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setFormData(prev => ({
-                              ...prev,
-                              bundle_items: (prev.bundle_items || []).filter(b => b.item_id !== bi.item_id)
-                            }));
-                          }}
-                          className="p-1.5 text-danger hover:bg-danger-soft dark:hover:bg-danger/20 rounded-lg transition-all"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 4. Strategy Config (Discount Value / BOGO / Tiered) */}
-        <div className="p-5 bg-muted/40 rounded-xl border border-line space-y-4">
-          {(formData.promo_type === 'percentage' || formData.promo_type === 'fixed_amount' || formData.promo_type === 'bundle') && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary">
-                {formData.promo_type === 'percentage' ? <Percent size={17} /> : <Coins size={17} />}
-                <h3 className="font-extrabold text-xs uppercase tracking-wide">Besaran Potongan / Diskon</h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {formData.promo_type === 'bundle' && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">Metrik Diskon Bundle</label>
-                    <Select 
-                      value={formData.discount_percent > 0 ? 'percent' : 'fixed'}
-                      onChange={v => {
-                        if (v === 'percent') {
-                          setFormData({ ...formData, discount_percent: 10, discount_value: undefined });
-                        } else {
-                          setFormData({ ...formData, discount_value: 5000, discount_percent: 0 });
-                        }
+                    <button
+                      key={tier.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          member_tier: tier.id || undefined,
+                          member_only: tier.id ? 1 : 0,
+                        });
                       }}
-                      className="w-full px-4 py-2.5 bg-card border border-line rounded-xl text-heading font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        isSelected
+                          ? 'bg-primary-soft text-primary border-primary/40'
+                          : 'bg-card border-line text-body hover:border-line-strong hover:text-heading'
+                      }`}
                     >
-                      <option value="percent">Diskon Persentase (%)</option>
-                      <option value="fixed">Potongan Nominal (Rp)</option>
-                    </Select>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">
-                    Nilai Diskon {(formData.promo_type === 'percentage' || (formData.promo_type === 'bundle' && formData.discount_percent > 0)) ? '(%)' : '(Rp)'} <span className="text-danger">*</span>
-                  </label>
-                  <input 
-                    type="number" 
-                    step="any"
-                    min="0.01" 
-                    required 
-                    value={(formData.promo_type === 'percentage' || (formData.promo_type === 'bundle' && formData.discount_percent > 0)) ? formData.discount_percent : (formData.discount_value || '')} 
-                    onChange={e => {
-                      const val = parseFloat(e.target.value) || 0;
-                      if (formData.promo_type === 'percentage') {
-                        setFormData({...formData, discount_percent: val, discount_value: undefined});
-                      } else if (formData.promo_type === 'bundle') {
-                        if (formData.discount_percent > 0) {
-                          setFormData({...formData, discount_percent: val, discount_value: undefined});
-                        } else {
-                          setFormData({...formData, discount_value: val, discount_percent: 0});
-                        }
-                      } else {
-                        setFormData({...formData, discount_value: val, discount_percent: 0});
-                      }
-                    }} 
-                    className="w-full px-4 py-2.5 bg-card border border-line rounded-xl text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary font-bold text-xs" 
-                    placeholder={formData.promo_type === 'percentage' ? 'Contoh: 15' : 'Contoh: 10000'}
-                  />
-                </div>
-
-                {((formData.promo_type === 'percentage') || (formData.promo_type === 'bundle' && formData.discount_percent > 0)) && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">Maksimal Diskon (Rp)</label>
-                    <input 
-                      type="number" 
-                      value={formData.max_discount_amount || ''} 
-                      onChange={e => setFormData({...formData, max_discount_amount: e.target.value ? parseFloat(e.target.value) : undefined})} 
-                      className="w-full px-4 py-2.5 bg-card border border-line rounded-xl text-heading placeholder:text-dim focus:outline-none focus:ring-2 focus:ring-primary font-semibold text-xs" 
-                      placeholder="Opsional, contoh: 50000" 
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Tiered Discount Configuration */}
-          {formData.promo_type === 'tiered' && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center text-primary ">
-                <div className="flex items-center gap-2">
-                  <Layers size={17} />
-                  <h3 className="font-extrabold text-xs uppercase tracking-wide">Tingkatan Diskon Bertingkat (Tier)</h3>
-                </div>
-                <button 
-                  type="button" 
-                  onClick={handleAddTier} 
-                  className="text-xs font-bold bg-primary-soft hover:bg-primary-soft text-primary px-3 py-1.5 rounded-xl flex items-center gap-1 transition-all"
-                >
-                  <Plus size={14} /> Tambah Tier
-                </button>
-              </div>
-
-              <div className="space-y-2.5">
-                {formData.tiers.map((tier, idx) => (
-                  <div key={idx} className="flex gap-3 items-center">
-                    <div className="flex-1 grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase text-dim mb-1">Minimal Beli (Qty)</label>
-                        <input 
-                          type="number" 
-                          min="1"
-                          value={tier.min_qty} 
-                          onChange={e => {
-                            const newTiers = [...formData.tiers];
-                            newTiers[idx].min_qty = parseFloat(e.target.value) || 1;
-                            setFormData({...formData, tiers: newTiers});
-                          }} 
-                          className="w-full px-3 py-2 bg-card border border-line rounded-xl text-heading text-xs font-semibold" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase text-dim mb-1">Diskon (%)</label>
-                        <input 
-                          type="number" 
-                          min="0.1"
-                          step="0.1"
-                          value={tier.discount_percent} 
-                          onChange={e => {
-                            const newTiers = [...formData.tiers];
-                            newTiers[idx].discount_percent = parseFloat(e.target.value) || 0;
-                            setFormData({...formData, tiers: newTiers});
-                          }} 
-                          className="w-full px-3 py-2 bg-card border border-line rounded-xl text-heading text-xs font-bold text-primary " 
-                        />
-                      </div>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveTier(idx)} 
-                      className="p-2 text-danger hover:bg-danger-soft dark:hover:bg-danger/20 rounded-xl transition-all mt-4"
-                    >
-                      <Trash2 size={16} />
+                      {tier.label}
                     </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          )}
-
-          {/* BOGO Configuration */}
-          {formData.promo_type === 'bogo' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-warning ">
-                <Gift size={17} />
-                <h3 className="font-extrabold text-xs uppercase tracking-wide">Aturan Beli X Gratis Y (BOGO)</h3>
-              </div>
-              
-              {formData.bogo_rules.length === 0 ? (
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setFormData({...formData, bogo_rules: [{buy_qty: 2, get_qty: 1, free_item_discount_percent: 100}]});
-                  }} 
-                  className="w-full py-3 bg-card border border-line text-warning font-bold rounded-xl hover:bg-muted transition-all text-xs border-dashed"
-                >
-                  Aktifkan Aturan BOGO
-                </button>
-              ) : (
-                <div className="grid grid-cols-2 gap-4 bg-card p-4 rounded-xl border border-line">
-                  <div>
-                    <label className="block text-xs font-bold text-dim uppercase mb-1.5">Beli Kuantitas</label>
-                    <input 
-                      type="number" 
-                      min="1" 
-                      value={formData.bogo_rules[0].buy_qty} 
-                      onChange={e => {
-                        const rules = [...formData.bogo_rules];
-                        rules[0].buy_qty = parseInt(e.target.value) || 1;
-                        setFormData({...formData, bogo_rules: rules});
-                      }} 
-                      className="w-full px-3 py-2 bg-muted border border-line rounded-xl text-heading text-xs font-bold" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-dim uppercase mb-1.5">Gratis Kuantitas</label>
-                    <input 
-                      type="number" 
-                      min="1" 
-                      value={formData.bogo_rules[0].get_qty} 
-                      onChange={e => {
-                        const rules = [...formData.bogo_rules];
-                        rules[0].get_qty = parseInt(e.target.value) || 1;
-                        setFormData({...formData, bogo_rules: rules});
-                      }} 
-                      className="w-full px-3 py-2 bg-muted border border-line rounded-xl text-heading text-xs font-bold text-success" 
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 5. Validation Rules & Membership */}
-        <div className="p-5 bg-muted/40 rounded-xl border border-line space-y-4">
-          <div className="flex items-center gap-2 text-heading">
-            <Calendar size={17} />
-            <h3 className="font-extrabold text-xs uppercase tracking-wide">Periode & Kriteria Member</h3>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">Minimal Pembelian (Qty)</label>
-              <input 
-                type="number" 
-                min="1"
-                value={formData.min_qty} 
-                onChange={e => setFormData({...formData, min_qty: parseFloat(e.target.value) || 1})} 
-                className="w-full px-4 py-2.5 bg-card border border-line rounded-xl text-heading font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-primary" 
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">Prioritas Eksekusi</label>
-              <input 
-                type="number" 
-                min="1"
-                value={formData.priority} 
-                onChange={e => setFormData({...formData, priority: parseInt(e.target.value) || 1})} 
-                className="w-full px-4 py-2.5 bg-card border border-line rounded-xl text-heading font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-primary" 
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">Tanggal Mulai (Opsional)</label>
-              <input 
-                type="date" 
-                value={formData.start_date || ''} 
-                onChange={e => setFormData({...formData, start_date: e.target.value || undefined})} 
-                className="w-full px-4 py-2.5 bg-card border border-line rounded-xl text-heading text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary" 
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5">Tanggal Berakhir (Opsional)</label>
-              <input 
-                type="date" 
-                value={formData.end_date || ''} 
-                onChange={e => setFormData({...formData, end_date: e.target.value || undefined})} 
-                className="w-full px-4 py-2.5 bg-card border border-line rounded-xl text-heading text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary" 
-              />
-            </div>
-          </div>
-
-          {/* Membership Tier Pills */}
-          <div className="pt-2 border-t border-line/60 dark:border-line">
-            <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-2">
-              Khusus Member Tertentu
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: '', label: 'Semua Pelanggan (Umum & Member)' },
-                { id: 'regular', label: 'Tier Regular' },
-                { id: 'member', label: 'Tier Member' },
-                { id: 'vip', label: 'Tier VIP' },
-              ].map(tier => {
-                const isSelected = (formData.member_tier || '') === tier.id;
-                return (
-                  <button
-                    key={tier.id}
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        member_tier: tier.id || undefined,
-                        member_only: tier.id ? 1 : 0
-                      });
-                    }}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      isSelected
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'bg-card border border-line text-body hover:border-line-strong'
-                    }`}
-                  >
-                    {tier.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </form>
-    </Modal>
+        </form>
+      )}
+    </Drawer>
   );
 }

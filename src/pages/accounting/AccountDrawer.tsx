@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Save, BookOpen } from 'lucide-react';
 import { CreateAccountInput, getAccounts, createAccount, updateAccount, Account } from '../../lib/api';
 import Drawer from '../../components/ui/Drawer';
-
+import Button from '../../components/ui/Button';
 import { toast } from '../../components/ui/Toast';
 import Select from '../../components/ui/Select';
+
 interface AccountDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -52,7 +53,7 @@ export default function AccountDrawer({ isOpen, onClose, onSaved, editAccountId 
   const loadAccount = async () => {
     try {
       const data = await getAccounts();
-      const account = data.find(a => a.id === editAccountId);
+      const account = data.find((a) => a.id === editAccountId);
       if (account) {
         setFormData({
           code: account.code,
@@ -69,7 +70,7 @@ export default function AccountDrawer({ isOpen, onClose, onSaved, editAccountId 
   };
 
   const handleTypeChange = (newType: string) => {
-    const normalBalance = (newType === 'asset' || newType === 'expense') ? 'debit' : 'credit';
+    const normalBalance = newType === 'asset' || newType === 'expense' ? 'debit' : 'credit';
     setFormData({ ...formData, type: newType, normal_balance: normalBalance });
   };
 
@@ -86,9 +87,10 @@ export default function AccountDrawer({ isOpen, onClose, onSaved, editAccountId 
       onClose();
     } catch (error) {
       console.error(error);
-      toast.error('Failed to save account: ' + error);
+      toast.error('Gagal menyimpan akun: ' + error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (!isOpen) return null;
@@ -98,84 +100,76 @@ export default function AccountDrawer({ isOpen, onClose, onSaved, editAccountId 
       isOpen={isOpen}
       onClose={onClose}
       size="md"
-      title={editAccountId ? 'Edit Akun Rekening' : 'Tambah Akun Baru'}
-      subtitle="Kelola bagan akun (Chart of Accounts)"
+      title={editAccountId ? 'Edit Akun' : 'Tambah Akun'}
       icon={BookOpen}
       footer={
-        <div className="flex justify-end gap-3 w-full">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-line text-sm font-semibold text-body hover:bg-muted transition-colors"
-          >
+        <>
+          <Button type="button" variant="outline" size="md" onClick={onClose} disabled={loading}>
             Batal
-          </button>
-          <button
-            type="submit"
-            form="accountForm"
-            disabled={loading}
-            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all disabled:opacity-50"
-          >
-            <Save size={16} />
-            {loading ? 'Menyimpan...' : 'Simpan Akun'}
-          </button>
-        </div>
+          </Button>
+          <Button type="submit" form="accountForm" variant="primary" size="md" loading={loading}>
+            <Save size={15} strokeWidth={1.75} />
+            Simpan Akun
+          </Button>
+        </>
       }
     >
       <form id="accountForm" onSubmit={handleSubmit} className="space-y-4">
         {isSystem && (
-          <div className="p-3.5 bg-warning-soft border border-warning/30 text-warning rounded-xl text-xs">
-            Akun sistem bawaan. Tipe akun dan saldo normal dilindungi dan tidak dapat diubah.
+          <div className="p-3 bg-warning-soft border border-warning/30 text-warning rounded-lg text-xs">
+            Akun sistem bawaan. Tipe dan saldo normal tidak dapat diubah.
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Kode Akun *</label>
+          <label className="block text-xs font-semibold text-body mb-1.5">Kode Akun *</label>
           <input
             required
             type="text"
             value={formData.code}
-            onChange={e => setFormData({...formData, code: e.target.value})}
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm font-mono text-heading outline-none focus:ring-2 focus:ring-primary"
-            placeholder="contoh: 1-1001"
+            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+            className="w-full h-9 bg-input border border-line rounded-lg px-3 text-sm font-mono text-heading focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            placeholder="Contoh: 1-1001"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Nama Akun *</label>
+          <label className="block text-xs font-semibold text-body mb-1.5">Nama Akun *</label>
           <input
             required
             type="text"
             value={formData.name}
-            onChange={e => setFormData({...formData, name: e.target.value})}
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
-            placeholder="contoh: Kas di Bank BCA"
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            placeholder="Contoh: Kas di Bank BCA"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Klasifikasi Tipe Akun</label>
-          <Select 
-            value={formData.type} 
-            onChange={v => handleTypeChange(v)} 
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary capitalize disabled:opacity-50"
+          <label className="block text-xs font-semibold text-body mb-1.5">Tipe Akun</label>
+          <Select
+            value={formData.type}
+            onChange={handleTypeChange}
             disabled={isSystem}
+            ariaLabel="Tipe akun"
+            className="w-full"
           >
-            <option value="asset">Aset (Harta)</option>
-            <option value="liability">Kewajiban (Hutang)</option>
-            <option value="equity">Ekuitas (Modal)</option>
+            <option value="asset">Aset</option>
+            <option value="liability">Kewajiban</option>
+            <option value="equity">Ekuitas</option>
             <option value="income">Pendapatan</option>
-            <option value="expense">Beban / Biaya</option>
+            <option value="expense">Beban</option>
           </Select>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Saldo Normal</label>
-          <Select 
-            value={formData.normal_balance} 
-            onChange={v => setFormData({...formData, normal_balance: v})} 
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary capitalize disabled:opacity-50"
+          <label className="block text-xs font-semibold text-body mb-1.5">Saldo Normal</label>
+          <Select
+            value={formData.normal_balance}
+            onChange={(v) => setFormData({ ...formData, normal_balance: v })}
             disabled={isSystem}
+            ariaLabel="Saldo normal"
+            className="w-full"
           >
             <option value="debit">Debit</option>
             <option value="credit">Kredit</option>
@@ -183,16 +177,21 @@ export default function AccountDrawer({ isOpen, onClose, onSaved, editAccountId 
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Induk Akun (Parent - Opsional)</label>
-          <Select 
-            value={formData.parent_id || ''} 
-            onChange={v => setFormData({...formData, parent_id: v || undefined})} 
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
+          <label className="block text-xs font-semibold text-body mb-1.5">Induk Akun (Opsional)</label>
+          <Select
+            value={formData.parent_id || ''}
+            onChange={(v) => setFormData({ ...formData, parent_id: v || undefined })}
+            ariaLabel="Induk akun"
+            className="w-full"
           >
-            <option value="">Tidak ada (Tingkat Utama / Root)</option>
-            {accounts.filter(a => a.id !== editAccountId).map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.code} - {cat.name}</option>
-            ))}
+            <option value="">Tingkat Utama (Root)</option>
+            {accounts
+              .filter((a) => a.id !== editAccountId)
+              .map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.code} - {cat.name}
+                </option>
+              ))}
           </Select>
         </div>
       </form>

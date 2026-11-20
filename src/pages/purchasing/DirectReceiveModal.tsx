@@ -1,18 +1,34 @@
-import { useState, useEffect } from 'react';
-import { 
-  CheckCircle2, Loader2, Plus, Trash2, Search, 
-  Building2, FileText, Download, FileSpreadsheet, AlertTriangle, X 
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  CheckCircle2,
+  Loader2,
+  Plus,
+  Trash2,
+  Search,
+  Download,
+  FileSpreadsheet,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { 
-  receiveGoodsDirect, ReceiveLineInput, getSuppliers, Supplier, 
-  getItemsFiltered, getItem, Item, ItemUnit,
-  exportReceiveTemplate, parseReceiveExcel
+import {
+  receiveGoodsDirect,
+  ReceiveLineInput,
+  getSuppliers,
+  Supplier,
+  getItemsFiltered,
+  getItem,
+  Item,
+  ItemUnit,
+  exportReceiveTemplate,
+  parseReceiveExcel,
 } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
-
-import { toast } from '../../components/ui/Toast';
+import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
+import { toast } from '../../components/ui/Toast';
+
 interface DirectReceiveModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,7 +49,28 @@ interface DirectLine {
   expiry_date: string;
 }
 
-export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchId }: DirectReceiveModalProps) {
+const createEmptyLine = (): DirectLine => ({
+  id: Math.random().toString(),
+  item_id: '',
+  item_name: '',
+  unit_id: '',
+  unit_name: '',
+  available_units: [],
+  qty_received: 1,
+  price_per_unit: 0,
+  batch_no: '',
+  expiry_date: '',
+});
+
+const CELL_INPUT_CLASS =
+  'h-8 w-full rounded-lg border border-line bg-input px-2 text-xs text-heading focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors';
+
+export default function DirectReceiveModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  branchId,
+}: DirectReceiveModalProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [invoiceNo, setInvoiceNo] = useState('');
@@ -47,41 +84,95 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
   const [searchResults, setSearchResults] = useState<Item[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [activeLineIdForSearch, setActiveLineIdForSearch] = useState<string | null>(null);
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const anchorElRef = useRef<HTMLElement | null>(null);
+
+  const closeSearchPopup = useCallback(() => {
+    setActiveLineIdForSearch(null);
+    setPopupPos(null);
+    setSearchQuery('');
+    setSearchResults([]);
+    anchorElRef.current = null;
+  }, []);
+
+  const updatePopupPos = useCallback(() => {
+    const anchor = anchorElRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const width = Math.max(rect.width, 300);
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+    const spaceBelow = window.innerHeight - rect.bottom - 12;
+    const estimatedHeight = 250;
+    const top =
+      spaceBelow < estimatedHeight && rect.top > spaceBelow
+        ? Math.max(8, rect.top - estimatedHeight - 4)
+        : rect.bottom + 4;
+    setPopupPos({ top, left, width });
+  }, []);
+
+  const openSearchPopup = (lineId: string, anchor: HTMLElement) => {
+    anchorElRef.current = anchor;
+    setActiveLineIdForSearch(lineId);
+    setSearchQuery('');
+    setSearchResults([]);
+    const rect = anchor.getBoundingClientRect();
+    const width = Math.max(rect.width, 300);
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+    const spaceBelow = window.innerHeight - rect.bottom - 12;
+    const estimatedHeight = 250;
+    const top =
+      spaceBelow < estimatedHeight && rect.top > spaceBelow
+        ? Math.max(8, rect.top - estimatedHeight - 4)
+        : rect.bottom + 4;
+    setPopupPos({ top, left, width });
+  };
+
+  useEffect(() => {
+    if (!activeLineIdForSearch) return;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        !popupRef.current?.contains(target) &&
+        !anchorElRef.current?.contains(target)
+      ) {
+        closeSearchPopup();
+      }
+    };
+    const onReflow = () => updatePopupPos();
+    document.addEventListener('mousedown', onDown);
+    window.addEventListener('resize', onReflow);
+    window.addEventListener('scroll', onReflow, true);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      window.removeEventListener('resize', onReflow);
+      window.removeEventListener('scroll', onReflow, true);
+    };
+  }, [activeLineIdForSearch, closeSearchPopup, updatePopupPos]);
 
   useEffect(() => {
     if (isOpen) {
       getSuppliers('', true).then(setSuppliers).catch(console.error);
       setSelectedSupplierId('');
       setInvoiceNo('');
-      setLines([
-        {
-          id: Math.random().toString(),
-          item_id: '',
-          item_name: '',
-          unit_id: '',
-          unit_name: '',
-          available_units: [],
-          qty_received: 1,
-          price_per_unit: 0,
-          batch_no: '',
-          expiry_date: '',
-        }
-      ]);
+      setLines([createEmptyLine()]);
+      closeSearchPopup();
     }
-  }, [isOpen]);
+  }, [isOpen, closeSearchPopup]);
 
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
       setIsSearching(true);
       const timer = setTimeout(() => {
         getItemsFiltered(searchQuery, '', '', true, 1, 10)
-          .then(res => setSearchResults(res.items))
+          .then((res) => setSearchResults(res.items))
           .catch(console.error)
           .finally(() => setIsSearching(false));
       }, 250);
       return () => clearTimeout(timer);
     } else {
       setSearchResults([]);
+      setIsSearching(false);
     }
   }, [searchQuery]);
 
@@ -89,10 +180,10 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
     try {
       const detail = await getItem(item.id);
       const units = detail.units || [];
-      const baseUnit = units.find(u => u.is_base === 1) || units[0];
+      const baseUnit = units.find((u) => u.is_base === 1) || units[0];
 
-      setLines(prev =>
-        prev.map(l => {
+      setLines((prev) =>
+        prev.map((l) => {
           if (l.id === lineId) {
             return {
               ...l,
@@ -105,22 +196,20 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
             };
           }
           return l;
-        })
+        }),
       );
     } catch (e) {
       console.error(e);
     } finally {
-      setActiveLineIdForSearch(null);
-      setSearchQuery('');
-      setSearchResults([]);
+      closeSearchPopup();
     }
   };
 
   const handleUnitChange = (lineId: string, unitId: string) => {
-    setLines(prev =>
-      prev.map(l => {
+    setLines((prev) =>
+      prev.map((l) => {
         if (l.id === lineId) {
-          const unit = l.available_units.find(u => u.id === unitId);
+          const unit = l.available_units.find((u) => u.id === unitId);
           return {
             ...l,
             unit_id: unitId,
@@ -128,50 +217,23 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
           };
         }
         return l;
-      })
+      }),
     );
   };
 
   const updateLine = (id: string, field: keyof DirectLine, value: any) => {
-    setLines(prev => prev.map(l => (l.id === id ? { ...l, [field]: value } : l)));
+    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
   };
 
   const addLine = () => {
-    setLines(prev => [
-      ...prev,
-      {
-        id: Math.random().toString(),
-        item_id: '',
-        item_name: '',
-        unit_id: '',
-        unit_name: '',
-        available_units: [],
-        qty_received: 1,
-        price_per_unit: 0,
-        batch_no: '',
-        expiry_date: '',
-      }
-    ]);
+    setLines((prev) => [...prev, createEmptyLine()]);
   };
 
   const removeLine = (id: string) => {
     if (lines.length === 1) {
-      setLines([
-        {
-          id: Math.random().toString(),
-          item_id: '',
-          item_name: '',
-          unit_id: '',
-          unit_name: '',
-          available_units: [],
-          qty_received: 1,
-          price_per_unit: 0,
-          batch_no: '',
-          expiry_date: '',
-        }
-      ]);
+      setLines([createEmptyLine()]);
     } else {
-      setLines(prev => prev.filter(l => l.id !== id));
+      setLines((prev) => prev.filter((l) => l.id !== id));
     }
   };
 
@@ -186,7 +248,7 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
       if (!filePath) return;
 
       await exportReceiveTemplate(filePath);
-      toast.error('Template Excel berhasil diunduh!');
+      toast.success('Template Excel berhasil diunduh.');
     } catch (e) {
       console.error(e);
       toast.error(`Gagal mengunduh template: ${e}`);
@@ -212,7 +274,7 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
       }
 
       const newLines: DirectLine[] = await Promise.all(
-        parsedItems.map(async p => {
+        parsedItems.map(async (p) => {
           let available_units: ItemUnit[] = [];
           if (p.item_id) {
             try {
@@ -232,16 +294,18 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
             batch_no: p.batch_no,
             expiry_date: p.expiry_date,
           };
-        })
+        }),
       );
 
       setLines(newLines);
 
-      const unmatchedCount = parsedItems.filter(p => !p.matched).length;
+      const unmatchedCount = parsedItems.filter((p) => !p.matched).length;
       if (unmatchedCount > 0) {
-        toast.success(`Berhasil memuat ${parsedItems.length} baris dari Excel.\nPerhatian: Ada ${unmatchedCount} item yang belum cocok dengan SKU master data.`);
+        toast.warning(
+          `${parsedItems.length} baris dimuat. ${unmatchedCount} barang belum cocok dengan data master.`,
+        );
       } else {
-        toast.error(`Berhasil memuat ${parsedItems.length} baris barang dari Excel!`);
+        toast.success(`${parsedItems.length} baris berhasil dimuat dari Excel.`);
       }
     } catch (err) {
       console.error(err);
@@ -251,22 +315,25 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
     }
   };
 
-  const totalAmount = lines.reduce((sum, l) => sum + (l.qty_received > 0 ? l.qty_received * l.price_per_unit : 0), 0);
+  const totalAmount = lines.reduce(
+    (sum, l) => sum + (l.qty_received > 0 ? l.qty_received * l.price_per_unit : 0),
+    0,
+  );
   const totalQty = lines.reduce((sum, l) => sum + (l.qty_received > 0 ? l.qty_received : 0), 0);
 
   const handleSubmit = async () => {
     if (!selectedSupplierId) {
-      return toast.info('Pilih supplier / pemasok terlebih dahulu.');
+      return toast.info('Pilih pemasok terlebih dahulu.');
     }
 
-    const validLines = lines.filter(l => l.item_id && l.qty_received > 0);
+    const validLines = lines.filter((l) => l.item_id && l.qty_received > 0);
     if (validLines.length === 0) {
-      return toast.info('Harap pilih minimal satu barang dengan kuantitas lebih dari 0.');
+      return toast.info('Pilih minimal satu barang dengan jumlah lebih dari 0.');
     }
 
     setIsSubmitting(true);
     try {
-      const payload: ReceiveLineInput[] = validLines.map(l => ({
+      const payload: ReceiveLineInput[] = validLines.map((l) => ({
         item_id: l.item_id,
         unit_id: l.unit_id,
         qty_received: Number(l.qty_received),
@@ -292,172 +359,136 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
       isOpen={isOpen}
       onClose={onClose}
       size="4xl"
-      title="Penerimaan Barang Langsung (Direct Receipt)"
-      subtitle="Catat faktur penerimaan barang & update stok fisik beserta hutang dagang"
+      title="Terima Barang Masuk"
       icon={CheckCircle2}
-      noPadding={true}
       footer={
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
-          <div className="flex items-center gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+          <div className="flex items-center gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase text-dim">Total Kuantitas</p>
-              <p className="text-sm font-extrabold text-heading">{totalQty} Unit</p>
+              <p className="text-xs text-dim">Total Qty</p>
+              <p className="text-sm font-bold text-heading tnum">{totalQty} unit</p>
             </div>
-            <div className="h-8 w-px bg-line dark:border-line" />
+            <div className="h-7 w-px bg-line" />
             <div>
-              <p className="text-[10px] font-bold uppercase text-dim">Total Nilai Faktur</p>
-              <p className="text-base font-extrabold text-success font-mono">
+              <p className="text-xs text-dim">Total Faktur</p>
+              <p className="text-sm font-bold text-heading tnum">
                 Rp {totalAmount.toLocaleString('id-ID')}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold text-body hover:bg-muted transition-colors cursor-pointer"
-            >
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Batal
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="flex items-center gap-2 bg-success hover:bg-success text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-            >
-              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-              Konfirmasi & Tambah ke Stok
-            </button>
+            </Button>
+            <Button type="button" variant="primary" onClick={handleSubmit} loading={isSubmitting}>
+              {!isSubmitting && <CheckCircle2 size={15} />}
+              Simpan Penerimaan
+            </Button>
           </div>
         </div>
       }
     >
-      <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
-
-        {/* Toolbar & Excel Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 rounded-xl bg-success-soft/60 border border-success-soft ">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-success text-white rounded-xl shadow-xs">
-              <FileSpreadsheet size={20} />
-            </div>
-            <div>
-              <h4 className="text-xs font-extrabold text-heading">Input Cepat via Spreadsheet Excel</h4>
-              <p className="text-[11px] text-dim">Unduh template standar, isi data faktur supplier, dan import otomatis ke formulir.</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleDownloadTemplate}
-              disabled={isExportingTemplate}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-card text-xs font-bold text-heading hover:bg-muted transition-all cursor-pointer shadow-xs"
-            >
-              {isExportingTemplate ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              Download Template
-            </button>
-            <button
-              type="button"
-              onClick={handleImportExcel}
-              disabled={isParsingExcel}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-success hover:bg-success text-white text-xs font-bold transition-all cursor-pointer"
-            >
-              {isParsingExcel ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
-              Import dari Excel
-            </button>
-          </div>
-        </div>
-
-        {/* Header Information (Supplier & Invoice) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
-            <label className="block text-xs font-bold text-heading mb-1">
-              Pemasok / Distributor *
-            </label>
-            <div className="relative flex items-center bg-muted border border-line rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-success/20">
-              <Building2 size={16} className="text-dim mr-2 shrink-0" />
-              <Select
-                value={selectedSupplierId}
-                onChange={v => setSelectedSupplierId(v)}
-                className="w-full bg-transparent border-none outline-none text-xs font-bold text-heading p-0"
-              >
-                <option value="">-- Pilih Pemasok --</option>
-                {suppliers.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </Select>
-            </div>
+            <label className="block text-xs font-semibold text-body mb-1.5">Pemasok *</label>
+            <Select
+              value={selectedSupplierId}
+              onChange={setSelectedSupplierId}
+              placeholder="Pilih pemasok..."
+              ariaLabel="Pemasok"
+            >
+              <option value="">Pilih pemasok...</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </Select>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-heading mb-1">
-              No. Faktur / Surat Jalan Supplier
+            <label className="block text-xs font-semibold text-body mb-1.5">
+              No. Faktur / Surat Jalan
             </label>
-            <div className="relative flex items-center bg-muted border border-line rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-success/20">
-              <FileText size={16} className="text-dim mr-2 shrink-0" />
-              <input
-                type="text"
-                value={invoiceNo}
-                onChange={e => setInvoiceNo(e.target.value)}
-                placeholder="contoh: INV-KF-2026-881"
-                className="w-full bg-transparent border-none outline-none text-xs text-heading font-mono p-0"
-              />
-            </div>
+            <input
+              type="text"
+              value={invoiceNo}
+              onChange={(e) => setInvoiceNo(e.target.value)}
+              placeholder="Contoh: INV-KF-2026-881"
+              className="h-9 w-full rounded-lg border border-line bg-input px-3 text-sm font-mono text-heading focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+            />
           </div>
         </div>
 
-        {/* Line Items Table */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-extrabold text-heading uppercase tracking-wider">
-              Daftar Barang & Batch Masuk ({lines.length} Baris)
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-heading tnum">
+              Daftar Barang ({lines.length})
             </h3>
-            <button
-              type="button"
-              onClick={addLine}
-              className="flex items-center gap-1 text-xs font-bold text-success hover:text-success transition-colors cursor-pointer"
-            >
-              <Plus size={15} /> Tambah Baris Manual
-            </button>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadTemplate}
+                loading={isExportingTemplate}
+              >
+                {!isExportingTemplate && <Download size={14} />}
+                Template Excel
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleImportExcel}
+                loading={isParsingExcel}
+              >
+                {!isParsingExcel && <FileSpreadsheet size={14} />}
+                Import Excel
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={addLine}>
+                <Plus size={14} />
+                Tambah Baris
+              </Button>
+            </div>
           </div>
 
-          <div className="border border-line rounded-xl overflow-hidden shadow-xs">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-muted/50 border-b border-line text-dim font-bold uppercase tracking-wider">
+          <div className="border border-line rounded-xl overflow-x-auto bg-card">
+            <table className="w-full text-left text-xs border-collapse min-w-[780px]">
+              <thead className="bg-muted border-b border-line text-dim font-semibold">
                 <tr>
-                  <th className="py-2.5 px-3 w-8 text-center">#</th>
-                  <th className="py-2.5 px-3">Nama Produk / Obat</th>
-                  <th className="py-2.5 px-3 w-28">Satuan</th>
-                  <th className="py-2.5 px-3 w-24 text-center">Kuantitas</th>
-                  <th className="py-2.5 px-3 w-32">Harga Beli Satuan</th>
-                  <th className="py-2.5 px-3 w-32">No. Batch</th>
-                  <th className="py-2.5 px-3 w-32">Kadaluarsa</th>
-                  <th className="py-2.5 px-3 w-28 text-right">Subtotal</th>
-                  <th className="py-2.5 px-2 w-10 text-center"></th>
+                  <th className="py-2.5 px-2.5 w-8 text-center">#</th>
+                  <th className="py-2.5 px-2.5">Barang</th>
+                  <th className="py-2.5 px-2.5 w-28">Satuan</th>
+                  <th className="py-2.5 px-2.5 w-20 text-center">Qty</th>
+                  <th className="py-2.5 px-2.5 w-32 text-right">Harga Beli</th>
+                  <th className="py-2.5 px-2.5 w-28">No. Batch</th>
+                  <th className="py-2.5 px-2.5 w-32">Kadaluarsa</th>
+                  <th className="py-2.5 px-2.5 w-28 text-right">Subtotal</th>
+                  <th className="py-2.5 px-2 w-9" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line dark:divide-line">
+              <tbody className="divide-y divide-line">
                 {lines.map((line, idx) => {
                   const lineSubtotal = line.qty_received * line.price_per_unit;
                   const isUnmatched = !line.item_id;
 
                   return (
-                    <tr key={line.id} className="bg-card dark:bg-input hover:bg-muted/50 dark:hover:bg-card/30 transition-colors">
-                      <td className="p-3 text-center text-dim font-mono text-[11px]">{idx + 1}</td>
+                    <tr key={line.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="py-2 px-2.5 text-center text-dim tnum">{idx + 1}</td>
 
-                      {/* Product Selector */}
-                      <td className="p-2.5 relative">
+                      <td className="py-2 px-2.5 min-w-[200px]">
                         {line.item_id ? (
-                          <div className="flex items-center justify-between group">
-                            <span className="font-bold text-heading text-xs">{line.item_name}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-heading truncate">
+                              {line.item_name}
+                            </span>
                             <button
                               type="button"
-                              onClick={() => {
-                                setActiveLineIdForSearch(line.id);
-                                setSearchQuery('');
-                              }}
-                              className="text-[10px] font-bold text-primary hover:underline ml-2 cursor-pointer"
+                              onClick={(e) => openSearchPopup(line.id, e.currentTarget)}
+                              className="text-xs font-semibold text-primary hover:underline shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
                             >
                               Ganti
                             </button>
@@ -466,149 +497,102 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
                           <div>
                             <button
                               type="button"
-                              onClick={() => {
-                                setActiveLineIdForSearch(line.id);
-                                setSearchQuery('');
-                              }}
-                              className="w-full text-left px-3 py-1.5 rounded-lg border border-dashed border-line-strong dark:border-line-strong text-dim hover:border-success hover:text-success flex items-center justify-between text-xs transition-colors cursor-pointer"
+                              onClick={(e) => openSearchPopup(line.id, e.currentTarget)}
+                              className="h-8 w-full text-left px-2.5 rounded-lg border border-dashed border-line-strong bg-input text-dim hover:border-primary hover:text-heading flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                             >
-                              <span>{line.item_name || 'Cari / Pilih Barang...'}</span>
-                              <Search size={14} />
+                              <span className="truncate">{line.item_name || 'Cari barang...'}</span>
+                              <Search size={13} className="shrink-0" />
                             </button>
                             {isUnmatched && line.item_name && (
-                              <p className="text-[10px] text-warning font-semibold mt-0.5 flex items-center gap-1">
-                                <AlertTriangle size={10} /> Belum cocok di master
+                              <p className="text-[11px] text-warning font-medium mt-1 flex items-center gap-1">
+                                <AlertTriangle size={11} className="shrink-0" />
+                                Belum cocok di master
                               </p>
                             )}
                           </div>
                         )}
-
-                        {/* Dropdown Popup */}
-                        {activeLineIdForSearch === line.id && (
-                          <div className="absolute left-2.5 top-12 z-30 w-80 bg-card rounded-xl shadow-2xl border border-line p-3 space-y-2">
-                            <div className="flex items-center gap-2 border-b border-line pb-2">
-                              <Search size={14} className="text-dim" />
-                              <input
-                                autoFocus
-                                type="text"
-                                placeholder="Ketik nama produk atau SKU..."
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-transparent text-xs text-heading outline-none"
-                              />
-                              <button onClick={() => setActiveLineIdForSearch(null)} className="text-dim hover:text-body cursor-pointer">
-                                <X size={14} />
-                              </button>
-                            </div>
-                            <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
-                              {isSearching ? (
-                                <div className="p-3 text-center text-dim flex items-center justify-center gap-2">
-                                  <Loader2 size={14} className="animate-spin" /> Mencari item...
-                                </div>
-                              ) : searchResults.length === 0 ? (
-                                <div className="p-3 text-center text-dim">
-                                  {searchQuery.length < 2 ? 'Ketik minimal 2 huruf...' : 'Tidak ditemukan.'}
-                                </div>
-                              ) : (
-                                searchResults.map(item => (
-                                  <button
-                                    key={item.id}
-                                    type="button"
-                                    onClick={() => handleSelectItem(line.id, item)}
-                                    className="w-full text-left p-2 rounded-xl hover:bg-success-soft dark:hover:bg-success/40 flex justify-between items-center transition-colors cursor-pointer"
-                                  >
-                                    <div>
-                                      <p className="font-bold text-heading text-xs">{item.name}</p>
-                                      <p className="text-[10px] text-dim font-mono">{item.sku}</p>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-success">Pilih</span>
-                                  </button>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        )}
                       </td>
 
-                      {/* Unit Selector */}
-                      <td className="p-2.5">
+                      <td className="py-2 px-2">
                         {line.available_units.length > 0 ? (
                           <Select
+                            size="sm"
                             value={line.unit_id}
-                            onChange={v => handleUnitChange(line.id, v)}
-                            className="w-full p-1.5 rounded-lg border border-line bg-muted text-xs font-bold text-heading outline-none"
+                            onChange={(v) => handleUnitChange(line.id, v)}
+                            ariaLabel="Satuan"
                           >
-                            {line.available_units.map(u => (
-                              <option key={u.id} value={u.id}>{u.unit_name}</option>
+                            {line.available_units.map((u) => (
+                              <option key={u.id} value={u.id}>
+                                {u.unit_name}
+                              </option>
                             ))}
                           </Select>
                         ) : (
                           <input
                             type="text"
                             value={line.unit_name || 'PCS'}
-                            onChange={e => updateLine(line.id, 'unit_name', e.target.value)}
-                            className="w-full p-1.5 rounded-lg border border-line bg-muted text-xs font-bold text-heading outline-none uppercase"
+                            onChange={(e) => updateLine(line.id, 'unit_name', e.target.value)}
+                            className={`${CELL_INPUT_CLASS} font-medium`}
                           />
                         )}
                       </td>
 
-                      {/* Qty */}
-                      <td className="p-2.5">
+                      <td className="py-2 px-2">
                         <input
                           type="number"
                           min="1"
                           value={line.qty_received || ''}
-                          onChange={e => updateLine(line.id, 'qty_received', parseFloat(e.target.value) || 0)}
-                          className="w-full p-1.5 rounded-lg border border-line bg-muted text-center font-bold text-heading outline-none focus:ring-1 focus:ring-success font-mono"
+                          onChange={(e) =>
+                            updateLine(line.id, 'qty_received', parseFloat(e.target.value) || 0)
+                          }
+                          className={`${CELL_INPUT_CLASS} text-center font-semibold tnum`}
                         />
                       </td>
 
-                      {/* Cost Price */}
-                      <td className="p-2.5">
-                        <div className="relative flex items-center bg-muted border border-line rounded-lg px-2 py-1.5">
-                          <span className="text-[10px] text-dim font-bold mr-1">Rp</span>
+                      <td className="py-2 px-2">
+                        <div className="h-8 flex items-center rounded-lg border border-line bg-input px-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-colors">
+                          <span className="text-[11px] text-dim mr-1 select-none">Rp</span>
                           <input
                             type="number"
                             min="0"
                             value={line.price_per_unit || ''}
-                            onChange={e => updateLine(line.id, 'price_per_unit', parseFloat(e.target.value) || 0)}
-                            className="w-full bg-transparent border-none outline-none text-right font-bold text-heading font-mono p-0"
+                            onChange={(e) =>
+                              updateLine(line.id, 'price_per_unit', parseFloat(e.target.value) || 0)
+                            }
+                            className="w-full bg-transparent border-none outline-none text-right font-semibold text-xs text-heading tnum p-0"
                           />
                         </div>
                       </td>
 
-                      {/* Batch No */}
-                      <td className="p-2.5">
+                      <td className="py-2 px-2">
                         <input
                           type="text"
-                          placeholder="BATCH-..."
+                          placeholder="No. batch"
                           value={line.batch_no}
-                          onChange={e => updateLine(line.id, 'batch_no', e.target.value)}
-                          className="w-full p-1.5 rounded-lg border border-line bg-muted text-xs text-heading font-mono outline-none"
+                          onChange={(e) => updateLine(line.id, 'batch_no', e.target.value)}
+                          className={`${CELL_INPUT_CLASS} font-mono`}
                         />
                       </td>
 
-                      {/* Expiry Date */}
-                      <td className="p-2.5">
+                      <td className="py-2 px-2">
                         <input
                           type="date"
                           value={line.expiry_date}
-                          onChange={e => updateLine(line.id, 'expiry_date', e.target.value)}
-                          className="w-full p-1.5 rounded-lg border border-line bg-muted text-xs text-heading outline-none"
+                          onChange={(e) => updateLine(line.id, 'expiry_date', e.target.value)}
+                          className={CELL_INPUT_CLASS}
                         />
                       </td>
 
-                      {/* Subtotal */}
-                      <td className="p-2.5 text-right font-bold font-mono text-heading">
+                      <td className="py-2 px-2.5 text-right font-semibold text-heading tnum">
                         Rp {lineSubtotal.toLocaleString('id-ID')}
                       </td>
 
-                      {/* Delete */}
-                      <td className="p-2.5 text-center">
+                      <td className="py-2 px-2 text-center">
                         <button
                           type="button"
                           onClick={() => removeLine(line.id)}
-                          className="text-dim hover:text-danger p-1 rounded-lg hover:bg-danger-soft dark:hover:bg-danger transition-colors cursor-pointer"
+                          aria-label="Hapus baris"
+                          className="w-7 h-7 inline-flex items-center justify-center rounded-lg text-dim hover:text-danger hover:bg-danger-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -620,8 +604,78 @@ export default function DirectReceiveModal({ isOpen, onClose, onSuccess, branchI
             </table>
           </div>
         </div>
-
       </div>
+
+      {activeLineIdForSearch &&
+        popupPos &&
+        createPortal(
+          <div
+            ref={popupRef}
+            style={{
+              position: 'fixed',
+              top: popupPos.top,
+              left: popupPos.left,
+              width: popupPos.width,
+            }}
+            className="z-[1200] bg-elevated border border-line rounded-lg shadow-lg shadow-black/15 dark:shadow-black/45 p-1 animate-pop-in"
+          >
+            <div className="flex items-center gap-2 px-2 py-1.5 border-b border-line">
+              <Search size={14} className="text-dim shrink-0" />
+              <input
+                autoFocus
+                type="text"
+                placeholder="Ketik nama barang atau SKU..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    closeSearchPopup();
+                  }
+                }}
+                className="w-full bg-transparent text-xs text-heading outline-none"
+              />
+              <button
+                type="button"
+                onClick={closeSearchPopup}
+                aria-label="Tutup pencarian"
+                className="text-dim hover:text-heading rounded-md p-0.5 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="max-h-52 overflow-y-auto custom-scrollbar pt-1 space-y-0.5">
+              {isSearching ? (
+                <div className="py-4 text-center text-xs text-dim flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Mencari barang...
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="py-4 text-center text-xs text-dim">
+                  {searchQuery.trim().length < 2
+                    ? 'Ketik minimal 2 huruf.'
+                    : 'Barang tidak ditemukan.'}
+                </div>
+              ) : (
+                searchResults.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelectItem(activeLineIdForSearch, item)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-muted flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold text-heading text-xs truncate">{item.name}</p>
+                      <p className="text-[11px] text-dim font-mono truncate">{item.sku}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-primary shrink-0">Pilih</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </Modal>
   );
 }

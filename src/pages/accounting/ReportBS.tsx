@@ -1,103 +1,151 @@
 import { useEffect, useState } from 'react';
 import { getBalanceSheet, BalanceSheet as BalanceSheetData } from '../../lib/api';
-import { Download, RefreshCw } from 'lucide-react';
+import { downloadCsv } from '../../lib/exportCsv';
+import { Download, RefreshCw, Loader2 } from 'lucide-react';
+import Button from '../../components/ui/Button';
 
 export default function ReportBS() {
   const [data, setData] = useState<BalanceSheetData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [asOfDate, setAsOfDate] = useState(() => {
-     return new Date().toISOString().split('T')[0];
-  });
+  const [error, setError] = useState<string | null>(null);
+  const [asOfDate, setAsOfDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await getBalanceSheet(asOfDate);
       setData(res);
     } catch (e) {
       console.error(e);
+      setError('Gagal memuat neraca keuangan.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
   }, [asOfDate]);
 
+  const handleExportCsv = () => {
+    if (!data) return;
+    const headers = ['Bagian', 'Kode Akun', 'Nama Akun', 'Nominal (Rp)'];
+    const rows: any[][] = [];
+    data.assets.forEach((r: any) => rows.push(['Aset', r.account_code, r.account_name, r.amount]));
+    rows.push(['Ringkasan', '', 'Total Aset', data.total_assets]);
+    data.liabilities.forEach((r: any) => rows.push(['Kewajiban', r.account_code, r.account_name, r.amount]));
+    data.equity.forEach((r: any) => rows.push(['Ekuitas', r.account_code, r.account_name, r.amount]));
+    rows.push(['Ringkasan', '', 'Total Kewajiban & Ekuitas', data.total_liabilities_equity]);
+    downloadCsv(`Neraca_Keuangan_${asOfDate}.csv`, headers, rows);
+  };
+
   const renderSection = (title: string, rows: any[], total: number) => (
-      <div className="flex-1 bg-muted dark:bg-muted/50 p-6 rounded-xl border border-line">
-         <h3 className="font-bold text-heading uppercase text-sm tracking-wider mb-4 border-b border-line pb-2">{title}</h3>
-         <div className="space-y-3 mb-6">
-             {rows.map((row: any) => (
-                 <div key={row.account_code} className="flex justify-between text-sm text-body">
-                    <div>{row.account_name}</div>
-                    <div className="tabular-nums">{row.amount.toLocaleString('id-ID')}</div>
-                 </div>
-             ))}
-         </div>
-         <div className="flex justify-between py-3 text-sm font-bold text-heading border-t border-line">
-            <div>Total {title}</div>
-            <div className="tabular-nums">{total.toLocaleString('id-ID')}</div>
-         </div>
+    <div className="flex-1 bg-muted/50 p-5 rounded-xl border border-line flex flex-col">
+      <h3 className="font-bold text-heading text-sm mb-3 pb-2 border-b border-line">{title}</h3>
+      <div className="space-y-2.5 mb-5 flex-1">
+        {rows.length === 0 ? (
+          <p className="text-xs text-dim">Tidak ada saldo akun.</p>
+        ) : (
+          rows.map((row: any) => (
+            <div key={row.account_code} className="flex justify-between text-sm text-body gap-4">
+              <div className="truncate">{row.account_name}</div>
+              <div className="tnum shrink-0">{row.amount.toLocaleString('id-ID')}</div>
+            </div>
+          ))
+        )}
       </div>
+      <div className="flex justify-between pt-3 text-sm font-bold text-heading border-t border-line">
+        <div>Total {title}</div>
+        <div className="tnum">Rp {total.toLocaleString('id-ID')}</div>
+      </div>
+    </div>
   );
 
   return (
-    <div className="flex flex-col h-full fade-in">
-       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-heading">Balance Sheet</h2>
-          <p className="text-body text-sm mt-1">Snapshot of Assets, Liabilities, and Equity.</p>
-        </div>
-        <div className="flex gap-3 items-center">
-          <span className="text-sm text-body">As of</span>
-          <input 
-             type="date" 
-             value={asOfDate}
-             onChange={e => setAsOfDate(e.target.value)}
-             className="input-field py-2 text-sm w-auto"
+    <div className="flex flex-col h-full gap-4 animate-fade-in">
+      <div className="flex flex-wrap justify-between items-center gap-3 shrink-0">
+        <h2 className="text-base font-bold tracking-tight text-heading">Neraca Keuangan</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-dim">Per tanggal</span>
+          <input
+            type="date"
+            value={asOfDate}
+            onChange={(e) => setAsOfDate(e.target.value)}
+            aria-label="Per tanggal"
+            className="h-8 bg-input border border-line rounded-lg px-2.5 text-xs text-heading tnum focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
-          <button onClick={fetchData} className="p-2 border border-line rounded-lg hover:bg-muted text-body">
-             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-          </button>
-          <button className="btn-secondary flex items-center gap-2">
-             <Download size={16}/> Export
-          </button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+            aria-label="Muat ulang"
+            title="Muat ulang"
+            className="px-2"
+          >
+            <RefreshCw size={14} strokeWidth={1.75} className={loading ? 'animate-spin' : ''} />
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={handleExportCsv} disabled={!data}>
+            <Download size={14} strokeWidth={1.75} />
+            Export CSV
+          </Button>
         </div>
       </div>
 
-      <div className="flex-1 bg-card rounded-xl border border-line shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-y-auto flex-1 p-8 custom-scrollbar">
-           {loading ? (
-              <div className="text-center py-10 text-body">Generating report...</div>
-           ) : data ? (
-              <div className="flex flex-col lg:flex-row gap-8">
-                 
-                 {/* Left Side: Assets */}
-                 <div className="flex-1 flex flex-col">
-                     {renderSection("Assets", data.assets, data.total_assets)}
-                     
-                     <div className="mt-8 flex justify-between py-4 text-base font-bold text-primary-hover dark:text-primary bg-primary-soft px-6 rounded-xl border border-primary-soft ">
-                        <div>Total Assets</div>
-                        <div className="tabular-nums">{data.total_assets.toLocaleString('id-ID')}</div>
-                     </div>
-                 </div>
+      <div className="flex-1 min-h-0 bg-card rounded-xl border border-line overflow-hidden flex flex-col">
+        <div className="overflow-y-auto flex-1 p-5 sm:p-6 custom-scrollbar">
+          {loading ? (
+            <div className="text-center py-14 text-dim">
+              <Loader2 className="animate-spin text-primary mx-auto mb-2" size={24} />
+              <span className="text-xs">Memuat laporan...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-14">
+              <p className="text-sm text-danger font-medium">{error}</p>
+              <Button type="button" variant="outline" size="sm" onClick={fetchData} className="mt-3">
+                Coba Lagi
+              </Button>
+            </div>
+          ) : data ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-4">
+                {renderSection('Aset', data.assets, data.total_assets)}
 
-                 {/* Right Side: Liabilities & Equity */}
-                 <div className="flex-1 flex flex-col gap-6">
-                     {renderSection("Liabilities", data.liabilities, data.liabilities.reduce((sum, r) => sum + r.amount, 0))}
-                     {renderSection("Equity", data.equity, data.equity.reduce((sum, r) => sum + r.amount, 0))}
-
-                     <div className={`mt-auto flex justify-between py-4 text-base font-bold px-6 rounded-xl border ${data.total_assets === data.total_liabilities_equity ? 'bg-success-soft text-success border-success/30 ' : 'bg-danger-soft text-danger border-danger/30 '}`}>
-                        <div>Total Liabilities & Equity</div>
-                        <div className="tabular-nums">{data.total_liabilities_equity.toLocaleString('id-ID')}</div>
-                     </div>
-                 </div>
-
+                <div className="flex justify-between items-center py-3.5 px-5 text-sm font-bold text-heading bg-muted rounded-xl border border-line">
+                  <div>Total Aset</div>
+                  <div className="tnum">Rp {data.total_assets.toLocaleString('id-ID')}</div>
+                </div>
               </div>
-           ) : (
-              <div className="text-center py-10 text-body">No data available.</div>
-           )}
+
+              <div className="flex flex-col gap-4">
+                {renderSection(
+                  'Kewajiban',
+                  data.liabilities,
+                  data.liabilities.reduce((sum, r) => sum + r.amount, 0)
+                )}
+                {renderSection(
+                  'Ekuitas',
+                  data.equity,
+                  data.equity.reduce((sum, r) => sum + r.amount, 0)
+                )}
+
+                <div
+                  className={`mt-auto flex justify-between items-center py-3.5 px-5 text-sm font-bold rounded-xl border ${
+                    data.total_assets === data.total_liabilities_equity
+                      ? 'bg-success-soft text-success border-success/30'
+                      : 'bg-danger-soft text-danger border-danger/30'
+                  }`}
+                >
+                  <div>Total Kewajiban & Ekuitas</div>
+                  <div className="tnum">Rp {data.total_liabilities_equity.toLocaleString('id-ID')}</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-14 text-dim text-sm">Tidak ada data tersedia.</div>
+          )}
         </div>
       </div>
     </div>

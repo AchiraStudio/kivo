@@ -15,7 +15,8 @@ interface Props {
   onChanged: () => void;
 }
 
-const fieldCls = 'w-full bg-input border border-line rounded-lg px-3 py-2 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25';
+const fieldCls =
+  'w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors';
 
 type Editing = { id?: string; name: string; notes: string; lines: MedicineLine[] };
 
@@ -25,10 +26,16 @@ export default function MedicinePresetsModal({ isOpen, onClose, presets, onChang
   const [toDelete, setToDelete] = useState<MedicinePreset | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => { if (!isOpen) { setEditing(null); setToDelete(null); } }, [isOpen]);
+  useEffect(() => {
+    if (!isOpen) {
+      setEditing(null);
+      setToDelete(null);
+    }
+  }, [isOpen]);
 
   const startNew = () => setEditing({ name: '', notes: '', lines: [] });
-  const startEdit = (p: MedicinePreset) => setEditing({ id: p.id, name: p.name, notes: p.notes ?? '', lines: linesFromSaved(p.items) });
+  const startEdit = (p: MedicinePreset) =>
+    setEditing({ id: p.id, name: p.name, notes: p.notes ?? '', lines: linesFromSaved(p.items) });
 
   const handleSave = async () => {
     if (!editing) return;
@@ -72,36 +79,56 @@ export default function MedicinePresetsModal({ isOpen, onClose, presets, onChang
         onClose={onClose}
         size="3xl"
         title={editing ? (editing.id ? 'Edit Preset Obat' : 'Preset Obat Baru') : 'Preset Obat'}
-        subtitle={editing ? 'Obat dan harga yang disimpan akan terisi otomatis saat dipakai.' : 'Daftar obat beserta harga yang sering diberikan bersamaan.'}
         icon={Pill}
-        footer={editing ? (
-          <div className="flex justify-between gap-2 w-full">
-            <Button variant="ghost" onClick={() => setEditing(null)}><ArrowLeft size={15} /> Kembali</Button>
-            <Button onClick={handleSave} loading={saving}>{!saving && <Save size={15} />} Simpan Preset</Button>
-          </div>
-        ) : (
-          <div className="flex justify-end w-full">
-            <Button onClick={startNew}><Plus size={15} /> Preset Baru</Button>
-          </div>
-        )}
+        footer={
+          editing ? (
+            <div className="flex justify-between gap-2 w-full">
+              <Button type="button" variant="outline" onClick={() => setEditing(null)} disabled={saving}>
+                <ArrowLeft size={15} /> Kembali
+              </Button>
+              <Button type="button" onClick={handleSave} loading={saving}>
+                {!saving && <Save size={15} />} Simpan Preset
+              </Button>
+            </div>
+          ) : (
+            <Button type="button" onClick={startNew}>
+              <Plus size={15} /> Preset Baru
+            </Button>
+          )
+        }
       >
         {editing ? (
           <div className="space-y-4">
             <label className="block">
               <span className="block text-xs font-semibold text-heading mb-1">Nama preset</span>
-              <input className={fieldCls} value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} placeholder="Misalnya Paket diabetes" autoFocus />
+              <input
+                className={fieldCls}
+                value={editing.name}
+                onChange={e => setEditing({ ...editing, name: e.target.value })}
+                placeholder="Mis. Paket diabetes"
+                autoFocus
+              />
             </label>
             <label className="block">
               <span className="block text-xs font-semibold text-heading mb-1">Catatan</span>
-              <input className={fieldCls} value={editing.notes} onChange={e => setEditing({ ...editing, notes: e.target.value })} placeholder="Opsional" />
+              <input
+                className={fieldCls}
+                value={editing.notes}
+                onChange={e => setEditing({ ...editing, notes: e.target.value })}
+                placeholder="Opsional"
+              />
             </label>
-            <MedicineLinesEditor lines={editing.lines} onChange={lines => setEditing({ ...editing, lines })} presetTools={false} />
+            <MedicineLinesEditor
+              lines={editing.lines}
+              onChange={lines => setEditing({ ...editing, lines })}
+              presetTools={false}
+            />
           </div>
         ) : presets.length === 0 ? (
-          <div className="py-12 text-center">
-            <Pill size={28} className="mx-auto text-dim mb-3" />
+          <div className="py-10 text-center border border-dashed border-line-strong rounded-xl px-4">
+            <Pill size={26} className="mx-auto text-dim mb-2" />
             <p className="text-sm font-semibold text-heading">Belum ada preset obat</p>
-            <p className="text-xs text-dim mt-1 max-w-xs mx-auto">Buat preset di sini, atau simpan daftar obat dari form catatan kesehatan.</p>
+            <p className="text-xs text-dim mt-1">Buat preset baru atau simpan dari form catatan kesehatan.</p>
           </div>
         ) : (
           <ul className="divide-y divide-line border border-line rounded-xl overflow-hidden">
@@ -116,7 +143,13 @@ export default function MedicinePresetsModal({ isOpen, onClose, presets, onChang
                     <ul className="mt-2 space-y-0.5">
                       {p.items.map(it => (
                         <li key={it.id} className="text-xs text-body flex justify-between gap-4">
-                          <span className="truncate">{it.name} <span className="text-dim">x {it.qty}{it.unit ? ` ${it.unit}` : ''}</span></span>
+                          <span className="truncate">
+                            {it.name}{' '}
+                            <span className="text-dim tnum">
+                              x {it.qty}
+                              {it.unit ? ` ${it.unit}` : ''}
+                            </span>
+                          </span>
                           <span className="tnum shrink-0">{formatRupiah(it.qty * it.price)}</span>
                         </li>
                       ))}
@@ -125,8 +158,22 @@ export default function MedicinePresetsModal({ isOpen, onClose, presets, onChang
                   <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0">
                     <p className="text-sm font-bold text-heading tnum">{formatRupiah(total)}</p>
                     <div className="flex gap-1">
-                      <button type="button" onClick={() => startEdit(p)} aria-label={`Edit preset ${p.name}`} className="p-2 rounded-lg text-body hover:bg-muted hover:text-heading transition-colors"><Pencil size={15} /></button>
-                      <button type="button" onClick={() => setToDelete(p)} aria-label={`Hapus preset ${p.name}`} className="p-2 rounded-lg text-danger hover:bg-danger-soft transition-colors"><Trash2 size={15} /></button>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(p)}
+                        aria-label={`Edit preset ${p.name}`}
+                        className="p-1.5 rounded-lg text-dim hover:bg-muted hover:text-heading transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setToDelete(p)}
+                        aria-label={`Hapus preset ${p.name}`}
+                        className="p-1.5 rounded-lg text-dim hover:text-danger hover:bg-danger-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </div>
                 </li>
@@ -139,7 +186,7 @@ export default function MedicinePresetsModal({ isOpen, onClose, presets, onChang
       {toDelete && (
         <ConfirmModal
           title="Hapus preset obat?"
-          message={`Preset "${toDelete.name}" akan dihapus. Catatan kesehatan yang sudah memakai preset ini tidak berubah.`}
+          message={`Preset "${toDelete.name}" akan dihapus. Catatan kesehatan yang sudah ada tidak berubah.`}
           confirmLabel="Hapus Preset"
           loading={deleting}
           onConfirm={handleDelete}

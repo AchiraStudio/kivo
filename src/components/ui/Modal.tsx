@@ -1,6 +1,7 @@
 import React, { useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X, LucideIcon } from 'lucide-react';
+import { isTopOverlay, popOverlay, pushOverlay } from './overlayStack';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | 'full';
 
@@ -38,12 +39,8 @@ const SIZE_CLASSES: Record<ModalSize, string> = {
   '4xl': 'max-w-4xl',
   '5xl': 'max-w-5xl',
   '6xl': 'max-w-6xl',
-  full: 'max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] h-[calc(100vh-2rem)]',
+  full: 'max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] h-[calc(100dvh-2rem)]',
 };
-
-// Global counter for active open modals to safely lock/unlock body scroll
-let activeModalCount = 0;
-const modalStack: string[] = [];
 
 export default function Modal({
   isOpen = true,
@@ -51,7 +48,7 @@ export default function Modal({
   title,
   subtitle,
   icon: IconOrElement,
-  iconBg = 'bg-primary-soft text-primary',
+  iconBg = 'bg-muted text-heading',
   badge,
   headerRight,
   footer,
@@ -73,17 +70,10 @@ export default function Modal({
   useEffect(() => {
     if (!isOpen) return;
 
-    activeModalCount++;
-    if (activeModalCount === 1) {
-      document.body.style.overflow = 'hidden';
-    }
-
-    // Only the topmost modal reacts to Escape, so a modal opened from another one
-    // closes alone instead of taking its parent down with it.
-    modalStack.push(titleId);
+    pushOverlay(titleId);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closeOnEsc && onClose && modalStack[modalStack.length - 1] === titleId) {
+      if (e.key === 'Escape' && closeOnEsc && onClose && isTopOverlay(titleId)) {
         e.stopPropagation();
         onClose();
       }
@@ -92,12 +82,7 @@ export default function Modal({
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      const at = modalStack.lastIndexOf(titleId);
-      if (at !== -1) modalStack.splice(at, 1);
-      activeModalCount = Math.max(0, activeModalCount - 1);
-      if (activeModalCount === 0) {
-        document.body.style.overflow = '';
-      }
+      popOverlay(titleId);
     };
   }, [isOpen, closeOnEsc, onClose, titleId]);
 
@@ -110,8 +95,8 @@ export default function Modal({
     }
     const IconComponent = IconOrElement as React.ComponentType<{ size?: number; className?: string }>;
     return (
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
-        <IconComponent size={20} />
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+        <IconComponent size={16} />
       </div>
     );
   };
@@ -120,14 +105,13 @@ export default function Modal({
 
   const modalContent = (
     <div
-      className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 overflow-x-hidden ${backdropClassName}`}
+      className={`fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-5 overflow-x-hidden ${backdropClassName}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? titleId : undefined}
     >
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/55 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 bg-black/45 animate-fade-in"
         onClick={() => {
           if (closeOnBackdropClick && onClose) {
             onClose();
@@ -136,62 +120,58 @@ export default function Modal({
         aria-hidden="true"
       />
 
-      {/* Modal Dialog Card */}
       <div
-        className={`relative z-10 w-[calc(100vw-1.5rem)] sm:w-full ${SIZE_CLASSES[size]} bg-elevated text-heading rounded-xl border border-line shadow-2xl shadow-black/40 flex flex-col max-h-[90dvh] overflow-hidden animate-pop-in ${className}`}
+        className={`relative z-10 w-[calc(100vw-1.5rem)] sm:w-full ${SIZE_CLASSES[size]} bg-elevated text-heading rounded-xl border border-line shadow-lg shadow-black/15 dark:shadow-black/45 flex flex-col max-h-[90dvh] overflow-hidden animate-pop-in ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         {hasHeader && (
           <div
-            className={`px-4 sm:px-6 py-3 sm:py-4 border-b border-line flex items-center justify-between gap-3 sm:gap-4 shrink-0 ${headerClassName}`}
+            className={`px-4 sm:px-5 py-3.5 border-b border-line flex items-center justify-between gap-3 shrink-0 ${headerClassName}`}
           >
-            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
               {renderIcon()}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   {title && (
-                    <h2 id={titleId} className="text-sm sm:text-base font-bold text-heading truncate">
+                    <h2 id={titleId} className="text-sm sm:text-[15px] font-bold text-heading truncate">
                       {title}
                     </h2>
                   )}
                   {badge}
                 </div>
                 {subtitle && (
-                  <p className="text-[11px] sm:text-xs text-dim mt-0.5 truncate">{subtitle}</p>
+                  <p className="text-xs text-dim mt-0.5 truncate">{subtitle}</p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               {headerRight}
               {showCloseButton && onClose && (
                 <button
                   type="button"
                   onClick={onClose}
                   aria-label="Tutup"
-                  className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                  className="w-8 h-8 flex items-center justify-center text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <X size={17} />
+                  <X size={16} />
                 </button>
               )}
             </div>
           </div>
         )}
 
-        {/* Body Content */}
         <div
           className={`flex-1 ${
             scrollable ? 'overflow-y-auto custom-scrollbar' : 'overflow-visible'
-          } ${noPadding ? '' : 'p-3.5 sm:p-5 md:p-6'} ${bodyClassName}`}
+          } ${noPadding ? '' : 'p-4 sm:p-5'} ${bodyClassName}`}
         >
           {children}
         </div>
 
-        {/* Footer */}
         {footer && (
           <div
-            className={`px-4 sm:px-6 py-3 sm:py-4 border-t border-line flex items-center justify-end gap-2.5 sm:gap-3 shrink-0 ${footerClassName}`}
+            className={`px-4 sm:px-5 py-3 border-t border-line bg-muted/30 flex items-center justify-end gap-2 shrink-0 ${footerClassName}`}
           >
             {footer}
           </div>
@@ -203,7 +183,6 @@ export default function Modal({
   return createPortal(modalContent, document.body);
 }
 
-// Subcomponents for custom layout needs
 Modal.Header = function ModalHeader({
   className = '',
   children,
@@ -213,7 +192,7 @@ Modal.Header = function ModalHeader({
 }) {
   return (
     <div
-      className={`px-4 sm:px-6 py-3 sm:py-4 border-b border-line flex items-center justify-between gap-3 sm:gap-4 shrink-0 ${className}`}
+      className={`px-4 sm:px-5 py-3.5 border-b border-line flex items-center justify-between gap-3 shrink-0 ${className}`}
     >
       {children}
     </div>
@@ -235,7 +214,7 @@ Modal.Body = function ModalBody({
     <div
       className={`flex-1 ${
         scrollable ? 'overflow-y-auto custom-scrollbar' : 'overflow-visible'
-      } ${noPadding ? '' : 'p-3.5 sm:p-5 md:p-6'} ${className}`}
+      } ${noPadding ? '' : 'p-4 sm:p-5'} ${className}`}
     >
       {children}
     </div>
@@ -251,7 +230,7 @@ Modal.Footer = function ModalFooter({
 }) {
   return (
     <div
-      className={`px-4 sm:px-6 py-3 sm:py-4 border-t border-line flex items-center justify-end gap-2.5 sm:gap-3 shrink-0 ${className}`}
+      className={`px-4 sm:px-5 py-3 border-t border-line bg-muted/30 flex items-center justify-end gap-2 shrink-0 ${className}`}
     >
       {children}
     </div>

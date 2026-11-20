@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Save, Layers, Loader2, Search } from 'lucide-react';
+import { Save, Layers, Loader2, Search, AlertCircle } from 'lucide-react';
 import { getCategories, getItemsFiltered, Category, Item, invoke } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
-
-import { toast } from '../../components/ui/Toast';
+import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
+import { toast } from '../../components/ui/Toast';
+
 interface BulkStockAddProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,20 +18,16 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [items, setItems] = useState<Item[]>([]);
   const [search, setSearch] = useState('');
-  
+
   const [loadingItems, setLoadingItems] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // qty state for each item (id -> qty)
   const [qtys, setQtys] = useState<Record<string, number>>({});
-  // hpp state for each item (id -> hpp)
   const [hpps, setHpps] = useState<Record<string, number>>({});
-  // batch state
   const [batchNos, setBatchNos] = useState<Record<string, string>>({});
-  // expiry state
   const [expiryDates, setExpiryDates] = useState<Record<string, string>>({});
 
-  // QOL multi-select and bulk edit
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkQty, setBulkQty] = useState('');
   const [bulkCat, setBulkCat] = useState('');
@@ -38,7 +35,7 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
 
   useEffect(() => {
     if (isOpen) {
-      getCategories().then(setCategories);
+      getCategories().then(setCategories).catch(console.error);
       fetchItems('all', '');
       setQtys({});
       setHpps({});
@@ -49,12 +46,13 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
 
   const fetchItems = async (catId: string, searchStr: string) => {
     setLoadingItems(true);
+    setErrorMsg(null);
     try {
-      // Use a large per_page to load all items at once, no pagination needed here
       const res = await getItemsFiltered(searchStr, catId === 'all' ? '' : catId, '', true, 1, 9999);
       setItems(res.items);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setErrorMsg(e?.message || String(e));
     } finally {
       setLoadingItems(false);
     }
@@ -64,7 +62,7 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
     if (isOpen) {
       const timer = setTimeout(() => {
         fetchItems(selectedCategory, search);
-        setSelectedIds(new Set()); // reset selection on search
+        setSelectedIds(new Set());
       }, 400);
       return () => clearTimeout(timer);
     }
@@ -74,7 +72,7 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
     if (selectedIds.size === items.length && items.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(items.map(i => i.id)));
+      setSelectedIds(new Set(items.map((i) => i.id)));
     }
   };
 
@@ -86,30 +84,33 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
   };
 
   const applyBulkChanges = async () => {
-    if (selectedIds.size === 0) return toast.info("Select at least one item first.");
-    
-    // Apply Qty if filled
+    if (selectedIds.size === 0) return toast.info('Pilih minimal satu produk.');
+
     if (bulkQty) {
       const q = Number(bulkQty);
       if (!isNaN(q) && q >= 0) {
-        setQtys(prev => {
+        setQtys((prev) => {
           const next = { ...prev };
-          selectedIds.forEach(id => next[id] = q);
+          selectedIds.forEach((id) => (next[id] = q));
           return next;
         });
       }
     }
 
-    // Apply Category if filled
     if (bulkCat) {
       setIsApplyingBulk(true);
       try {
         await invoke('bulk_update_category', { itemIds: Array.from(selectedIds), categoryId: bulkCat });
-        // Refresh local item state
-        setItems(prev => prev.map(i => selectedIds.has(i.id) ? { ...i, category_id: bulkCat, category_name: categories.find(c => c.id === bulkCat)?.name } as Item : i));
-        toast.error("Categories updated successfully!");
+        setItems((prev) =>
+          prev.map((i) =>
+            selectedIds.has(i.id)
+              ? ({ ...i, category_id: bulkCat, category_name: categories.find((c) => c.id === bulkCat)?.name } as Item)
+              : i
+          )
+        );
+        toast.success('Kategori berhasil diperbarui.');
       } catch (e) {
-        toast.error("Failed to update categories: " + e);
+        toast.error('Gagal memperbarui kategori: ' + e);
       } finally {
         setIsApplyingBulk(false);
       }
@@ -117,36 +118,36 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
   };
 
   const handleSubmit = async () => {
-    const payload = items
-      .filter(i => qtys[i.id] && qtys[i.id] > 0)
-      .map(i => {
-        let expiryDate = expiryDates[i.id];
-        if (expiryDate && new Date(expiryDate) < new Date(new Date().setHours(0,0,0,0))) {
-          throw new Error(`Item ${i.name} has expiry date in the past.`);
-        }
-        return {
-          item_id: i.id,
-          unit_id: i.base_unit_id,
-          qty_change: qtys[i.id],
-          hpp_value: hpps[i.id] !== undefined ? hpps[i.id] : (i.avg_hpp || 0),
-          batch_no: batchNos[i.id] || null,
-          expiry_date: expiryDate || null,
-          notes: 'Bulk Stock Addition',
-        };
-      });
-
-    if (payload.length === 0) {
-      toast.info("No quantities entered.");
-      return;
-    }
-
-    setIsSubmitting(true);
     try {
+      const payload = items
+        .filter((i) => qtys[i.id] && qtys[i.id] > 0)
+        .map((i) => {
+          const expiryDate = expiryDates[i.id];
+          if (expiryDate && new Date(expiryDate) < new Date(new Date().setHours(0, 0, 0, 0))) {
+            throw new Error(`Produk ${i.name} memiliki tanggal kadaluarsa yang sudah lewat.`);
+          }
+          return {
+            item_id: i.id,
+            unit_id: i.base_unit_id,
+            qty_change: qtys[i.id],
+            hpp_value: hpps[i.id] !== undefined ? hpps[i.id] : i.avg_hpp || 0,
+            batch_no: batchNos[i.id] || null,
+            expiry_date: expiryDate || null,
+            notes: 'Bulk Stock Addition',
+          };
+        });
+
+      if (payload.length === 0) {
+        toast.info('Belum ada jumlah stok yang diisi.');
+        return;
+      }
+
+      setIsSubmitting(true);
       await invoke('bulk_add_stock', { branchId, items: payload });
       onSuccess();
       onClose();
     } catch (e: any) {
-      toast.error(`Failed to save bulk stock: ${e.message || e}`);
+      toast.error(`Gagal menyimpan stok massal: ${e.message || e}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -160,169 +161,173 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
       onClose={onClose}
       size="4xl"
       title="Penyesuaian Stok Massal"
-      subtitle="Tambah atau sesuaikan stok beberapa produk sekaligus"
       icon={Layers}
       noPadding={true}
       footer={
-        <div className="flex justify-end gap-3 w-full">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold text-heading hover:bg-line dark:hover:bg-muted transition-colors"
-          >
+        <div className="flex justify-end gap-2 w-full">
+          <Button type="button" variant="outline" onClick={onClose}>
             Batal
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            {isSubmitting ? 'Menyimpan...' : 'Simpan Penyesuaian'}
-          </button>
+          </Button>
+          <Button type="button" variant="primary" onClick={handleSubmit} loading={isSubmitting}>
+            {!isSubmitting && <Save size={15} />}
+            {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+          </Button>
         </div>
       }
     >
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b border-line flex flex-col gap-4">
-          {/* Top Row: Search & Filter */}
-          <div className="flex gap-4">
+        <div className="p-4 border-b border-line flex flex-col gap-3 bg-muted/30">
+          <div className="flex flex-col sm:flex-row gap-2.5">
             <div className="flex-1 max-w-sm relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dim" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search items..." 
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dim" size={15} />
+              <input
+                type="text"
+                placeholder="Cari produk..."
                 value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-muted border border-line rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-9 pl-9 pr-3 bg-input border border-line rounded-lg text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
               />
             </div>
-            <Select 
-              value={selectedCategory}
-              onChange={v => setSelectedCategory(v)}
-              className="w-48 bg-muted border border-line rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
-            >
-              <option value="all">All Categories</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+            <Select value={selectedCategory} onChange={(v) => setSelectedCategory(v)} className="w-full sm:w-48">
+              <option value="all">Semua Kategori</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </Select>
           </div>
-          
-          {/* Bottom Row: Bulk Apply Toolbar */}
-          <div className="flex items-center gap-4 bg-muted/50 p-2.5 rounded-xl border border-line">
-            <div className="text-sm font-bold text-heading px-2 min-w-[120px]">
-              {selectedIds.size} Selected
-            </div>
-            <div className="h-6 w-px bg-line"></div>
-            <span className="text-xs font-semibold text-dim uppercase">Apply to Selected:</span>
-            
-            <input 
+
+          <div className="flex flex-wrap items-center gap-2.5 bg-card p-2.5 rounded-lg border border-line">
+            <span className="text-xs font-semibold text-heading px-1 tnum">
+              {selectedIds.size} terpilih
+            </span>
+            <div className="h-4 w-px bg-line hidden sm:block" />
+
+            <input
               type="number"
               placeholder="Set Qty"
               value={bulkQty}
-              onChange={e => setBulkQty(e.target.value)}
-              className="w-24 bg-card dark:bg-input border border-line rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
+              onChange={(e) => setBulkQty(e.target.value)}
+              className="w-24 h-8 bg-input border border-line rounded-lg px-2.5 text-xs text-heading tnum outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
-            
-            <Select 
-              value={bulkCat}
-              onChange={v => setBulkCat(v)}
-              className="w-48 bg-card dark:bg-input border border-line rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
-            >
-              <option value="">Move Category...</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+
+            <Select value={bulkCat} onChange={(v) => setBulkCat(v)} size="sm" className="w-44">
+              <option value="">Pindah kategori...</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </Select>
 
-            <button 
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={applyBulkChanges}
-              disabled={selectedIds.size === 0 || (!bulkQty && !bulkCat) || isApplyingBulk}
-              className="px-4 py-1.5 bg-muted hover:bg-line-strong text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50"
+              loading={isApplyingBulk}
+              disabled={selectedIds.size === 0 || (!bulkQty && !bulkCat)}
             >
-              {isApplyingBulk ? 'Applying...' : 'Apply'}
-            </button>
+              Terapkan
+            </Button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+        <div className="flex-1 overflow-auto max-h-[55vh] custom-scrollbar relative">
           {loadingItems ? (
-            <div className="flex justify-center items-center h-32">
-              <Loader2 className="animate-spin text-primary" size={24} />
+            <div className="flex justify-center items-center py-16">
+              <Loader2 className="animate-spin text-primary" size={22} />
             </div>
+          ) : errorMsg ? (
+            <div className="flex flex-col items-center justify-center py-14 text-center">
+              <AlertCircle size={22} className="text-danger mb-2" />
+              <p className="text-sm font-semibold text-heading">Gagal memuat produk</p>
+              <p className="text-xs text-dim mt-0.5 mb-3">{errorMsg}</p>
+              <Button variant="outline" size="sm" onClick={() => fetchItems(selectedCategory, search)}>
+                Coba Lagi
+              </Button>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="py-16 text-center text-sm text-dim">Tidak ada produk ditemukan.</div>
           ) : (
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-muted border-b border-line z-10">
-                <tr className="text-xs font-semibold text-body uppercase">
-                  <th className="py-3 px-4 w-10 text-center">
-                    <input 
-                      type="checkbox" 
+                <tr className="text-xs font-semibold text-dim">
+                  <th className="py-2.5 px-3.5 w-10 text-center">
+                    <input
+                      type="checkbox"
                       checked={items.length > 0 && selectedIds.size === items.length}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-line-strong text-primary focus:ring-primary"
+                      className="w-4 h-4 rounded border-line-strong text-primary focus:ring-primary cursor-pointer"
                     />
                   </th>
-                  <th className="py-3 px-4">Item Name</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4 w-32">Add Qty</th>
-                  <th className="py-3 px-4 w-32">Batch No.</th>
-                  <th className="py-3 px-4 w-40">Expiry Date</th>
-                  <th className="py-3 px-4 w-32">Cost/Unit</th>
+                  <th className="py-2.5 px-3.5">Produk</th>
+                  <th className="py-2.5 px-3.5">Kategori</th>
+                  <th className="py-2.5 px-3.5 w-28">Tambah Qty</th>
+                  <th className="py-2.5 px-3.5 w-32">No. Batch</th>
+                  <th className="py-2.5 px-3.5 w-40">Kadaluarsa</th>
+                  <th className="py-2.5 px-3.5 w-32">HPP / Satuan</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line dark:divide-line/50 text-sm">
-                {items.map(item => (
-                  <tr key={item.id} className={`hover:bg-muted/50 dark:hover:bg-card/30 transition-colors ${selectedIds.has(item.id) ? 'bg-primary-soft ' : ''}`}>
-                    <td className="py-2 px-4 text-center">
-                      <input 
-                        type="checkbox" 
+              <tbody className="divide-y divide-line text-sm">
+                {items.map((item) => (
+                  <tr
+                    key={item.id}
+                    className={`hover:bg-muted/40 transition-colors ${
+                      selectedIds.has(item.id) ? 'bg-primary-soft/40' : ''
+                    }`}
+                  >
+                    <td className="py-2 px-3.5 text-center">
+                      <input
+                        type="checkbox"
                         checked={selectedIds.has(item.id)}
                         onChange={() => toggleSelect(item.id)}
-                        className="w-4 h-4 rounded border-line-strong text-primary focus:ring-primary"
+                        className="w-4 h-4 rounded border-line-strong text-primary focus:ring-primary cursor-pointer"
                       />
                     </td>
-                    <td className="py-2 px-4">
-                      <div className="font-bold text-heading">{item.name}</div>
-                      <div className="text-[10px] font-mono text-dim">{item.sku} • {item.base_unit_name || 'Unit'}</div>
+                    <td className="py-2 px-3.5">
+                      <div className="font-semibold text-heading text-xs sm:text-sm">{item.name}</div>
+                      <div className="text-[11px] font-mono text-dim">
+                        {item.sku} | {item.base_unit_name || 'Unit'}
+                      </div>
                     </td>
-                    <td className="py-2 px-4 text-body">{(item as any).category_name || '-'}</td>
-                    <td className="py-2 px-4">
-                      <input 
+                    <td className="py-2 px-3.5 text-xs text-body">{(item as any).category_name || '-'}</td>
+                    <td className="py-2 px-3.5">
+                      <input
                         type="number"
                         min="0"
                         value={qtys[item.id] || ''}
-                        onChange={e => setQtys({...qtys, [item.id]: Number(e.target.value)})}
-                        className="w-full bg-card dark:bg-input border border-line rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                        onChange={(e) => setQtys({ ...qtys, [item.id]: Number(e.target.value) })}
+                        className="w-full h-8 bg-input border border-line rounded-lg px-2 text-xs text-heading tnum outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                         placeholder="0"
                       />
                     </td>
-                    <td className="py-2 px-4">
-                      <input 
+                    <td className="py-2 px-3.5">
+                      <input
                         type="text"
                         value={batchNos[item.id] || ''}
-                        onChange={e => setBatchNos({...batchNos, [item.id]: e.target.value})}
-                        className="w-full bg-card dark:bg-input border border-line rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
-                        placeholder="Optional"
+                        onChange={(e) => setBatchNos({ ...batchNos, [item.id]: e.target.value })}
+                        className="w-full h-8 bg-input border border-line rounded-lg px-2 text-xs font-mono text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        placeholder="Opsional"
                       />
                     </td>
-                    <td className="py-2 px-4">
-                      <input 
+                    <td className="py-2 px-3.5">
+                      <input
                         type="date"
                         value={expiryDates[item.id] || ''}
-                        onChange={e => setExpiryDates({...expiryDates, [item.id]: e.target.value})}
-                        className="w-full bg-card dark:bg-input border border-line rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                        onChange={(e) => setExpiryDates({ ...expiryDates, [item.id]: e.target.value })}
+                        className="w-full h-8 bg-input border border-line rounded-lg px-2 text-xs text-heading tnum outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                       />
                     </td>
-                    <td className="py-2 px-4">
-                      <input 
+                    <td className="py-2 px-3.5">
+                      <input
                         type="number"
                         min="0"
-                        value={hpps[item.id] !== undefined ? hpps[item.id] : (item.avg_hpp || '')}
-                        onChange={e => setHpps({...hpps, [item.id]: Number(e.target.value)})}
-                        className="w-full bg-card dark:bg-input border border-line rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
-                        placeholder="Cost"
+                        value={hpps[item.id] !== undefined ? hpps[item.id] : item.avg_hpp || ''}
+                        onChange={(e) => setHpps({ ...hpps, [item.id]: Number(e.target.value) })}
+                        className="w-full h-8 bg-input border border-line rounded-lg px-2 text-xs text-heading tnum outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        placeholder="0"
                       />
                     </td>
                   </tr>

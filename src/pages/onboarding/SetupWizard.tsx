@@ -1,11 +1,42 @@
 import { useState } from 'react';
-import { Building2, Cloud, ShieldCheck, CheckCircle2, ArrowRight, ArrowLeft, Store, Users, FileSpreadsheet, Lock, Eye, EyeOff, Server, Check, AlertCircle, Loader2, Upload, DollarSign, MapPin, Phone, Sun, Moon, Pill, ShoppingCart, Coffee, Wrench, Briefcase, KeyRound, Download, ExternalLink, Copy, CheckCheck, MessageSquare, Plug } from 'lucide-react';
-import { 
-  setSetting, 
-  createWorkspace, 
-  joinWorkspace, 
-  createUser, 
-  getUsers, 
+import {
+  Building2,
+  Cloud,
+  CheckCircle2,
+  ArrowLeft,
+  Store,
+  Users,
+  FileSpreadsheet,
+  Lock,
+  Eye,
+  EyeOff,
+  Server,
+  Check,
+  AlertCircle,
+  Upload,
+  MapPin,
+  Phone,
+  Sun,
+  Moon,
+  Pill,
+  ShoppingCart,
+  Coffee,
+  Wrench,
+  Briefcase,
+  KeyRound,
+  Download,
+  ExternalLink,
+  Copy,
+  CheckCheck,
+  MessageSquare,
+  Plug,
+} from 'lucide-react';
+import {
+  setSetting,
+  createWorkspace,
+  joinWorkspace,
+  createUser,
+  getUsers,
   loginUser,
   importItemsExcel,
   triggerSyncPull,
@@ -14,7 +45,7 @@ import {
   testCloudConnection,
   getBootstrapSql,
   openBrowserUrl,
-  invoke
+  invoke,
 } from '../../lib/api';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useAuthStore } from '../../store/AuthStore';
@@ -22,8 +53,9 @@ import { supabase, updateSupabaseCredentials, getSavedSupabaseCredentials } from
 import KivoLogo from '../../components/common/KivoLogo';
 import TitleBar from '../../components/TitleBar';
 import { useTheme } from '../../components/ThemeProvider';
-
 import Select from '../../components/ui/Select';
+import Button from '../../components/ui/Button';
+
 type SetupMode = 'new' | 'join' | 'restore';
 
 interface SetupWizardProps {
@@ -32,12 +64,20 @@ interface SetupWizardProps {
 }
 
 const BUSINESS_TYPES = [
-  { id: 'pharmacy', label: 'Apotek & Farmasi', icon: Pill, desc: 'Batch, kadaluarsa & resep' },
-  { id: 'retail', label: 'Retail & Minimarket', icon: ShoppingCart, desc: 'Scan barcode & grosir' },
-  { id: 'fnb', label: 'F&B, Kafe & Resto', icon: Coffee, desc: 'Kasir cepat & pesanan meja' },
-  { id: 'hardware', label: 'Toko Bangunan & Teknik', icon: Wrench, desc: 'Multi-satuan & faktur hutang' },
-  { id: 'general', label: 'Usaha Dagang & Jasa', icon: Briefcase, desc: 'Katalog fleksibel serbaguna' },
+  { id: 'pharmacy', label: 'Apotek', icon: Pill },
+  { id: 'retail', label: 'Retail', icon: ShoppingCart },
+  { id: 'fnb', label: 'F&B', icon: Coffee },
+  { id: 'hardware', label: 'Bangunan', icon: Wrench },
+  { id: 'general', label: 'Umum', icon: Briefcase },
 ];
+
+const INPUT_CLASS =
+  'w-full h-9 px-3 bg-input border border-line rounded-lg text-heading placeholder:text-dim text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors';
+
+const ICON_INPUT_CLASS =
+  'w-full h-9 pl-9 pr-3 bg-input border border-line rounded-lg text-heading placeholder:text-dim text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors';
+
+const LABEL_CLASS = 'text-xs font-semibold text-heading block';
 
 export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) {
   const [step, setStep] = useState<number>(0);
@@ -48,7 +88,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
   const { setAuth } = useAuthStore();
   const { theme, setTheme } = useTheme();
 
-  // ─── Mode NEW: Store Identity ───
+  // Mode NEW: Store Identity
   const [companyName, setCompanyName] = useState('Kivo Store');
   const [branchName, setBranchName] = useState('Cabang Utama');
   const [businessType, setBusinessType] = useState('retail');
@@ -56,13 +96,13 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
   const [companyAddress, setCompanyAddress] = useState('');
   const [companyPhone, setCompanyPhone] = useState('');
 
-  // ─── Mode NEW: Cloud & Workspace ───
+  // Mode NEW: Cloud & Workspace
   const [enableCloud, setEnableCloud] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('Kivo Store');
   const [workspaceCode, setWorkspaceCode] = useState('');
   const [createdWorkspace, setCreatedWorkspace] = useState<WorkspaceInfo | null>(null);
 
-  // ─── Mode NEW: BYOK Cloud (Supabase) ───
+  // Mode NEW: BYOK Cloud (Supabase)
   const [supabaseUrl, setSupabaseUrl] = useState(() => getSavedSupabaseCredentials().url);
   const [supabaseAnonKey, setSupabaseAnonKey] = useState(() => getSavedSupabaseCredentials().anonKey);
   const [showAnonKey, setShowAnonKey] = useState(false);
@@ -74,18 +114,18 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
   }>({ status: 'idle' });
   const [copiedSchema, setCopiedSchema] = useState(false);
 
-  // ─── Mode NEW: Kivo AI (OpenAI) ───
+  // Mode NEW: Kivo AI (OpenAI)
   const [openaiApiKey, setOpenaiApiKey] = useState(() => localStorage.getItem('kivo_openai_api_key') || '');
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
 
-  // ─── Mode NEW: Owner Account ───
+  // Mode NEW: Owner Account
   const [ownerName, setOwnerName] = useState('Pemilik Usaha');
   const [ownerUsername, setOwnerUsername] = useState('owner');
   const [ownerPassword, setOwnerPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // ─── Mode NEW: Seed Config ───
+  // Mode NEW: Seed Config
   const [hppMethod, setHppMethod] = useState<'avg' | 'fifo' | 'lifo'>('avg');
   const [taxRate, setTaxRate] = useState('0');
   const [memberDiscount, setMemberDiscount] = useState('5');
@@ -93,7 +133,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
   const [importedRowCount, setImportedRowCount] = useState<number | null>(null);
   const [importedFileName, setImportedFileName] = useState<string | null>(null);
 
-  // ─── Mode JOIN State ───
+  // Mode JOIN State
   const [joinCodeOrToken, setJoinCodeOrToken] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
   const [joinTab, setJoinTab] = useState<'existing' | 'new_cashier'>('existing');
@@ -102,13 +142,12 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
   const [joinUserPassword, setJoinUserPassword] = useState('');
   const [joinConfirmPassword, setJoinConfirmPassword] = useState('');
 
-  // ─── Mode RESTORE State ───
+  // Mode RESTORE State
   const [restoreCode, setRestoreCode] = useState('');
   const [restoreWsPassword, setRestoreWsPassword] = useState('');
   const [restoreUsername, setRestoreUsername] = useState('');
   const [restorePassword, setRestorePassword] = useState('');
 
-  // Auto-generate workspace code proposal when companyName changes
   const handleCompanyNameChange = (val: string) => {
     setCompanyName(val);
     setWorkspaceName(val);
@@ -121,7 +160,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
 
   const handleTestCloudConnection = async () => {
     if (!supabaseUrl.trim() || !supabaseAnonKey.trim()) {
-      setSupabaseTestStatus({ status: 'error', error: 'Masukkan Supabase Project URL dan Anon Key terlebih dahulu.' });
+      setSupabaseTestStatus({ status: 'error', error: 'Isi URL dan Anon Key terlebih dahulu.' });
       return;
     }
     setTestingSupabase(true);
@@ -145,35 +184,31 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
       const sql = await getBootstrapSql();
       await navigator.clipboard.writeText(sql);
       setCopiedSchema(true);
-      setTimeout(() => setCopiedSchema(false), 3500);
+      setTimeout(() => setCopiedSchema(false), 3000);
     } catch (e: any) {
-      console.error('Gagal mengambil skema SQL:', e);
       setError('Gagal menyalin skema SQL: ' + (e.message || String(e)));
     }
   };
 
-  // ─── MODE NEW: Step 2 Cloud Next ───
   const handleNewStep2Next = async () => {
     setError('');
     if (enableCloud) {
       if (!supabaseUrl.trim()) {
-        setError('Supabase Project URL wajib diisi jika Kivo Cloud aktif.');
+        setError('Supabase Project URL wajib diisi.');
         return;
       }
       if (!supabaseAnonKey.trim()) {
-        setError('Supabase Anon Public Key wajib diisi jika Kivo Cloud aktif.');
+        setError('Supabase Anon Key wajib diisi.');
         return;
       }
       if (!workspaceCode.trim()) {
-        setError('Kode workspace tidak boleh kosong jika Kivo Cloud aktif.');
+        setError('Kode workspace wajib diisi.');
         return;
       }
       setLoading(true);
       try {
-        // Persist cloud credentials to SQLite and dynamic client
         await setCloudConfig(supabaseUrl.trim(), supabaseAnonKey.trim());
         updateSupabaseCredentials(supabaseUrl.trim(), supabaseAnonKey.trim());
-
         const ws = await createWorkspace(workspaceName.trim() || companyName, workspaceCode.trim().toUpperCase());
         setCreatedWorkspace(ws);
         setStep(3);
@@ -187,7 +222,6 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
     setStep(3);
   };
 
-  // ─── MODE NEW: Step 3 Owner Next ───
   const handleNewStep3Next = () => {
     setError('');
     if (!ownerName.trim()) {
@@ -195,7 +229,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
       return;
     }
     if (!ownerUsername.trim()) {
-      setError('Username pemilik wajib diisi.');
+      setError('Username wajib diisi.');
       return;
     }
     if (!ownerPassword || ownerPassword.length < 6) {
@@ -209,7 +243,6 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
     setStep(4);
   };
 
-  // ─── Excel File Import ───
   const handlePickExcel = async () => {
     try {
       const selected = await open({
@@ -234,14 +267,11 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
     }
   };
 
-  // ─── MODE NEW: Final Finish ───
   const handleNewFinish = async () => {
     setLoading(true);
     setError('');
     try {
       const wsId = createdWorkspace?.id || null;
-
-      // 1. Create or Update Owner Account
       const users = await getUsers().catch(() => []);
       const existingUser = users.find(u => u.username.toLowerCase() === ownerUsername.trim().toLowerCase());
 
@@ -267,7 +297,6 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
         );
       }
 
-      // 2. Persist Global Settings
       const settingsToSave: [string, string][] = [
         ['has_completed_setup', 'true'],
         ['company_name', companyName.trim() || 'Kivo Store'],
@@ -299,27 +328,23 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
         updateSupabaseCredentials(supabaseUrl.trim(), supabaseAnonKey.trim());
       }
 
-      // 3. Log in automatically
       const loginRes = await loginUser(ownerUsername.trim().toLowerCase(), ownerPassword);
       if (loginRes.supabase_token) {
         await supabase.auth.setSession({ access_token: loginRes.supabase_token, refresh_token: '' });
       }
       setAuth(loginRes.token, loginRes.user);
-
       onComplete();
     } catch (err: any) {
-      console.error('Setup failed:', err);
       setError(err.message || String(err));
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── MODE JOIN: Step 1 Next ───
   const handleJoinStep1Next = async () => {
     setError('');
     if (!joinCodeOrToken.trim()) {
-      setError('Silakan masukkan Kode Workspace atau Token Undangan.');
+      setError('Kode workspace wajib diisi.');
       return;
     }
     setLoading(true);
@@ -338,7 +363,6 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
     }
   };
 
-  // ─── MODE JOIN: Step 2 Next ───
   const handleJoinStep2Next = async () => {
     setError('');
     setLoading(true);
@@ -350,7 +374,6 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
           setLoading(false);
           return;
         }
-        // Pull latest users from cloud first
         await triggerSyncPull(true).catch(() => {});
         const loginRes = await loginUser(joinUsername.trim().toLowerCase(), joinUserPassword);
         if (loginRes.supabase_token) {
@@ -359,7 +382,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
         setAuth(loginRes.token, loginRes.user);
       } else {
         if (!joinCashierName.trim() || !joinUsername.trim() || !joinUserPassword) {
-          setError('Semua data kasir baru wajib diisi.');
+          setError('Semua data kasir wajib diisi.');
           setLoading(false);
           return;
         }
@@ -389,7 +412,6 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
     }
   };
 
-  // ─── MODE JOIN: Finish ───
   const handleJoinFinish = async () => {
     setLoading(true);
     try {
@@ -409,11 +431,10 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
     }
   };
 
-  // ─── MODE RESTORE: Step 1 Next ───
   const handleRestoreStep1Next = async () => {
     setError('');
     if (!restoreCode.trim()) {
-      setError('Kode Toko / Workspace cloud wajib diisi.');
+      setError('Kode toko wajib diisi.');
       return;
     }
     if (!restoreUsername.trim() || !restorePassword) {
@@ -436,22 +457,17 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
     }
   };
 
-  // ─── MODE RESTORE: Step 2 Download & Restore ───
   const handleRestoreDownload = async () => {
     setError('');
     setLoading(true);
     try {
-      // 1. Pull entire database from Supabase into local SQLite
       await triggerSyncPull(true);
-
-      // 2. Authenticate locally with restored owner credentials
       const loginRes = await loginUser(restoreUsername.trim().toLowerCase(), restorePassword);
       if (loginRes.supabase_token) {
         await supabase.auth.setSession({ access_token: loginRes.supabase_token, refresh_token: '' });
       }
       setAuth(loginRes.token, loginRes.user);
 
-      // 3. Mark setup complete
       await setSetting('has_completed_setup', 'true');
       if (createdWorkspace?.name) {
         await setSetting('company_name', createdWorkspace.name);
@@ -467,315 +483,202 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
     }
   };
 
-  return (
-    <div className="h-full w-full bg-background text-heading dark:text-heading flex flex-col justify-between relative overflow-hidden select-none">
+  const modeLabel = mode === 'new' ? 'Toko Baru' : mode === 'join' ? 'Gabung Workspace' : 'Pulihkan Cloud';
 
-      {/* Top Custom Headbar - Unified TitleBar matching the app theme */}
+  return (
+    <div className="h-[100dvh] w-full bg-background text-heading flex flex-col overflow-hidden select-none">
       <TitleBar
-        theme="auto"
         leftContent={
           <div className="flex items-center gap-2">
-            <KivoLogo size={20} showText={true} textClassName="text-xs font-bold text-heading dark:text-white tracking-tight" />
+            <KivoLogo size={18} showText textClassName="text-xs font-bold" />
+            <span className="text-[11px] font-mono text-dim">1.5.2</span>
           </div>
         }
-        centerContent={
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-dim">
-              Kivo Setup
-            </span>
-            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-primary-soft text-primary border border-primary/20 ">
-              v1.5
-            </span>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.2 rounded-full bg-muted text-dim border border-line">
-              {mode === 'new' ? 'Buat Toko Baru' : mode === 'join' ? 'Gabung Workspace' : 'Pulihkan Cloud'}
-            </span>
-          </div>
-        }
+        centerContent={<span className="text-xs font-semibold text-dim">Setup · {modeLabel}</span>}
         rightExtra={
           <button
+            type="button"
             onMouseDown={e => e.stopPropagation()}
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="h-full px-2.5 flex items-center justify-center text-dim hover:text-warning dark:text-body dark:hover:text-warning transition-colors"
-            title="Ganti Tema (Terang / Gelap)"
+            aria-label="Ganti tema"
+            className="h-full px-3 flex items-center justify-center text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer"
           >
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>
         }
       />
 
-      {/* Main Wizard Content Area - strictly fits within viewport */}
-      <main className="relative z-10 flex-1 min-h-0 max-w-4xl w-full mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col justify-center overflow-hidden">
-
-        {/* Global Error Banner */}
+      <main className="flex-1 min-h-0 max-w-2xl w-full mx-auto px-4 py-5 flex flex-col justify-center overflow-hidden">
         {error && (
-          <div className="mb-3 p-3 rounded-xl bg-danger-soft border border-danger text-danger text-xs flex items-center gap-2.5 animate-fade-in shrink-0">
-            <AlertCircle size={15} className="text-danger shrink-0" />
-            <p className="flex-1">{error}</p>
+          <div className="mb-3 p-3 rounded-lg bg-danger-soft border border-danger/25 text-danger text-xs flex items-center gap-2 shrink-0">
+            <AlertCircle size={15} className="shrink-0" />
+            <span className="flex-1">{error}</span>
           </div>
         )}
 
-        {/* Step Cards Container - Fits 100vh with inner scrolling if window is tiny */}
-        <div className="bg-card border border-line rounded-xl p-5 sm:p-6 shadow-sm overflow-y-auto max-h-full custom-scrollbar flex flex-col justify-between">
-
-          {/* ══════════════════════════════════════════════════════════════
-              SCREEN 0: Welcome & Mode Selection
-             ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-card border border-line rounded-xl p-5 sm:p-6 overflow-y-auto max-h-full custom-scrollbar">
+          {/* STEP 0: Mode Selection */}
           {step === 0 && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="text-center max-w-lg mx-auto space-y-1">
-                <div className="inline-flex p-2.5 bg-primary-soft border border-primary/20 rounded-xl mb-1">
-                  <Store size={22} className="text-primary" />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-heading">
-                  Selamat Datang di Kivo
-                </h2>
-                <p className="text-dim text-xs leading-relaxed">
-                  Platform manajemen bisnis, kasir pintar (POS), dan multi-cabang Anda. Pilih bagaimana Anda ingin memulai:
-                </p>
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-lg font-bold text-heading">Mulai Setup Kivo</h2>
+                <p className="text-xs text-dim mt-0.5">Pilih cara menyiapkan perangkat ini.</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                {/* Option 1: Fresh Store */}
-                <div
-                  onClick={() => setMode('new')}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
- mode === 'new'
- ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
- : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
- }`}
-                >
-                  <div className="space-y-2">
-                    <div className="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
-                      <Store size={20} />
-                    </div>
-                    <h3 className="font-bold text-heading text-sm">Buat Toko Baru</h3>
-                    <p className="text-[11px] text-dim leading-relaxed">
-                      Instalasi baru untuk toko atau cabang ini. Data tersimpan lokal di komputer Anda dan siap offline.
-                    </p>
-                  </div>
-                  <div className="pt-3 flex items-center gap-1 text-[11px] font-semibold text-primary">
-                    <span>Disarankan</span>
-                    <ArrowRight size={13} />
-                  </div>
-                </div>
-
-                {/* Option 2: Join Cloud */}
-                <div
-                  onClick={() => setMode('join')}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
- mode === 'join'
- ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
- : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
- }`}
-                >
-                  <div className="space-y-2">
-                    <div className="w-9 h-9 rounded-lg bg-primary-soft text-primary  flex items-center justify-center">
-                      <Cloud size={20} />
-                    </div>
-                    <h3 className="font-bold text-heading text-sm">Gabung Workspace</h3>
-                    <p className="text-[11px] text-dim leading-relaxed">
-                      Hubungkan perangkat kasir ini ke toko yang sudah berjalan menggunakan Kode Workspace.
-                    </p>
-                  </div>
-                  <div className="pt-3 flex items-center gap-1 text-[11px] font-semibold text-primary ">
-                    <span>Multi-Perangkat</span>
-                    <ArrowRight size={13} />
-                  </div>
-                </div>
-
-                {/* Option 3: Restore Cloud */}
-                <div
-                  onClick={() => setMode('restore')}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
- mode === 'restore'
- ? 'border-primary bg-primary-soft ring-1 ring-primary shadow-sm'
- : 'border-line bg-muted/70 dark:bg-muted/40 hover:border-line-strong dark:hover:border-line-strong hover:bg-muted/70 dark:hover:bg-muted/70'
- }`}
-                >
-                  <div className="space-y-2">
-                    <div className="w-9 h-9 rounded-lg bg-accent/20 text-accent flex items-center justify-center">
-                      <Server size={20} />
-                    </div>
-                    <h3 className="font-bold text-heading text-sm">Pulihkan Cloud</h3>
-                    <p className="text-[11px] text-dim leading-relaxed">
-                      Masuk dengan akun Pemilik yang telah ada di Cloud untuk unduh otomatis seluruh data toko.
-                    </p>
-                  </div>
-                  <div className="pt-3 flex items-center gap-1 text-[11px] font-semibold text-accent ">
-                    <span>Sinkronisasi</span>
-                    <ArrowRight size={13} />
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {[
+                  { id: 'new' as const, icon: Store, title: 'Buat Toko Baru', desc: 'Data tersimpan lokal, siap offline.' },
+                  { id: 'join' as const, icon: Cloud, title: 'Gabung Workspace', desc: 'Hubungkan kasir ke toko yang ada.' },
+                  { id: 'restore' as const, icon: Server, title: 'Pulihkan Cloud', desc: 'Unduh seluruh data dari Supabase.' },
+                ].map(opt => {
+                  const Icon = opt.icon;
+                  const active = mode === opt.id;
+                  return (
+                    <button
+                      type="button"
+                      key={opt.id}
+                      onClick={() => setMode(opt.id)}
+                      className={`p-4 rounded-xl border text-left transition-colors cursor-pointer space-y-2 ${
+                        active
+                          ? 'border-primary bg-primary-soft'
+                          : 'border-line bg-card hover:bg-muted/60 hover:border-line-strong'
+                      }`}
+                    >
+                      <Icon size={18} className={active ? 'text-primary' : 'text-dim'} />
+                      <div>
+                        <p className="font-bold text-sm text-heading">{opt.title}</p>
+                        <p className="text-xs text-dim mt-0.5">{opt.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="flex justify-between items-center pt-2">
+              <div className="flex justify-between items-center pt-2 border-t border-line">
                 {onCancel ? (
-                  <button
-                    type="button"
-                    onClick={onCancel}
-                    className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors"
-                  >
+                  <Button type="button" variant="outline" size="md" onClick={onCancel}>
                     <ArrowLeft size={14} />
-                    <span>Kembali ke Login</span>
-                  </button>
+                    Login
+                  </Button>
                 ) : (
                   <div />
                 )}
-                <button
-                  onClick={() => { setError(''); setStep(1); }}
-                  className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-2 text-xs sm:text-sm transition-colors"
-                >
-                  <span>Lanjutkan</span>
-                  <ArrowRight size={15} />
-                </button>
+                <Button type="button" variant="primary" size="md" onClick={() => { setError(''); setStep(1); }}>
+                  Lanjut
+                </Button>
               </div>
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════
-              BRANCH 1: BUAT TOKO BARU (mode === 'new')
-             ══════════════════════════════════════════════════════════════ */}
-
-          {/* Step 1: Identitas Bisnis */}
+          {/* NEW - STEP 1: Store Identity */}
           {mode === 'new' && step === 1 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-heading">Identitas Bisnis & Toko</h2>
-                <p className="text-dim text-xs mt-0.5">
-                  Informasi ini tercantum pada struk kasir, faktur penjualan, dan laporan operasional.
-                </p>
+                <h2 className="text-base font-bold text-heading">Identitas Toko</h2>
+                <p className="text-xs text-dim mt-0.5">Dipakai pada struk dan laporan.</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Store Name */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Nama Toko / Perusahaan <span className="text-danger">*</span>
-                  </label>
+                  <label className={LABEL_CLASS}>Nama Toko *</label>
                   <div className="relative flex items-center">
-                    <Building2 size={16} className="absolute left-3 text-dim" />
+                    <Building2 size={15} className="absolute left-3 text-dim pointer-events-none" />
                     <input
                       type="text"
                       value={companyName}
                       onChange={(e) => handleCompanyNameChange(e.target.value)}
-                      placeholder="Contoh: Kivo Mart, Apotek Sehat"
-                      className="w-full pl-9 pr-3 py-2 bg-muted border border-line rounded-xl text-heading placeholder:text-dim text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      placeholder="Nama toko"
+                      className={ICON_INPUT_CLASS}
                     />
                   </div>
                 </div>
 
-                {/* Branch Name */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Nama Cabang / Titik Kasir
-                  </label>
+                  <label className={LABEL_CLASS}>Cabang</label>
                   <div className="relative flex items-center">
-                    <Store size={16} className="absolute left-3 text-dim" />
+                    <Store size={15} className="absolute left-3 text-dim pointer-events-none" />
                     <input
                       type="text"
                       value={branchName}
                       onChange={(e) => setBranchName(e.target.value)}
-                      placeholder="Contoh: Cabang Utama, Kasir 1"
-                      className="w-full pl-9 pr-3 py-2 bg-muted border border-line rounded-xl text-heading placeholder:text-dim text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      placeholder="Cabang Utama"
+                      className={ICON_INPUT_CLASS}
                     />
                   </div>
                 </div>
 
-                {/* Currency */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Mata Uang Utama
-                  </label>
-                  <div className="relative flex items-center">
-                    <DollarSign size={16} className="absolute left-3 text-dim" />
-                    <Select
-                      value={currency}
-                      onChange={(v) => setCurrency(v)}
-                      className="w-full pl-9 pr-3 py-2 bg-muted border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
-                    >
-                      <option value="IDR">Rupiah Indonesia (Rp / IDR)</option>
-                      <option value="USD">US Dollar ($ / USD)</option>
-                      <option value="SGD">Singapore Dollar (S$ / SGD)</option>
-                      <option value="MYR">Malaysian Ringgit (RM / MYR)</option>
-                    </Select>
-                  </div>
+                  <label className={LABEL_CLASS}>Mata Uang</label>
+                  <Select value={currency} onChange={(v) => setCurrency(v)} className="w-full">
+                    <option value="IDR">IDR (Rp)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="SGD">SGD (S$)</option>
+                    <option value="MYR">MYR (RM)</option>
+                  </Select>
                 </div>
 
-                {/* Phone */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Nomor Kontak / WhatsApp
-                  </label>
+                  <label className={LABEL_CLASS}>Kontak</label>
                   <div className="relative flex items-center">
-                    <Phone size={16} className="absolute left-3 text-dim" />
+                    <Phone size={15} className="absolute left-3 text-dim pointer-events-none" />
                     <input
                       type="text"
                       value={companyPhone}
                       onChange={(e) => setCompanyPhone(e.target.value)}
-                      placeholder="Contoh: 08123456789"
-                      className="w-full pl-9 pr-3 py-2 bg-muted border border-line rounded-xl text-heading placeholder:text-dim text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      placeholder="08xxxxxxxxxx"
+                      className={ICON_INPUT_CLASS}
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Address */}
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                  Alamat Lengkap Toko
-                </label>
+                <label className={LABEL_CLASS}>Alamat</label>
                 <div className="relative flex items-start">
-                  <MapPin size={16} className="absolute left-3 top-2.5 text-dim" />
+                  <MapPin size={15} className="absolute left-3 top-2.5 text-dim pointer-events-none" />
                   <textarea
                     value={companyAddress}
                     onChange={(e) => setCompanyAddress(e.target.value)}
                     rows={2}
-                    placeholder="Contoh: Jl. Ahmad Yani No. 45, Jakarta Pusat"
-                    className="w-full pl-9 pr-3 py-2 bg-muted border border-line rounded-xl text-heading placeholder:text-dim text-xs sm:text-sm focus:outline-none focus:border-primary"
+                    placeholder="Alamat toko"
+                    className="w-full pl-9 pr-3 py-2 bg-input border border-line rounded-lg text-heading placeholder:text-dim text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
 
-              {/* Business Type Selector - with React Lucide Icons */}
-              <div className="space-y-1.5 pt-1">
-                <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                  Kategori / Jenis Usaha
-                </label>
+              <div className="space-y-1.5">
+                <label className={LABEL_CLASS}>Jenis Usaha</label>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {BUSINESS_TYPES.map((b) => {
                     const IconComp = b.icon;
                     const isSelected = businessType === b.id;
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={b.id}
                         onClick={() => setBusinessType(b.id)}
-                        className={`p-2.5 rounded-xl border cursor-pointer transition-all flex flex-col items-center text-center gap-1.5 ${
- isSelected
- ? 'border-primary bg-primary-soft ring-1 ring-primary'
- : 'border-line/80 bg-muted/70 dark:bg-card/60 hover:border-line-strong dark:hover:border-line-strong'
- }`}
+                        className={`p-2.5 rounded-lg border cursor-pointer transition-colors flex flex-col items-center gap-1.5 ${
+                          isSelected
+                            ? 'border-primary bg-primary-soft text-primary'
+                            : 'border-line bg-card hover:bg-muted text-dim hover:text-heading'
+                        }`}
                       >
-                        <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-primary-soft text-primary' : 'bg-line/60 dark:bg-muted text-body'}`}>
-                          <IconComp size={18} />
-                        </div>
-                        <p className="font-bold text-xs text-heading truncate w-full">{b.label}</p>
-                        <p className="text-[10px] text-dim line-clamp-1">{b.desc}</p>
-                      </div>
+                        <IconComp size={16} />
+                        <span className="font-semibold text-xs text-heading">{b.label}</span>
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-2">
-                <button
-                  onClick={() => setStep(0)}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Kembali</span>
-                </button>
-                <button
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(0)}>
+                  Kembali
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
                   onClick={() => {
                     if (!companyName.trim()) {
                       setError('Nama toko wajib diisi.');
@@ -784,1172 +687,732 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
                     setError('');
                     setStep(2);
                   }}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all"
                 >
-                  <span>Lanjutkan</span>
-                  <ArrowRight size={14} />
-                </button>
+                  Lanjut
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step 2: Kivo Cloud & Workspace (BYOK) */}
+          {/* NEW - STEP 2: Cloud & AI (Optional) */}
           {mode === 'new' && step === 2 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-heading">Konektivitas Cloud &amp; AI (Opsional)</h2>
-                <p className="text-dim text-xs mt-0.5">
-                  Kivo mengadopsi prinsip <strong>Bring Your Own Keys (BYOK)</strong>. Database dan data Anda 100% milik toko Anda sendiri secara aman.
-                </p>
+                <h2 className="text-base font-bold text-heading">Cloud &amp; AI (Opsional)</h2>
+                <p className="text-xs text-dim mt-0.5">Lewati untuk bekerja 100% lokal di perangkat ini.</p>
               </div>
 
-              <div className="space-y-3.5">
-                {/* ── Toggle Kivo Cloud ── */}
-                <div 
-                  onClick={() => setEnableCloud(!enableCloud)}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all flex items-start gap-3.5 ${
- enableCloud 
- ? 'border-primary bg-primary-soft ring-1 ring-primary' 
- : 'border-line bg-muted/70 dark:bg-card/50 hover:border-line-strong'
- }`}
-                >
-                  <div className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
+              <button
+                type="button"
+                onClick={() => setEnableCloud(!enableCloud)}
+                className={`w-full p-3.5 rounded-lg border text-left cursor-pointer transition-colors flex items-center gap-3 ${
+                  enableCloud ? 'border-primary bg-primary-soft' : 'border-line bg-card hover:bg-muted/60'
+                }`}
+              >
+                <span
+                  className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${
                     enableCloud ? 'bg-primary text-white' : 'border border-line-strong'
-                  }`}>
-                    {enableCloud && <Check size={14} strokeWidth={3} />}
-                  </div>
-                  <div className="flex-1 space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-heading text-sm">Aktifkan Kivo Cloud (Multi-Cabang &amp; Sync)</h4>
-                      <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded-full bg-primary text-white">
-                        BYOK Cloud
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-dim leading-relaxed">
-                      Hubungkan ke database Supabase pribadi Anda untuk sinkronisasi antar perangkat kasir, cabang, dan cadangan real-time.
-                    </p>
-                  </div>
+                  }`}
+                >
+                  {enableCloud && <Check size={12} strokeWidth={3} />}
+                </span>
+                <div>
+                  <p className="font-semibold text-sm text-heading">Aktifkan sinkronisasi Supabase</p>
+                  <p className="text-xs text-dim">Gunakan project Supabase milik Anda sendiri.</p>
                 </div>
+              </button>
 
-                {/* ── When Cloud Enabled: Supabase BYOK Config + Workspace Details ── */}
-                {enableCloud && (
-                  <div className="space-y-3.5 animate-fade-in">
-                    {/* Card 1: Supabase BYOK Credentials */}
-                    <div className="p-4 rounded-xl bg-card border border-line space-y-3 shadow-xs">
-                      <div className="flex items-start justify-between gap-3 border-b border-line pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
-                            <Cloud size={18} />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h5 className="font-bold text-heading text-xs sm:text-sm">Kredensial Supabase Project</h5>
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-success-soft text-success border border-success/30">
-                                100% Milik Anda
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-dim mt-0.5">
-                              Data disimpan di project Supabase Anda sendiri tanpa perantara.
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Quick helper links */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => openBrowserUrl(supabaseUrl ? `${supabaseUrl.replace(/\/$/, '')}` : 'https://supabase.com/dashboard/new')}
-                            className="px-2.5 py-1.5 rounded-lg border border-line bg-muted/60 hover:bg-muted text-[11px] font-semibold text-heading flex items-center gap-1 transition-all cursor-pointer"
-                            title="Buka Supabase Dashboard di Browser"
-                          >
-                            <span>Dashboard</span>
-                            <ExternalLink size={11} className="text-dim" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleCopySchemaNotice}
-                            className="px-2.5 py-1.5 rounded-lg border border-line bg-muted/60 hover:bg-muted text-[11px] font-semibold text-heading flex items-center gap-1 transition-all"
-                            title="Salin instruksi skema SQL Supabase"
-                          >
-                            {copiedSchema ? (
-                              <>
-                                <CheckCheck size={11} className="text-success" />
-                                <span className="text-success">Tersalin!</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy size={11} className="text-dim" />
-                                <span>Salin Skema SQL</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Notice banner for SQL script */}
-                      <div className="p-2.5 rounded-lg bg-primary-soft/60 border border-primary/20 text-[11px] text-dim flex items-start gap-2">
-                        <Server size={14} className="text-primary shrink-0 mt-0.5" />
-                        <div className="flex-1 leading-relaxed">
-                          Jalankan file <code className="px-1 py-0.5 rounded bg-card border border-line text-heading font-mono text-[10px]">supabase_full_bootstrap.sql</code> di <strong>Supabase SQL Editor</strong> Anda untuk menyiapkan seluruh 34 tabel multi-cabang.
-                        </div>
-                      </div>
-
-                      {/* Input: Project URL */}
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-heading uppercase tracking-wider flex items-center justify-between">
-                          <span>Project URL Supabase <span className="text-danger">*</span></span>
-                          <span className="text-[10px] text-dim font-normal">Contoh: https://xyzcompany.supabase.co</span>
-                        </label>
-                        <input
-                          type="url"
-                          value={supabaseUrl}
-                          onChange={(e) => setSupabaseUrl(e.target.value.trim())}
-                          placeholder="https://xyzcompany.supabase.co"
-                          className="w-full px-3.5 py-2 bg-muted/50 border border-line rounded-xl text-heading font-mono text-xs focus:outline-none focus:border-primary focus:bg-card transition-all"
-                        />
-                      </div>
-
-                      {/* Input: Anon Key */}
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-heading uppercase tracking-wider flex items-center justify-between">
-                          <span>Anon / Public API Key <span className="text-danger">*</span></span>
-                          <span className="text-[10px] text-dim font-normal">Project Settings &gt; API</span>
-                        </label>
-                        <div className="relative flex items-center">
-                          <input
-                            type={showAnonKey ? 'text' : 'password'}
-                            value={supabaseAnonKey}
-                            onChange={(e) => setSupabaseAnonKey(e.target.value.trim())}
-                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                            className="w-full pl-3.5 pr-10 py-2 bg-muted/50 border border-line rounded-xl text-heading font-mono text-xs focus:outline-none focus:border-primary focus:bg-card transition-all"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowAnonKey(!showAnonKey)}
-                            className="absolute right-2.5 p-1 text-dim hover:text-heading transition-colors"
-                          >
-                            {showAnonKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Test Connection Button & Status */}
-                      <div className="pt-1 flex items-center justify-between gap-3">
-                        <button
-                          type="button"
-                          onClick={handleTestCloudConnection}
-                          disabled={testingSupabase || !supabaseUrl || !supabaseAnonKey}
-                          className="px-3.5 py-1.5 rounded-lg border border-line bg-muted hover:bg-line text-heading font-semibold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50"
-                        >
-                          {testingSupabase ? (
-                            <>
-                              <Loader2 size={13} className="animate-spin text-primary" />
-                              <span>Menguji Koneksi...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Plug size={13} className="text-primary" />
-                              <span>Tes Koneksi Cloud</span>
-                            </>
-                          )}
-                        </button>
-
-                        {supabaseTestStatus.status === 'success' && (
-                          <div className="flex items-center gap-1.5 text-xs text-success font-semibold">
-                            <CheckCircle2 size={14} />
-                            <span>Koneksi Berhasil ({supabaseTestStatus.latency}ms)</span>
-                          </div>
-                        )}
-
-                        {supabaseTestStatus.status === 'error' && (
-                          <div className="flex items-center gap-1.5 text-xs text-danger font-medium truncate max-w-[280px]">
-                            <AlertCircle size={14} className="shrink-0" />
-                            <span className="truncate">{supabaseTestStatus.error}</span>
-                          </div>
-                        )}
-                      </div>
+              {enableCloud && (
+                <div className="p-4 rounded-xl bg-muted/40 border border-line space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-heading">Kredensial Supabase</span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openBrowserUrl(supabaseUrl ? supabaseUrl.replace(/\/$/, '') : 'https://supabase.com/dashboard/new')}
+                      >
+                        Dashboard
+                        <ExternalLink size={12} />
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={handleCopySchemaNotice}>
+                        {copiedSchema ? <CheckCheck size={12} className="text-success" /> : <Copy size={12} />}
+                        {copiedSchema ? 'Tersalin' : 'Salin SQL'}
+                      </Button>
                     </div>
-
-                    {/* Workspace Identifiers */}
-                    <div className="p-4 rounded-xl bg-card border border-line space-y-3 shadow-xs">
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                          Nama Cloud Workspace
-                        </label>
-                        <input
-                          type="text"
-                          value={workspaceName}
-                          onChange={(e) => setWorkspaceName(e.target.value)}
-                          placeholder="Nama Workspace Toko"
-                          className="w-full px-3.5 py-2 bg-muted/50 border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary focus:bg-card transition-all"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                            Kode Workspace Unik (Shareable)
-                          </label>
-                          <span className="text-[10px] text-dim">Huruf besar &amp; angka</span>
-                        </div>
-                        <input
-                          type="text"
-                          value={workspaceCode}
-                          onChange={(e) => setWorkspaceCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
-                          placeholder="Contoh: KV-TOKO-01"
-                          className="w-full px-3.5 py-2 bg-muted/50 border border-line rounded-xl text-heading font-mono text-xs sm:text-sm tracking-wider focus:outline-none focus:border-primary focus:bg-card transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── When Cloud Disabled: Local Mode Banner ── */}
-                {!enableCloud && (
-                  <div className="p-3.5 rounded-xl bg-muted/40 border border-line text-xs text-body flex items-start gap-3">
-                    <ShieldCheck size={18} className="text-success shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-heading text-xs">Mode Lokal (Offline-First Aktif)</p>
-                      <p className="text-[11px] text-dim mt-0.5">
-                        Seluruh data penjualan, inventaris, dan akuntansi tersimpan 100% di komputer ini menggunakan SQLite lokal berkecepatan tinggi tanpa ketergantungan internet.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Card 2: Kivo AI Assistant (OpenAI BYOK) ── */}
-                <div className="p-4 rounded-xl bg-card border border-line space-y-3 shadow-xs">
-                  <div className="flex items-start justify-between gap-3 border-b border-line pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
-                        <MessageSquare size={18} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h5 className="font-bold text-heading text-xs sm:text-sm">Kivo AI Assistant (OpenAI)</h5>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-dim border border-line">
-                            Opsional
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-dim mt-0.5">
-                          Analisis penjualan otomatis, audit stok cerdas, dan prediksi pesanan barang.
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => openBrowserUrl('https://platform.openai.com/api-keys')}
-                      className="px-2.5 py-1.5 rounded-lg border border-line bg-muted/60 hover:bg-muted text-[11px] font-semibold text-heading flex items-center gap-1 transition-all shrink-0 cursor-pointer"
-                      title="Buka OpenAI Platform di Browser"
-                    >
-                      <span>Dapatkan Key</span>
-                      <ExternalLink size={11} className="text-dim" />
-                    </button>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider flex items-center justify-between">
-                      <span>OpenAI API Key</span>
-                      <span className="text-[10px] text-dim font-normal">Bisa diisi nanti di Pengaturan</span>
-                    </label>
+                    <label className={LABEL_CLASS}>Project URL *</label>
+                    <input
+                      type="url"
+                      value={supabaseUrl}
+                      onChange={(e) => setSupabaseUrl(e.target.value.trim())}
+                      placeholder="https://xyz.supabase.co"
+                      className={`${INPUT_CLASS} font-mono text-xs`}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className={LABEL_CLASS}>Anon Key *</label>
                     <div className="relative flex items-center">
                       <input
-                        type={showOpenaiKey ? 'text' : 'password'}
-                        value={openaiApiKey}
-                        onChange={(e) => setOpenaiApiKey(e.target.value.trim())}
-                        placeholder="sk-proj-..."
-                        className="w-full pl-3.5 pr-10 py-2 bg-muted/50 border border-line rounded-xl text-heading font-mono text-xs focus:outline-none focus:border-primary focus:bg-card transition-all"
+                        type={showAnonKey ? 'text' : 'password'}
+                        value={supabaseAnonKey}
+                        onChange={(e) => setSupabaseAnonKey(e.target.value.trim())}
+                        placeholder="eyJhbGci..."
+                        className={`${INPUT_CLASS} pr-9 font-mono text-xs`}
                       />
                       <button
                         type="button"
-                        onClick={() => setShowOpenaiKey(!showOpenaiKey)}
-                        className="absolute right-2.5 p-1 text-dim hover:text-heading transition-colors"
+                        onClick={() => setShowAnonKey(!showAnonKey)}
+                        aria-label="Toggle key"
+                        className="absolute right-2.5 p-1 text-dim hover:text-heading cursor-pointer"
                       >
-                        {showOpenaiKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {showAnonKey ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className={LABEL_CLASS}>Nama Workspace</label>
+                      <input
+                        type="text"
+                        value={workspaceName}
+                        onChange={(e) => setWorkspaceName(e.target.value)}
+                        className={INPUT_CLASS}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className={LABEL_CLASS}>Kode Workspace *</label>
+                      <input
+                        type="text"
+                        value={workspaceCode}
+                        onChange={(e) => setWorkspaceCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                        placeholder="KV-TOKO-01"
+                        className={`${INPUT_CLASS} font-mono`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTestCloudConnection}
+                      disabled={testingSupabase || !supabaseUrl || !supabaseAnonKey}
+                      loading={testingSupabase}
+                    >
+                      <Plug size={13} />
+                      Tes Koneksi
+                    </Button>
+
+                    {supabaseTestStatus.status === 'success' && (
+                      <span className="text-xs text-success font-semibold">
+                        Terhubung ({supabaseTestStatus.latency}ms)
+                      </span>
+                    )}
+                    {supabaseTestStatus.status === 'error' && (
+                      <span className="text-xs text-danger truncate max-w-[240px]">
+                        {supabaseTestStatus.error}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3.5 rounded-xl bg-muted/40 border border-line space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-heading flex items-center gap-1.5">
+                    <MessageSquare size={14} className="text-dim" />
+                    OpenAI API Key (opsional)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => openBrowserUrl('https://platform.openai.com/api-keys')}
+                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    Dapatkan Key
+                    <ExternalLink size={11} />
+                  </button>
+                </div>
+                <div className="relative flex items-center">
+                  <input
+                    type={showOpenaiKey ? 'text' : 'password'}
+                    value={openaiApiKey}
+                    onChange={(e) => setOpenaiApiKey(e.target.value.trim())}
+                    placeholder="sk-proj-..."
+                    className={`${INPUT_CLASS} pr-9 font-mono text-xs`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+                    aria-label="Toggle API key"
+                    className="absolute right-2.5 p-1 text-dim hover:text-heading cursor-pointer"
+                  >
+                    {showOpenaiKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
                 </div>
               </div>
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-2">
-                <button
-                  onClick={() => setStep(1)}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Kembali</span>
-                </button>
-                <button
-                  onClick={handleNewStep2Next}
-                  disabled={loading}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>Menyiapkan Workspace...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{enableCloud ? 'Verifikasi & Lanjut' : 'Lanjut Mode Lokal'}</span>
-                      <ArrowRight size={14} />
-                    </>
-                  )}
-                </button>
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(1)}>
+                  Kembali
+                </Button>
+                <Button type="button" variant="primary" size="md" onClick={handleNewStep2Next} loading={loading}>
+                  {enableCloud ? 'Verifikasi & Lanjut' : 'Lanjut Lokal'}
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Akun Pemilik */}
+          {/* NEW - STEP 3: Owner Account */}
           {mode === 'new' && step === 3 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-heading">Buat Akun Pemilik (Owner)</h2>
-                <p className="text-dim text-xs mt-0.5">
-                  Akun ini memegang hak akses utama (Owner) yang tidak dapat dihapus dan memiliki wewenang penuh atas sistem.
-                </p>
+                <h2 className="text-base font-bold text-heading">Akun Pemilik</h2>
+                <p className="text-xs text-dim mt-0.5">Akun utama dengan akses penuh.</p>
               </div>
 
               <div className="space-y-3">
-                {/* Full Name */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Nama Lengkap Pemilik <span className="text-danger">*</span>
-                  </label>
+                  <label className={LABEL_CLASS}>Nama Lengkap *</label>
                   <div className="relative flex items-center">
-                    <Users size={16} className="absolute left-3 text-dim" />
+                    <Users size={15} className="absolute left-3 text-dim pointer-events-none" />
                     <input
                       type="text"
                       value={ownerName}
                       onChange={(e) => setOwnerName(e.target.value)}
-                      placeholder="Contoh: Budi Santoso"
-                      className="w-full pl-9 pr-3 py-2 bg-muted border border-line rounded-xl text-heading placeholder:text-dim text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      placeholder="Nama lengkap"
+                      className={ICON_INPUT_CLASS}
                     />
                   </div>
                 </div>
 
-                {/* Username */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Username Login <span className="text-danger">*</span>
-                  </label>
+                  <label className={LABEL_CLASS}>Username *</label>
                   <input
                     type="text"
                     value={ownerUsername}
                     onChange={(e) => setOwnerUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                    placeholder="Contoh: owner, budi"
-                    className="w-full px-3.5 py-2 bg-muted border border-line rounded-xl text-heading font-mono text-xs sm:text-sm focus:outline-none focus:border-primary"
+                    placeholder="owner"
+                    className={`${INPUT_CLASS} font-mono`}
                   />
                 </div>
 
-                {/* Password Fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Password <span className="text-danger">*</span>
-                    </label>
+                    <label className={LABEL_CLASS}>Password *</label>
                     <div className="relative flex items-center">
-                      <Lock size={16} className="absolute left-3 text-dim" />
+                      <Lock size={15} className="absolute left-3 text-dim pointer-events-none" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={ownerPassword}
                         onChange={(e) => setOwnerPassword(e.target.value)}
                         placeholder="Min. 6 karakter"
-                        className="w-full pl-9 pr-9 py-2 bg-muted border border-line rounded-xl text-heading placeholder:text-dim text-xs sm:text-sm focus:outline-none focus:border-primary"
+                        className={`${ICON_INPUT_CLASS} pr-9`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 text-dim hover:text-body dark:hover:text-heading"
+                        aria-label="Toggle password"
+                        className="absolute right-2.5 text-dim hover:text-heading p-1 cursor-pointer"
                       >
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Ulangi Password <span className="text-danger">*</span>
-                    </label>
+                    <label className={LABEL_CLASS}>Konfirmasi Password *</label>
                     <div className="relative flex items-center">
-                      <Lock size={16} className="absolute left-3 text-dim" />
+                      <Lock size={15} className="absolute left-3 text-dim pointer-events-none" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Ketik ulang password"
-                        className="w-full pl-9 pr-3 py-2 bg-muted border border-line rounded-xl text-heading placeholder:text-dim text-xs sm:text-sm focus:outline-none focus:border-primary"
+                        placeholder="Ulangi password"
+                        className={ICON_INPUT_CLASS}
                       />
                     </div>
                   </div>
                 </div>
-
-                <div className="p-2.5 rounded-xl bg-primary-soft border border-primary/20  text-[11px] flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-primary  shrink-0" />
-                  <span>Password dienkripsi menggunakan hashing Bcrypt standard.</span>
-                </div>
               </div>
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-2">
-                <button
-                  onClick={() => setStep(2)}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Kembali</span>
-                </button>
-                <button
-                  onClick={handleNewStep3Next}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all"
-                >
-                  <span>Lanjutkan</span>
-                  <ArrowRight size={14} />
-                </button>
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(2)}>
+                  Kembali
+                </Button>
+                <Button type="button" variant="primary" size="md" onClick={handleNewStep3Next}>
+                  Lanjut
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step 4: Konfigurasi Bisnis Awal */}
+          {/* NEW - STEP 4: Operational Defaults */}
           {mode === 'new' && step === 4 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-heading">Konfigurasi Operasional & Data</h2>
-                <p className="text-dim text-xs mt-0.5">
-                  Tentukan metode perhitungan modal/HPP, tarif pajak, dan opsi import katalog produk awal.
-                </p>
+                <h2 className="text-base font-bold text-heading">Pengaturan Awal</h2>
+                <p className="text-xs text-dim mt-0.5">Bisa diubah kapan saja di menu Pengaturan.</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {/* HPP Method */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Metode Perhitungan HPP (COGS)
-                  </label>
+                  <label className={LABEL_CLASS}>Metode HPP</label>
                   <div className="space-y-1.5">
                     {[
-                      { id: 'avg', title: 'Moving Average (Disarankan)', desc: 'Rata-rata tertimbang harga beli barang' },
-                      { id: 'fifo', title: 'FIFO (First In, First Out)', desc: 'Barang pertama masuk dijual lebih dulu' },
-                      { id: 'lifo', title: 'LIFO (Last In, First Out)', desc: 'Barang terakhir masuk dijual lebih dulu' },
+                      { id: 'avg', title: 'Moving Average' },
+                      { id: 'fifo', title: 'FIFO' },
+                      { id: 'lifo', title: 'LIFO' },
                     ].map((m) => (
-                      <label
+                      <button
+                        type="button"
                         key={m.id}
                         onClick={() => setHppMethod(m.id as any)}
-                        className={`p-2.5 rounded-xl border cursor-pointer flex items-start gap-2.5 transition-all ${
- hppMethod === m.id
- ? 'border-primary bg-primary-soft ring-1 ring-primary'
- : 'border-line bg-muted/70 dark:bg-card/50 hover:border-line-strong dark:hover:border-line-strong'
- }`}
+                        className={`w-full px-3 py-2 rounded-lg border text-left text-xs font-semibold transition-colors cursor-pointer ${
+                          hppMethod === m.id
+                            ? 'border-primary bg-primary-soft text-primary'
+                            : 'border-line bg-card text-heading hover:bg-muted'
+                        }`}
                       >
-                        <input
-                          type="radio"
-                          name="hpp"
-                          checked={hppMethod === m.id}
-                          onChange={() => {}}
-                          className="mt-0.5 accent-primary"
-                        />
-                        <div>
-                          <p className="font-bold text-xs text-heading">{m.title}</p>
-                          <p className="text-[10px] text-dim">{m.desc}</p>
-                        </div>
-                      </label>
+                        {m.title}
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Tax & Tier Discounts */}
                 <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Tarif PPN / Pajak (%)
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1.5">
+                    <label className={LABEL_CLASS}>Tarif PPN (%)</label>
+                    <div className="grid grid-cols-3 gap-1.5">
                       {['0', '11', '12'].map((val) => (
                         <button
                           key={val}
                           type="button"
                           onClick={() => setTaxRate(val)}
-                          className={`py-1.5 rounded-xl border text-xs font-bold transition-all ${
- taxRate === val
- ? 'border-primary bg-primary text-white shadow-xs'
- : 'border-line bg-muted text-heading hover:border-line-strong dark:hover:border-line-strong'
- }`}
+                          className={`h-9 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                            taxRate === val
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-line bg-card text-heading hover:bg-muted'
+                          }`}
                         >
-                          {val === '0' ? 'Bebas (0%)' : `${val}% PPN`}
+                          {val}%
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                        Diskon Member (%)
-                      </label>
+                      <label className={LABEL_CLASS}>Diskon Member %</label>
                       <input
                         type="number"
                         min={0}
                         max={100}
                         value={memberDiscount}
                         onChange={(e) => setMemberDiscount(e.target.value)}
-                        className="w-full px-3 py-1.5 bg-muted border border-line rounded-xl text-heading text-xs font-mono focus:outline-none focus:border-primary"
+                        className={`${INPUT_CLASS} font-mono tnum`}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                        Diskon VIP Tier (%)
-                      </label>
+                      <label className={LABEL_CLASS}>Diskon VIP %</label>
                       <input
                         type="number"
                         min={0}
                         max={100}
                         value={vipDiscount}
                         onChange={(e) => setVipDiscount(e.target.value)}
-                        className="w-full px-3 py-1.5 bg-muted border border-line rounded-xl text-heading text-xs font-mono focus:outline-none focus:border-primary"
+                        className={`${INPUT_CLASS} font-mono tnum`}
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Initial Product Catalog Seed / Import */}
-              <div className="pt-2 border-t border-line/80">
-                <div className="p-3 rounded-xl bg-muted/60 border border-line flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-success/20 text-success flex items-center justify-center shrink-0">
-                      <FileSpreadsheet size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-heading truncate">
-                        {importedRowCount !== null
-                          ? `Berhasil Memuat ${importedRowCount} Produk dari Excel!`
-                          : 'Import Produk dari File Excel (.xlsx)'}
-                      </p>
-                      <p className="text-[10px] text-dim truncate">
-                        {importedFileName ? `File: ${importedFileName}` : 'Opsional. Anda dapat memasukkan produk satu per satu nanti.'}
-                      </p>
-                    </div>
+              <div className="p-3 rounded-lg bg-muted/40 border border-line flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <FileSpreadsheet size={16} className="text-success shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-xs text-heading truncate">
+                      {importedRowCount !== null ? `${importedRowCount} produk dimuat` : 'Import produk Excel (.xlsx)'}
+                    </p>
+                    {importedFileName && <p className="text-[11px] text-dim truncate">{importedFileName}</p>}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={handlePickExcel}
-                    disabled={loading}
-                    className="px-3 py-1.5 bg-card hover:bg-muted dark:hover:bg-line-strong text-body dark:text-heading font-semibold rounded-xl text-[11px] flex items-center gap-1.5 border border-line-strong dark:border-line-strong transition-colors shrink-0"
-                  >
-                    <Upload size={13} />
-                    <span>{importedRowCount !== null ? 'Ganti File' : 'Pilih File'}</span>
-                  </button>
                 </div>
+                <Button type="button" variant="outline" size="sm" onClick={handlePickExcel} disabled={loading}>
+                  <Upload size={13} />
+                  {importedRowCount !== null ? 'Ganti' : 'Pilih File'}
+                </Button>
               </div>
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-2">
-                <button
-                  onClick={() => setStep(3)}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Kembali</span>
-                </button>
-                <button
-                  onClick={() => setStep(5)}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all"
-                >
-                  <span>Lanjutkan</span>
-                  <ArrowRight size={14} />
-                </button>
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(3)}>
+                  Kembali
+                </Button>
+                <Button type="button" variant="primary" size="md" onClick={() => setStep(5)}>
+                  Lanjut
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step 5: Review & Selesai */}
+          {/* NEW - STEP 5: Summary */}
           {mode === 'new' && step === 5 && (
-            <div className="space-y-4 text-center animate-fade-in">
-              <div className="w-12 h-12 rounded-xl bg-success text-white flex items-center justify-center mx-auto shadow-sm">
-                <CheckCircle2 size={28} />
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-heading">Siap Digunakan</h2>
+                  <p className="text-xs text-dim">Periksa ringkasan lalu mulai.</p>
+                </div>
               </div>
 
-              <div className="space-y-0.5">
-                <h2 className="text-xl font-black text-heading">Semua Siap! Mulai Gunakan Kivo</h2>
-                <p className="text-dim text-xs max-w-sm mx-auto">
-                  Konfigurasi dasar siap. Klik tombol di bawah untuk menyimpan dan membuka Dashboard Kivo.
-                </p>
-              </div>
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-left py-1">
-                <div className="p-2.5 rounded-xl bg-muted border border-line/80">
-                  <span className="text-[9px] uppercase font-bold text-dim">Bisnis</span>
-                  <p className="font-bold text-xs text-heading truncate mt-0.5">{companyName}</p>
-                  <p className="text-[10px] text-dim truncate">{branchName}</p>
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-lg bg-muted/50 border border-line">
+                  <span className="text-dim">Toko</span>
+                  <p className="font-semibold text-heading mt-0.5 truncate">{companyName} · {branchName}</p>
                 </div>
-                <div className="p-2.5 rounded-xl bg-muted border border-line/80">
-                  <span className="text-[9px] uppercase font-bold text-dim">Owner</span>
-                  <p className="font-bold text-xs text-heading truncate mt-0.5">{ownerName}</p>
-                  <p className="text-[10px] text-dim font-mono">@{ownerUsername}</p>
+                <div className="p-3 rounded-lg bg-muted/50 border border-line">
+                  <span className="text-dim">Pemilik</span>
+                  <p className="font-semibold text-heading mt-0.5 truncate">{ownerName} (@{ownerUsername})</p>
                 </div>
-                <div className="p-2.5 rounded-xl bg-muted border border-line/80">
-                  <span className="text-[9px] uppercase font-bold text-dim">Cloud / Sync</span>
-                  <p className="font-bold text-xs text-success truncate mt-0.5">
-                    {createdWorkspace ? createdWorkspace.code : enableCloud ? workspaceCode : 'Lokal (Offline)'}
+                <div className="p-3 rounded-lg bg-muted/50 border border-line">
+                  <span className="text-dim">Mode</span>
+                  <p className="font-semibold text-heading mt-0.5 truncate">
+                    {createdWorkspace ? createdWorkspace.code : enableCloud ? workspaceCode : 'Lokal'}
                   </p>
-                  <p className="text-[10px] text-dim">SQLite Ready</p>
                 </div>
-                <div className="p-2.5 rounded-xl bg-muted border border-line/80">
-                  <span className="text-[9px] uppercase font-bold text-dim">Katalog</span>
-                  <p className="font-bold text-xs text-heading truncate mt-0.5">
-                    {importedRowCount !== null ? `${importedRowCount} Produk` : 'Katalog Baru'}
+                <div className="p-3 rounded-lg bg-muted/50 border border-line">
+                  <span className="text-dim">PPN / Katalog</span>
+                  <p className="font-semibold text-heading mt-0.5 truncate">
+                    {taxRate}% · {importedRowCount !== null ? `${importedRowCount} item` : 'Kosong'}
                   </p>
-                  <p className="text-[10px] text-dim">PPN: {taxRate}%</p>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-center gap-2.5 pt-2">
-                <button
-                  onClick={() => setStep(4)}
-                  disabled={loading}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl text-xs transition-colors"
-                >
-                  Ubah
-                </button>
-                <button
-                  onClick={handleNewFinish}
-                  disabled={loading}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98] disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Menyiapkan Dashboard Kivo...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Buka Dashboard Kivo</span>
-                      <ArrowRight size={15} />
-                    </>
-                  )}
-                </button>
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(4)} disabled={loading}>
+                  Kembali
+                </Button>
+                <Button type="button" variant="primary" size="md" onClick={handleNewFinish} loading={loading}>
+                  Mulai Kivo
+                </Button>
               </div>
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════
-              BRANCH 2: GABUNG WORKSPACE (mode === 'join')
-             ══════════════════════════════════════════════════════════════ */}
-
-          {/* Step 1: Hubungkan ke Workspace */}
+          {/* JOIN - STEP 1 */}
           {mode === 'join' && step === 1 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-heading">Gabung ke Workspace Toko</h2>
-                <p className="text-dim text-xs mt-0.5">
-                  Hubungkan komputer kasir ini ke sistem toko yang sudah berjalan menggunakan Kode Workspace atau Token Undangan.
-                </p>
+                <h2 className="text-base font-bold text-heading">Gabung Workspace</h2>
+                <p className="text-xs text-dim mt-0.5">Masukkan kode workspace dari toko utama.</p>
               </div>
 
-              <div className="p-4 rounded-xl bg-muted/80 border border-line/80 space-y-3">
+              <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Kode Workspace / Token Undangan <span className="text-danger">*</span>
-                  </label>
+                  <label className={LABEL_CLASS}>Kode Workspace *</label>
                   <div className="relative flex items-center">
-                    <KeyRound size={16} className="absolute left-3 text-dim" />
+                    <KeyRound size={15} className="absolute left-3 text-dim pointer-events-none" />
                     <input
                       type="text"
                       value={joinCodeOrToken}
                       onChange={(e) => setJoinCodeOrToken(e.target.value.trim())}
-                      placeholder="Contoh: KV-TOKO-01 atau token invite"
-                      className="w-full pl-9 pr-3 py-2.5 bg-card dark:bg-input border border-line rounded-xl text-heading font-mono text-xs sm:text-sm tracking-wider focus:outline-none focus:border-primary"
+                      placeholder="KV-TOKO-01"
+                      className={`${ICON_INPUT_CLASS} font-mono`}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Password Workspace (Opsional)
-                  </label>
+                  <label className={LABEL_CLASS}>Password Workspace (opsional)</label>
                   <div className="relative flex items-center">
-                    <Lock size={16} className="absolute left-3 text-dim" />
+                    <Lock size={15} className="absolute left-3 text-dim pointer-events-none" />
                     <input
                       type="password"
                       value={joinPassword}
                       onChange={(e) => setJoinPassword(e.target.value)}
-                      placeholder="Kosongi jika toko tidak diproteksi password"
-                      className="w-full pl-9 pr-3 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      placeholder="Opsional"
+                      className={ICON_INPUT_CLASS}
                     />
                   </div>
                 </div>
-
-                <div className="p-2.5 rounded-xl bg-primary-soft border border-primary/20  text-[11px] flex items-center gap-2">
-                  <Cloud size={16} className="text-primary  shrink-0" />
-                  <span>Katalog produk, harga, dan pengaturan cabang akan otomatis diunduh dari cloud.</span>
-                </div>
               </div>
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-2">
-                <button
-                  onClick={() => setStep(0)}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Kembali</span>
-                </button>
-                <button
-                  onClick={handleJoinStep1Next}
-                  disabled={loading}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>Menghubungkan ke Toko...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Verifikasi & Lanjut</span>
-                      <ArrowRight size={14} />
-                    </>
-                  )}
-                </button>
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(0)}>
+                  Kembali
+                </Button>
+                <Button type="button" variant="primary" size="md" onClick={handleJoinStep1Next} loading={loading}>
+                  Hubungkan
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step 2: Akun Kasir di Komputer Ini */}
+          {/* JOIN - STEP 2 */}
           {mode === 'join' && step === 2 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-success-soft text-success text-[11px] font-semibold mb-1">
-                  <Check size={12} strokeWidth={3} />
-                  <span>Terhubung ke: {createdWorkspace?.name} ({createdWorkspace?.code})</span>
-                </div>
-                <h2 className="text-lg sm:text-xl font-bold text-heading">Akun Pengguna di Komputer Ini</h2>
-                <p className="text-dim text-xs mt-0.5">
-                  Tentukan profil pengguna yang akan digunakan untuk mengoperasikan kasir pada komputer ini.
+                <h2 className="text-base font-bold text-heading">Akun Perangkat</h2>
+                <p className="text-xs text-dim mt-0.5">
+                  Terhubung ke {createdWorkspace?.name} ({createdWorkspace?.code})
                 </p>
               </div>
 
-              {/* Tab Selector */}
-              <div className="flex rounded-xl bg-muted dark:bg-input p-1 border border-line">
+              <div className="flex rounded-lg bg-muted p-1 border border-line">
                 <button
                   type="button"
                   onClick={() => setJoinTab('existing')}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    joinTab === 'existing'
-                      ? 'bg-card dark:bg-muted text-heading shadow-xs'
-                      : 'text-dim hover:text-heading dark:hover:text-white'
+                  className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                    joinTab === 'existing' ? 'bg-card text-heading border border-line' : 'text-dim hover:text-heading border border-transparent'
                   }`}
                 >
-                  Login Akun yang Ada
+                  Akun yang Ada
                 </button>
                 <button
                   type="button"
                   onClick={() => setJoinTab('new_cashier')}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    joinTab === 'new_cashier'
-                      ? 'bg-card dark:bg-muted text-heading shadow-xs'
-                      : 'text-dim hover:text-heading dark:hover:text-white'
+                  className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                    joinTab === 'new_cashier' ? 'bg-card text-heading border border-line' : 'text-dim hover:text-heading border border-transparent'
                   }`}
                 >
-                  Daftar Akun Kasir Baru
+                  Buat Kasir Baru
                 </button>
               </div>
 
-              {/* Tab: Existing User */}
-              {joinTab === 'existing' && (
-                <div className="space-y-3 p-4 rounded-xl bg-muted/80 border border-line/80 animate-fade-in">
+              {joinTab === 'existing' ? (
+                <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Username <span className="text-danger">*</span>
-                    </label>
+                    <label className={LABEL_CLASS}>Username *</label>
                     <input
                       type="text"
                       value={joinUsername}
                       onChange={(e) => setJoinUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                      placeholder="Username staf / kasir yang terdaftar"
-                      className="w-full px-3.5 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      placeholder="Username"
+                      className={INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Password <span className="text-danger">*</span>
-                    </label>
+                    <label className={LABEL_CLASS}>Password *</label>
                     <input
                       type="password"
                       value={joinUserPassword}
                       onChange={(e) => setJoinUserPassword(e.target.value)}
-                      placeholder="Masukkan password akun Anda"
-                      className="w-full px-3.5 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      placeholder="Password"
+                      className={INPUT_CLASS}
                     />
                   </div>
                 </div>
-              )}
-
-              {/* Tab: New Cashier */}
-              {joinTab === 'new_cashier' && (
-                <div className="space-y-3 p-4 rounded-xl bg-muted/80 border border-line/80 animate-fade-in">
+              ) : (
+                <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Nama Kasir / Perangkat <span className="text-danger">*</span>
-                    </label>
+                    <label className={LABEL_CLASS}>Nama Kasir *</label>
                     <input
                       type="text"
                       value={joinCashierName}
                       onChange={(e) => setJoinCashierName(e.target.value)}
-                      placeholder="Contoh: Kasir Depan, Kasir 2"
-                      className="w-full px-3.5 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      placeholder="Kasir 1"
+                      className={INPUT_CLASS}
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                        Username Login <span className="text-danger">*</span>
-                      </label>
+                      <label className={LABEL_CLASS}>Username *</label>
                       <input
                         type="text"
                         value={joinUsername}
                         onChange={(e) => setJoinUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                        placeholder="Contoh: kasir1"
-                        className="w-full px-3.5 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading font-mono text-xs sm:text-sm focus:outline-none focus:border-primary"
+                        placeholder="kasir1"
+                        className={`${INPUT_CLASS} font-mono`}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                        Password <span className="text-danger">*</span>
-                      </label>
+                      <label className={LABEL_CLASS}>Password *</label>
                       <input
                         type="password"
                         value={joinUserPassword}
                         onChange={(e) => setJoinUserPassword(e.target.value)}
                         placeholder="Min. 6 karakter"
-                        className="w-full px-3.5 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
+                        className={INPUT_CLASS}
                       />
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Konfirmasi Password <span className="text-danger">*</span>
-                    </label>
+                    <label className={LABEL_CLASS}>Konfirmasi Password *</label>
                     <input
                       type="password"
                       value={joinConfirmPassword}
                       onChange={(e) => setJoinConfirmPassword(e.target.value)}
                       placeholder="Ulangi password"
-                      className="w-full px-3.5 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
+                      className={INPUT_CLASS}
                     />
                   </div>
                 </div>
               )}
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-2">
-                <button
-                  onClick={() => setStep(1)}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Kembali</span>
-                </button>
-                <button
-                  onClick={handleJoinStep2Next}
-                  disabled={loading}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>Menyimpan Profil...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Lanjutkan</span>
-                      <ArrowRight size={14} />
-                    </>
-                  )}
-                </button>
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(1)}>
+                  Kembali
+                </Button>
+                <Button type="button" variant="primary" size="md" onClick={handleJoinStep2Next} loading={loading}>
+                  Lanjut
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Selesai Gabung Workspace */}
+          {/* JOIN - STEP 3 */}
           {mode === 'join' && step === 3 && (
-            <div className="space-y-4 text-center animate-fade-in">
-              <div className="w-12 h-12 rounded-xl bg-success text-white flex items-center justify-center mx-auto shadow-sm">
-                <CheckCircle2 size={28} />
-              </div>
-
-              <div className="space-y-0.5">
-                <h2 className="text-xl font-black text-heading">Kasir Berhasil Terhubung!</h2>
-                <p className="text-dim text-xs max-w-sm mx-auto">
-                  Komputer ini sekarang siap digunakan sebagai titik penjualan kasir toko Anda.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-left py-1">
-                <div className="p-3 rounded-xl bg-muted border border-line/80">
-                  <span className="text-[9px] uppercase font-bold text-dim">Workspace Toko</span>
-                  <p className="font-bold text-xs text-heading truncate mt-0.5">{createdWorkspace?.name}</p>
-                  <p className="text-[10px] text-dim font-mono">{createdWorkspace?.code}</p>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={20} />
                 </div>
-                <div className="p-3 rounded-xl bg-muted border border-line/80">
-                  <span className="text-[9px] uppercase font-bold text-dim">Akun Pengguna</span>
-                  <p className="font-bold text-xs text-heading truncate mt-0.5">@{joinUsername}</p>
-                  <p className="text-[10px] text-dim">{joinTab === 'new_cashier' ? joinCashierName : 'Staf Aktif'}</p>
-                </div>
-                <div className="p-3 rounded-xl bg-muted border border-line/80">
-                  <span className="text-[9px] uppercase font-bold text-dim">Mode Sinkronisasi</span>
-                  <p className="font-bold text-xs text-success truncate mt-0.5">Real-Time Cloud</p>
-                  <p className="text-[10px] text-dim">LAN Mesh Aktif</p>
+                <div>
+                  <h2 className="text-base font-bold text-heading">Perangkat Terhubung</h2>
+                  <p className="text-xs text-dim">
+                    {createdWorkspace?.name} ({createdWorkspace?.code}) · @{joinUsername}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-2.5 pt-2">
-                <button
-                  onClick={handleJoinFinish}
-                  disabled={loading}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98] disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Menyiapkan Kasir Kivo...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Mulai Gunakan Kasir Kivo</span>
-                      <ArrowRight size={15} />
-                    </>
-                  )}
-                </button>
+              <div className="flex justify-end pt-3 border-t border-line">
+                <Button type="button" variant="primary" size="md" onClick={handleJoinFinish} loading={loading}>
+                  Buka Kasir
+                </Button>
               </div>
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════
-              BRANCH 3: PULIHKAN CLOUD (mode === 'restore')
-             ══════════════════════════════════════════════════════════════ */}
-
-          {/* Step 1: Kredensial Pemilik Cloud */}
+          {/* RESTORE - STEP 1 */}
           {mode === 'restore' && step === 1 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-heading">Pulihkan Toko dari Kivo Cloud</h2>
-                <p className="text-dim text-xs mt-0.5">
-                  Masukkan Kode Toko dan kredensial Akun Pemilik Anda untuk memverifikasi dan menarik seluruh data toko ke komputer ini.
-                </p>
+                <h2 className="text-base font-bold text-heading">Pulihkan dari Cloud</h2>
+                <p className="text-xs text-dim mt-0.5">Masukkan kode workspace dan akun pemilik.</p>
               </div>
 
-              <div className="p-4 rounded-xl bg-muted/80 border border-line/80 space-y-3">
+              <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Kode Toko / Workspace Cloud <span className="text-danger">*</span>
-                  </label>
-                  <div className="relative flex items-center">
-                    <KeyRound size={16} className="absolute left-3 text-dim" />
+                  <label className={LABEL_CLASS}>Kode Workspace *</label>
+                  <input
+                    type="text"
+                    value={restoreCode}
+                    onChange={(e) => setRestoreCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                    placeholder="KV-TOKO-01"
+                    className={`${INPUT_CLASS} font-mono`}
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className={LABEL_CLASS}>Username Pemilik *</label>
                     <input
                       type="text"
-                      value={restoreCode}
-                      onChange={(e) => setRestoreCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
-                      placeholder="Contoh: KV-TOKO-01"
-                      className="w-full pl-9 pr-3 py-2.5 bg-card dark:bg-input border border-line rounded-xl text-heading font-mono text-xs sm:text-sm tracking-wider focus:outline-none focus:border-primary"
+                      value={restoreUsername}
+                      onChange={(e) => setRestoreUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                      placeholder="owner"
+                      className={INPUT_CLASS}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={LABEL_CLASS}>Password *</label>
+                    <input
+                      type="password"
+                      value={restorePassword}
+                      onChange={(e) => setRestorePassword(e.target.value)}
+                      placeholder="Password"
+                      className={INPUT_CLASS}
                     />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Username Pemilik <span className="text-danger">*</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <Users size={16} className="absolute left-3 text-dim" />
-                      <input
-                        type="text"
-                        value={restoreUsername}
-                        onChange={(e) => setRestoreUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                        placeholder="Contoh: owner, budi"
-                        className="w-full pl-9 pr-3 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                      Password Pemilik <span className="text-danger">*</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <Lock size={16} className="absolute left-3 text-dim" />
-                      <input
-                        type="password"
-                        value={restorePassword}
-                        onChange={(e) => setRestorePassword(e.target.value)}
-                        placeholder="Password akun Anda"
-                        className="w-full pl-9 pr-3 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-heading uppercase tracking-wider">
-                    Password Workspace (Opsional)
-                  </label>
+                  <label className={LABEL_CLASS}>Password Workspace (opsional)</label>
                   <input
                     type="password"
                     value={restoreWsPassword}
                     onChange={(e) => setRestoreWsPassword(e.target.value)}
-                    placeholder="Kosongi jika toko tidak diproteksi password"
-                    className="w-full px-3.5 py-2 bg-card dark:bg-input border border-line rounded-xl text-heading text-xs sm:text-sm focus:outline-none focus:border-primary"
+                    placeholder="Opsional"
+                    className={INPUT_CLASS}
                   />
                 </div>
               </div>
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-2">
-                <button
-                  onClick={() => setStep(0)}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Kembali</span>
-                </button>
-                <button
-                  onClick={handleRestoreStep1Next}
-                  disabled={loading}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>Memverifikasi Toko di Cloud...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Cari Toko di Cloud</span>
-                      <ArrowRight size={14} />
-                    </>
-                  )}
-                </button>
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(0)}>
+                  Kembali
+                </Button>
+                <Button type="button" variant="primary" size="md" onClick={handleRestoreStep1Next} loading={loading}>
+                  Cari Workspace
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step 2: Konfirmasi Pemulihan & Unduh Data */}
+          {/* RESTORE - STEP 2 */}
           {mode === 'restore' && step === 2 && (
-            <div className="space-y-4 text-center animate-fade-in">
-              <div className="w-12 h-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center mx-auto">
-                <Server size={26} />
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-base font-bold text-heading">Workspace Ditemukan</h2>
+                <p className="text-xs text-dim mt-0.5">Unduh data ke penyimpanan lokal perangkat ini.</p>
               </div>
 
-              <div className="space-y-0.5">
-                <h2 className="text-xl font-black text-heading">Toko Ditemukan di Cloud</h2>
-                <p className="text-dim text-xs max-w-sm mx-auto">
-                  Database toko siap diunduh dan disinkronkan ke komputer lokal ini.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-muted border border-line/80 text-left space-y-2.5 max-w-md mx-auto">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-dim">Nama Toko</span>
-                  <span className="font-bold text-heading">{createdWorkspace?.name}</span>
+              <div className="p-3.5 rounded-lg bg-muted/50 border border-line space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-dim">Toko</span>
+                  <span className="font-semibold text-heading">{createdWorkspace?.name}</span>
                 </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-dim">Kode Workspace</span>
-                  <span className="font-mono font-bold text-primary">{createdWorkspace?.code}</span>
+                <div className="flex justify-between">
+                  <span className="text-dim">Kode</span>
+                  <span className="font-mono font-semibold text-primary">{createdWorkspace?.code}</span>
                 </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-dim">Akun Pemilik</span>
-                  <span className="font-bold text-heading">@{restoreUsername}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-dim">Data Yang Dipulihkan</span>
-                  <span className="text-success font-semibold">Produk, Harga, Pelanggan & Laporan</span>
+                <div className="flex justify-between">
+                  <span className="text-dim">Pemilik</span>
+                  <span className="font-semibold text-heading">@{restoreUsername}</span>
                 </div>
               </div>
 
-              <div className="flex justify-center gap-3 pt-2">
-                <button
-                  onClick={() => setStep(1)}
-                  disabled={loading}
-                  className="px-4 py-2 border border-line hover:bg-muted text-heading font-semibold rounded-xl text-xs transition-colors"
-                >
+              <div className="flex justify-between pt-3 border-t border-line">
+                <Button type="button" variant="outline" size="md" onClick={() => setStep(1)} disabled={loading}>
                   Batal
-                </button>
-                <button
-                  onClick={handleRestoreDownload}
-                  disabled={loading}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm transition-all disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Mengunduh Database Toko...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download size={15} />
-                      <span>Unduh & Pulihkan Seluruh Data</span>
-                    </>
-                  )}
-                </button>
+                </Button>
+                <Button type="button" variant="primary" size="md" onClick={handleRestoreDownload} loading={loading}>
+                  <Download size={14} />
+                  Unduh &amp; Pulihkan
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Pemulihan Selesai */}
+          {/* RESTORE - STEP 3 */}
           {mode === 'restore' && step === 3 && (
-            <div className="space-y-4 text-center animate-fade-in">
-              <div className="w-12 h-12 rounded-xl bg-success text-white flex items-center justify-center mx-auto shadow-sm">
-                <CheckCircle2 size={28} />
-              </div>
-
-              <div className="space-y-0.5">
-                <h2 className="text-xl font-black text-heading">Pemulihan Data Selesai!</h2>
-                <p className="text-dim text-xs max-w-sm mx-auto">
-                  Seluruh data toko dari Kivo Cloud telah berhasil diunduh dan tersimpan di database lokal komputer ini.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-muted border border-line/80 text-left max-w-sm mx-auto text-xs space-y-1.5">
-                <div className="flex items-center gap-2 text-success font-semibold">
-                  <Check size={15} strokeWidth={3} />
-                  <span>Katalog Produk & Satuan Harga Pulih</span>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={20} />
                 </div>
-                <div className="flex items-center gap-2 text-success font-semibold">
-                  <Check size={15} strokeWidth={3} />
-                  <span>Daftar Pelanggan, Pemasok & Promosi Pulih</span>
-                </div>
-                <div className="flex items-center gap-2 text-success font-semibold">
-                  <Check size={15} strokeWidth={3} />
-                  <span>Hak Akses Pengguna & Cloud Sync Aktif</span>
+                <div>
+                  <h2 className="text-base font-bold text-heading">Pemulihan Selesai</h2>
+                  <p className="text-xs text-dim">Data toko siap digunakan di perangkat ini.</p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-center pt-2">
-                <button
-                  onClick={onComplete}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm transition-colors active:scale-[0.98]"
-                >
-                  <span>Buka Dashboard Kivo</span>
-                  <ArrowRight size={15} />
-                </button>
+              <div className="flex justify-end pt-3 border-t border-line">
+                <Button type="button" variant="primary" size="md" onClick={onComplete}>
+                  Buka Kivo
+                </Button>
               </div>
             </div>
           )}
-
         </div>
       </main>
-
-      {/* Footer Branding - Compact */}
-      <footer className="relative z-10 py-1.5 text-center text-[10px] text-dim border-t border-line/60 shrink-0">
-        <span>Kivo Platform &copy; {new Date().getFullYear()} | Solusi Cerdas Manajemen Bisnis &amp; Kasir Multi-Perangkat</span>
-      </footer>
     </div>
   );
 }

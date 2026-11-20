@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Save, AlertCircle, Loader2, PackagePlus } from 'lucide-react';
+import { Save, PackagePlus } from 'lucide-react';
 import { StockOverviewRow, setInitialStock } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
-
+import Button from '../../components/ui/Button';
 import { toast } from '../../components/ui/Toast';
+
 interface SetInitialStockModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,11 +24,11 @@ export default function SetInitialStockModal({ isOpen, onClose, item, branchId, 
     if (qty === '' || !item.unit_id) return;
     setIsSubmitting(true);
     try {
-      await setInitialStock(item.item_id, item.unit_id, branchId, Number(qty), Number(hppValue) || 0, "Initial System Setup");
+      await setInitialStock(item.item_id, item.unit_id, branchId, Number(qty), Number(hppValue) || 0, 'Initial System Setup');
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error(`Failed to set initial stock: ${error}`);
+      toast.error(`Gagal menyimpan stok awal: ${error}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -42,57 +43,51 @@ export default function SetInitialStockModal({ isOpen, onClose, item, branchId, 
       subtitle={item.item_name}
       icon={PackagePlus}
       footer={
-        <div className="flex justify-end gap-3 w-full">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-line text-sm font-semibold text-body hover:bg-muted transition-colors"
-          >
+        <div className="flex justify-end gap-2 w-full">
+          <Button type="button" variant="outline" onClick={onClose}>
             Batal
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="primary"
             onClick={handleSubmit}
-            disabled={isSubmitting || qty === ''}
-            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+            loading={isSubmitting}
+            disabled={qty === ''}
           >
-            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            Simpan Stok Awal
-          </button>
+            {!isSubmitting && <Save size={15} />}
+            Simpan
+          </Button>
         </div>
       }
     >
       <div className="space-y-4">
-        <div className="bg-accent-soft p-4 rounded-xl border border-accent/30 flex gap-3">
-          <AlertCircle size={18} className="text-accent shrink-0 mt-0.5" />
-          <p className="text-xs text-accent leading-relaxed">
-            Stok awal hanya dapat diatur satu kali saat inisialisasi barang. Perubahan berikutnya harus melalui menu Penyesuaian Stok.
-          </p>
-        </div>
-        
+        <p className="text-xs text-dim">
+          Hanya dapat diatur sekali saat inisialisasi.
+        </p>
+
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">
+          <label className="block text-xs font-semibold text-heading mb-1.5">
             Jumlah Stok Awal ({item.unit_name || 'Satuan'})
           </label>
           <input
             type="number"
             value={qty}
-            onChange={e => setQty(e.target.value === '' ? '' : Number(e.target.value))}
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 font-mono text-base outline-none focus:ring-2 focus:ring-primary"
+            onChange={(e) => setQty(e.target.value === '' ? '' : Number(e.target.value))}
+            className="w-full h-9 bg-input border border-line rounded-lg px-3 font-mono text-sm text-heading tnum outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
             placeholder="0"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">
-            Harga Modal Dasar (HPP) per {item.unit_name || 'Satuan'}
+          <label className="block text-xs font-semibold text-heading mb-1.5">
+            HPP per {item.unit_name || 'Satuan'} (Rp)
           </label>
           <input
             type="number"
             value={hppValue}
-            onChange={e => setHppValue(e.target.value === '' ? '' : Number(e.target.value))}
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary"
-            placeholder="0.00"
+            onChange={(e) => setHppValue(e.target.value === '' ? '' : Number(e.target.value))}
+            className="w-full h-9 bg-input border border-line rounded-lg px-3 font-mono text-sm text-heading tnum outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+            placeholder="0"
           />
         </div>
       </div>

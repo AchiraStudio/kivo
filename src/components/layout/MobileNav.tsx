@@ -1,4 +1,4 @@
-﻿import { ShoppingCart, LayoutDashboard, Package, FileText, Menu } from 'lucide-react';
+import { ShoppingCart, LayoutDashboard, Package, FileText, Menu } from 'lucide-react';
 import { usePermissions } from '../../lib/permissions';
 
 interface MobileNavProps {
@@ -32,7 +32,7 @@ export default function MobileNav({
     },
     {
       id: 'inventory',
-      label: 'Produk',
+      label: 'Inventaris',
       icon: Package,
       show: can('items.view') || can('inventory.view'),
     },
@@ -45,8 +45,11 @@ export default function MobileNav({
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-3 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2">
-      <nav className="pointer-events-auto max-w-md mx-auto bg-card/90 border border-line/80 dark:border-line/50 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 flex items-center justify-around p-1.5 select-none transition-all">
+    <nav
+      aria-label="Navigasi mobile"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-line pb-[env(safe-area-inset-bottom)] select-none"
+    >
+      <div className="flex items-center justify-around px-1.5 py-1">
         {NAV_ITEMS.filter(item => item.show).map((item) => {
           const Icon = item.icon;
           const isActive = activeMenu === item.id;
@@ -56,42 +59,37 @@ export default function MobileNav({
               key={item.id}
               type="button"
               onClick={() => setActiveMenu(item.id)}
-              className={`flex flex-col items-center justify-center flex-1 py-1.5 px-1.5 rounded-xl transition-all duration-200 relative active:scale-95 cursor-pointer ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg transition-colors relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 isActive
-                  ? 'bg-primary/12 text-primary font-bold shadow-xs'
-                  : 'text-dim hover:text-heading font-medium hover:bg-muted/40'
+                  ? 'bg-primary-soft text-primary font-semibold'
+                  : 'text-dim hover:text-heading font-medium'
               }`}
             >
               <div className="relative flex items-center justify-center">
-                <Icon size={19} strokeWidth={isActive ? 2.4 : 1.9} />
+                <Icon size={18} strokeWidth={isActive ? 2 : 1.75} />
                 {item.badge ? (
-                  <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-primary text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+                  <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center tnum">
                     {item.badge}
                   </span>
                 ) : null}
               </div>
-              <span className={`text-[10px] mt-1 tracking-tight truncate max-w-[62px] ${isActive ? 'text-primary' : 'text-dim'}`}>
+              <span className="text-[10px] mt-0.5 truncate max-w-[64px]">
                 {item.label}
               </span>
-              {isActive && (
-                <span className="w-1 h-1 rounded-full bg-primary mt-0.5 animate-pulse" />
-              )}
             </button>
           );
         })}
 
-        {/* Menu / Lainnya Drawer Trigger */}
         <button
           type="button"
           onClick={onOpenMenuDrawer}
-          className="flex flex-col items-center justify-center flex-1 py-1.5 px-1.5 rounded-xl text-dim hover:text-heading font-medium hover:bg-muted/40 transition-all duration-200 relative active:scale-95 cursor-pointer"
+          className="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-dim hover:text-heading font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          <div className="relative flex items-center justify-center">
-            <Menu size={19} strokeWidth={1.9} />
-          </div>
-          <span className="text-[10px] mt-1 tracking-tight">Menu</span>
+          <Menu size={18} strokeWidth={1.75} />
+          <span className="text-[10px] mt-0.5">Menu</span>
         </button>
-      </nav>
-    </div>
+      </div>
+    </nav>
   );
 }

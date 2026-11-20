@@ -414,7 +414,7 @@ async fn handle_lan_info(AxumState(ctx): AxumState<ServerContext>) -> Json<serde
 
     Json(serde_json::json!({
         "app": "kivo",
-        "version": "1.5.0",
+        "version": env!("CARGO_PKG_VERSION"),
         "device_id": get_device_unique_id(),
         "device_name": device_name,
         "role": role,
@@ -1512,7 +1512,7 @@ pub async fn spawn_lan_discovery_service(pool: SqlitePool, app_handle: AppHandle
 
             let packet = LanBeaconPacket {
                 app: "kivo".to_string(),
-                version: "1.5.0".to_string(),
+                version: env!("CARGO_PKG_VERSION").to_string(),
                 workspace_id,
                 device_id: device_id.clone(),
                 device_name,
@@ -2073,7 +2073,7 @@ pub async fn test_lan_connection(
                     role: info.get("role").and_then(|v| v.as_str()).unwrap_or("parent").to_string(),
                     workspace_id: info.get("workspace_id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
                     items_count: info.get("items_count").and_then(|v| v.as_i64()).unwrap_or(0),
-                    version: info.get("version").and_then(|v| v.as_str()).unwrap_or("1.5.0").to_string(),
+                    version: info.get("version").and_then(|v| v.as_str()).unwrap_or(env!("CARGO_PKG_VERSION")).to_string(),
                     server_time: info.get("timestamp").and_then(|v| v.as_str()).unwrap_or("").to_string(),
                     error: None,
                 })

@@ -17,14 +17,13 @@ export interface ConfirmModalProps {
 export default function ConfirmModal({
   title,
   message,
-  confirmLabel = 'Ya, Lanjutkan',
+  confirmLabel = 'Lanjutkan',
   cancelLabel = 'Batal',
   variant = 'danger',
   loading = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
-  // Enter key confirms
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && !loading) {
@@ -60,31 +59,24 @@ export default function ConfirmModal({
   };
 
   const v = variants[variant];
-  const Icon = v.Icon;
 
   return (
     <Modal
       isOpen={true}
       onClose={onCancel}
       title={title}
-      icon={Icon}
+      icon={v.Icon}
       iconBg={v.iconBg}
       size="sm"
       footer={
-        <div className="flex gap-3 w-full">
-          <Button variant="outline" className="flex-1" onClick={onCancel} disabled={loading}>
+        <>
+          <Button variant="outline" size="sm" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button
-            variant={v.btnVariant}
-            className="flex-[2]"
-            onClick={onConfirm}
-            loading={loading}
-          >
-            <Icon size={15} />
+          <Button variant={v.btnVariant} size="sm" onClick={onConfirm} loading={loading}>
             {confirmLabel}
           </Button>
-        </div>
+        </>
       }
     >
       <p className="text-sm text-body leading-relaxed">{message}</p>

@@ -1,109 +1,152 @@
 import { useEffect, useState } from 'react';
 import { getProfitLoss, ProfitLossReport } from '../../lib/api';
-import { Download, RefreshCw } from 'lucide-react';
+import { downloadCsv } from '../../lib/exportCsv';
+import { Download, RefreshCw, Loader2 } from 'lucide-react';
+import Button from '../../components/ui/Button';
 
 export default function ReportPL() {
   const [data, setData] = useState<ProfitLossReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState(() => {
-     const d = new Date();
-     d.setDate(1);
-     return d.toISOString().split('T')[0];
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split('T')[0];
   });
-  const [endDate, setEndDate] = useState(() => {
-     return new Date().toISOString().split('T')[0];
-  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await getProfitLoss(startDate, endDate);
       setData(res);
     } catch (e) {
       console.error(e);
+      setError('Gagal memuat laporan laba rugi.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
   }, [startDate, endDate]);
 
+  const handleExportCsv = () => {
+    if (!data) return;
+    const headers = ['Kategori', 'Kode Akun', 'Nama Akun', 'Nominal (Rp)'];
+    const rows: any[][] = [];
+    data.revenue?.rows.forEach((r: any) => rows.push(['Pendapatan', r.account_code, r.account_name, r.amount]));
+    data.cogs?.rows.forEach((r: any) => rows.push(['HPP', r.account_code, r.account_name, r.amount]));
+    rows.push(['Ringkasan', '', 'Laba Kotor', data.gross_profit]);
+    data.expenses?.rows.forEach((r: any) => rows.push(['Beban Operasional', r.account_code, r.account_name, r.amount]));
+    rows.push(['Ringkasan', '', 'Laba / (Rugi) Bersih', data.net_profit]);
+    downloadCsv(`Laba_Rugi_${startDate}_sd_${endDate}.csv`, headers, rows);
+  };
+
   const renderGroup = (group: any, label: string) => {
-     if (!group) return null;
-     return (
-        <div className="mb-6">
-           <h3 className="font-bold text-heading uppercase text-xs tracking-wider mb-3 border-b border-line pb-2">{label}</h3>
-           {group.rows.map((row: any) => (
-               <div key={row.account_code} className="flex justify-between py-2 text-sm text-body">
-                  <div className="pl-4">{row.account_name}</div>
-                  <div className="tabular-nums">{row.amount.toLocaleString('id-ID')}</div>
-               </div>
-           ))}
-           <div className="flex justify-between py-3 text-sm font-semibold text-heading border-t border-line mt-2">
-              <div>Total {label}</div>
-              <div className="tabular-nums">{group.total.toLocaleString('id-ID')}</div>
-           </div>
+    if (!group) return null;
+    return (
+      <div className="mb-5">
+        <h3 className="font-semibold text-dim text-xs mb-2 pb-2 border-b border-line">{label}</h3>
+        {group.rows.length === 0 ? (
+          <p className="py-2 text-xs text-dim">Tidak ada mutasi.</p>
+        ) : (
+          group.rows.map((row: any) => (
+            <div key={row.account_code} className="flex justify-between py-2 text-sm text-body gap-4">
+              <div className="pl-2 truncate">{row.account_name}</div>
+              <div className="tnum shrink-0">{row.amount.toLocaleString('id-ID')}</div>
+            </div>
+          ))
+        )}
+        <div className="flex justify-between py-2.5 text-sm font-semibold text-heading border-t border-line mt-1.5">
+          <div>Total {label}</div>
+          <div className="tnum">Rp {group.total.toLocaleString('id-ID')}</div>
         </div>
-     );
+      </div>
+    );
   };
 
   return (
-    <div className="flex flex-col h-full fade-in">
-       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-heading">Profit & Loss</h2>
-          <p className="text-body text-sm mt-1">Income Statement (P&L) for a selected period.</p>
-        </div>
-        <div className="flex gap-3 items-center">
-          <input 
-             type="date" 
-             value={startDate}
-             onChange={e => setStartDate(e.target.value)}
-             className="input-field py-2 text-sm w-auto"
+    <div className="flex flex-col h-full gap-4 animate-fade-in">
+      <div className="flex flex-wrap justify-between items-center gap-3 shrink-0">
+        <h2 className="text-base font-bold tracking-tight text-heading">Laba Rugi</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            aria-label="Tanggal mulai"
+            className="h-8 bg-input border border-line rounded-lg px-2.5 text-xs text-heading tnum focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
-          <span className="text-dim">to</span>
-          <input 
-             type="date" 
-             value={endDate}
-             onChange={e => setEndDate(e.target.value)}
-             className="input-field py-2 text-sm w-auto"
+          <span className="text-dim text-xs">s/d</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            aria-label="Tanggal akhir"
+            className="h-8 bg-input border border-line rounded-lg px-2.5 text-xs text-heading tnum focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
-          <button onClick={fetchData} className="p-2 border border-line rounded-lg hover:bg-muted text-body">
-             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-          </button>
-          <button className="btn-secondary flex items-center gap-2">
-             <Download size={16}/> Export
-          </button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+            aria-label="Muat ulang"
+            title="Muat ulang"
+            className="px-2"
+          >
+            <RefreshCw size={14} strokeWidth={1.75} className={loading ? 'animate-spin' : ''} />
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={handleExportCsv} disabled={!data}>
+            <Download size={14} strokeWidth={1.75} />
+            Export CSV
+          </Button>
         </div>
       </div>
 
-      <div className="flex-1 bg-card rounded-xl border border-line shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-y-auto flex-1 p-8 custom-scrollbar">
-           {loading ? (
-              <div className="text-center py-10 text-body">Generating report...</div>
-           ) : data ? (
-              <div className="max-w-3xl mx-auto">
-                 
-                 {renderGroup(data.revenue, "Revenue")}
-                 {renderGroup(data.cogs, "Cost of Goods Sold")}
-                 
-                 <div className="flex justify-between py-4 mb-6 text-base font-bold text-primary-hover dark:text-primary bg-primary-soft px-4 rounded-xl">
-                    <div>Gross Profit</div>
-                    <div className="tabular-nums">{data.gross_profit.toLocaleString('id-ID')}</div>
-                 </div>
+      <div className="flex-1 min-h-0 bg-card rounded-xl border border-line overflow-hidden flex flex-col">
+        <div className="overflow-y-auto flex-1 p-5 sm:p-6 custom-scrollbar">
+          {loading ? (
+            <div className="text-center py-14 text-dim">
+              <Loader2 className="animate-spin text-primary mx-auto mb-2" size={24} />
+              <span className="text-xs">Memuat laporan...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-14">
+              <p className="text-sm text-danger font-medium">{error}</p>
+              <Button type="button" variant="outline" size="sm" onClick={fetchData} className="mt-3">
+                Coba Lagi
+              </Button>
+            </div>
+          ) : data ? (
+            <div className="max-w-3xl mx-auto">
+              {renderGroup(data.revenue, 'Pendapatan')}
+              {renderGroup(data.cogs, 'Harga Pokok Penjualan (HPP)')}
 
-                 {renderGroup(data.expenses, "Operating Expenses")}
-
-                 <div className={`flex justify-between py-5 text-lg font-bold px-4 rounded-xl mt-8 ${data.net_profit >= 0 ? 'bg-success-soft text-success ' : 'bg-danger-soft text-danger '}`}>
-                    <div>Net Profit / (Loss)</div>
-                    <div className="tabular-nums">{data.net_profit.toLocaleString('id-ID')}</div>
-                 </div>
-
+              <div className="flex justify-between items-center py-3.5 px-4 mb-6 text-sm font-bold text-heading bg-muted rounded-xl border border-line">
+                <div>Laba Kotor</div>
+                <div className="tnum">Rp {data.gross_profit.toLocaleString('id-ID')}</div>
               </div>
-           ) : (
-              <div className="text-center py-10 text-body">No data available.</div>
-           )}
+
+              {renderGroup(data.expenses, 'Beban Operasional')}
+
+              <div
+                className={`flex justify-between items-center py-4 px-4 text-base font-bold rounded-xl border mt-6 ${
+                  data.net_profit >= 0
+                    ? 'bg-success-soft text-success border-success/30'
+                    : 'bg-danger-soft text-danger border-danger/30'
+                }`}
+              >
+                <div>Laba / (Rugi) Bersih</div>
+                <div className="tnum">Rp {data.net_profit.toLocaleString('id-ID')}</div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-14 text-dim text-sm">Tidak ada data tersedia.</div>
+          )}
         </div>
       </div>
     </div>

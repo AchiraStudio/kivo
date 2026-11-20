@@ -41,79 +41,70 @@ export default function TitleBar({
     return null;
   }
 
-  const minimize   = () => { if (isTauri()) getCurrentWindow().minimize(); };
-  const toggleMax  = () => { if (isTauri()) (isMaximized ? getCurrentWindow().unmaximize() : getCurrentWindow().maximize()); };
-  const close      = () => { if (isTauri()) getCurrentWindow().close(); };
+  const minimize  = () => { if (isTauri()) getCurrentWindow().minimize(); };
+  const toggleMax = () => { if (isTauri()) (isMaximized ? getCurrentWindow().unmaximize() : getCurrentWindow().maximize()); };
+  const close     = () => { if (isTauri()) getCurrentWindow().close(); };
 
   return (
     <div
       data-tauri-drag-region
-      className={`
-        h-9 shrink-0 w-full
-        bg-card border-b border-line text-body
-        select-none relative flex items-center justify-between
-        transition-colors duration-200
-        z-50
-        ${className}
-      `}
+      className={`h-9 shrink-0 w-full bg-sidebar border-b border-sidebar-line text-body select-none relative flex items-center justify-between z-50 ${className}`}
     >
-      {/* Left side: custom leftContent or default brand logo */}
       <div data-tauri-drag-region className="flex items-center gap-2 h-full z-10 pl-3">
         {leftContent || (
           <div className="flex items-center gap-2 select-none">
             <img src="/kivo.png" alt="Kivo" className="w-4 h-4 rounded-sm object-contain" />
-            <span className="text-[11px] font-bold text-heading tracking-tight">Kivo</span>
+            <span className="text-xs font-bold text-heading tracking-tight">Kivo</span>
+            <span className="text-[11px] font-mono text-dim">1.5.2</span>
           </div>
         )}
       </div>
 
-      {/* Centered title – absolutely positioned for perfect balance */}
-      <div
-        data-tauri-drag-region
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-      >
-        {centerContent || (
-          <span className="text-[11px] font-bold tracking-widest uppercase flex items-center gap-1.5 text-body">
-            <span>Kivo</span>
-            <span className="text-[9px] px-1.5 py-px rounded bg-primary-soft text-primary font-mono">Platform</span>
-          </span>
-        )}
-      </div>
+      {centerContent && (
+        <div
+          data-tauri-drag-region
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        >
+          {centerContent}
+        </div>
+      )}
 
-      {/* Right: extra actions + Windows window controls */}
       <div className="flex items-center h-full shrink-0 z-10">
         {rightExtra}
 
-        {/* Minimize */}
         <button
+          type="button"
           onMouseDown={e => e.stopPropagation()}
           onClick={minimize}
-          className="h-full w-11 flex items-center justify-center text-dim hover:text-heading hover:bg-muted transition-colors"
-          title="Minimize"
+          aria-label="Perkecil jendela"
+          className="h-full w-11 flex items-center justify-center text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer"
+          title="Perkecil"
         >
-          <Minus size={14} strokeWidth={2} />
+          <Minus size={14} strokeWidth={1.75} />
         </button>
 
-        {/* Maximize / Restore */}
         <button
+          type="button"
           onMouseDown={e => e.stopPropagation()}
           onClick={toggleMax}
-          className="h-full w-11 flex items-center justify-center text-dim hover:text-heading hover:bg-muted transition-colors"
-          title={isMaximized ? "Restore" : "Maximize"}
+          aria-label={isMaximized ? 'Kembalikan ukuran' : 'Perbesar jendela'}
+          className="h-full w-11 flex items-center justify-center text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer"
+          title={isMaximized ? 'Pulihkan' : 'Perbesar'}
         >
           {isMaximized
-            ? <Copy size={12} strokeWidth={2} />
-            : <Square size={12} strokeWidth={2} />}
+            ? <Copy size={12} strokeWidth={1.75} />
+            : <Square size={12} strokeWidth={1.75} />}
         </button>
 
-        {/* Close */}
         <button
+          type="button"
           onMouseDown={e => e.stopPropagation()}
           onClick={close}
-          className="h-full w-11 flex items-center justify-center text-dim hover:bg-danger hover:text-white transition-colors"
-          title="Close"
+          aria-label="Tutup aplikasi"
+          className="h-full w-11 flex items-center justify-center text-dim hover:bg-danger hover:text-white transition-colors cursor-pointer"
+          title="Tutup"
         >
-          <X size={14} strokeWidth={2} />
+          <X size={14} strokeWidth={1.75} />
         </button>
       </div>
     </div>

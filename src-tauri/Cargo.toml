@@ -1,8 +1,8 @@
 [package]
 name = "kivo"
-version = "1.5.0"
+version = "1.5.2"
 description = "Modern Inventory & Cashier System"
-authors = ["you"]
+authors = ["Achira Studios"]
 edition = "2021"
 
 [build-dependencies]

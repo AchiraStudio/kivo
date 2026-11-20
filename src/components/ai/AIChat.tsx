@@ -1,25 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, User, Loader2, Minimize2, Maximize2, Trash2, Copy, Check, X, BarChart3, Package, Gift, ArrowRight, Key, MessageSquare } from 'lucide-react';
+import { Send, User, Loader2, Minimize2, Maximize2, Trash2, Copy, Check, X, BarChart3, Package, Gift, Key, MessageSquare } from 'lucide-react';
 import { ChatMessage, sendChatRequest, getOpenAIApiKey, getSelectedAIModel } from '../../lib/aiClient';
 import * as api from '../../lib/api';
 import { useAuthStore } from '../../store/AuthStore';
-
 import { toast } from '../ui/Toast';
 import Select from '../ui/Select';
+import Button from '../ui/Button';
+import ConfirmModal from '../ui/ConfirmModal';
+
 const CHAT_HISTORY_KEY = 'kivo_chat_history';
 const LEGACY_CHAT_HISTORY_KEY = 'achira_chat_history';
 
-// ─── MARKDOWN FORMATTER ──────────────────────────────────────────────────────
 const formatMessageContent = (text: string) => {
   if (!text) return { __html: '' };
 
-  // First process inline styling: inline code, bold, italic
-  let formatted = text
+  const formatted = text
     .replace(/`([^`]+)`/g, '<code class="bg-muted text-primary px-1.5 py-0.5 rounded text-xs font-mono border border-line">$1</code>')
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-heading">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em class="italic text-heading">$1</em>');
 
-  // Process line by line to preserve exact numbered & bullet list structures without browser <ol> reset bugs
   const lines = formatted.split('\n');
   const resultLines: string[] = [];
 
@@ -32,9 +31,8 @@ const formatMessageContent = (text: string) => {
       continue;
     }
 
-    // Headers
     if (trimmed.startsWith('### ')) {
-      resultLines.push(`<h3 class="text-xs font-bold uppercase tracking-wider text-heading mt-2.5 mb-1">${trimmed.slice(4)}</h3>`);
+      resultLines.push(`<h3 class="text-xs font-bold text-heading mt-2.5 mb-1">${trimmed.slice(4)}</h3>`);
       continue;
     }
     if (trimmed.startsWith('## ')) {
@@ -42,85 +40,43 @@ const formatMessageContent = (text: string) => {
       continue;
     }
 
-    // Numbered List: e.g. "1. Pengelolaan Produk:" or "2. Manajemen Pelanggan:"
     const numMatch = rawLine.match(/^(\s*)([0-9]+)\.\s+(.*$)/);
     if (numMatch) {
-      const num = numMatch[2];
-      const content = numMatch[3];
       resultLines.push(
-        `<div class="flex items-start gap-1.5 my-1 text-heading"><span class="font-bold text-primary shrink-0 tabular-nums">${num}.</span><div class="flex-1 font-medium">${content}</div></div>`
+        `<div class="flex items-start gap-1.5 my-1 text-heading"><span class="font-bold text-primary shrink-0 tnum">${numMatch[2]}.</span><div class="flex-1">${numMatch[3]}</div></div>`
       );
       continue;
     }
 
-    // Bullet List: e.g. "- Menambah item..." or "* Menambah item..." or "• Menambah item..."
     const bulletMatch = rawLine.match(/^(\s*)[\-\*•]\s+(.*$)/);
     if (bulletMatch) {
-      const content = bulletMatch[2];
       resultLines.push(
-        `<div class="flex items-start gap-2 ml-3 my-0.5 text-heading"><span class="text-primary/80 shrink-0 select-none font-bold">•</span><div class="flex-1 text-heading font-medium leading-relaxed">${content}</div></div>`
+        `<div class="flex items-start gap-2 ml-2 my-0.5 text-heading"><span class="text-dim shrink-0 select-none">•</span><div class="flex-1 leading-relaxed">${bulletMatch[2]}</div></div>`
       );
       continue;
     }
 
-    // Regular paragraph line
     resultLines.push(`<div class="text-heading leading-relaxed">${rawLine}</div>`);
   }
 
   return { __html: resultLines.join('') };
 };
 
-// ─── TYPEWRITER ───────────────────────────────────────────────────────────────
-function TypewriterMessage({ text, animate }: { text: string; animate: boolean }) {
-  const [displayedText, setDisplayedText] = useState(() => (animate ? '' : text));
-  const hasFinishedRef = useRef(!animate);
-
-  useEffect(() => {
-    // If this message was already finished or shouldn't animate, stay static
-    if (hasFinishedRef.current) {
-      setDisplayedText(text);
-      return;
-    }
-
-    let i = 0;
-    const step = Math.max(3, Math.ceil(text.length / 50));
-    const intervalId = setInterval(() => {
-      i += step;
-      if (i >= text.length) {
-        clearInterval(intervalId);
-        hasFinishedRef.current = true;
-        setDisplayedText(text);
-      } else {
-        setDisplayedText(text.slice(0, i));
-      }
-    }, 12);
-
-    return () => clearInterval(intervalId);
-  }, [text]);
-
-  return (
-    <div
-      className="whitespace-pre-wrap leading-relaxed space-y-0.5"
-      dangerouslySetInnerHTML={formatMessageContent(displayedText)}
-    />
-  );
-}
-
-// ─── PROPS ───────────────────────────────────────────────────────────────────
 interface AIChatProps {
   isOpen: boolean;
   onClose: () => void;
   branchId: string;
 }
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
   const { user } = useAuthStore();
   const storageKey = `${CHAT_HISTORY_KEY}_${user?.id || 'guest'}`;
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
-      const saved = localStorage.getItem(storageKey) || localStorage.getItem(`${LEGACY_CHAT_HISTORY_KEY}_${user?.id || 'guest'}`);
+      const saved =
+        localStorage.getItem(storageKey) ||
+        localStorage.getItem(`${LEGACY_CHAT_HISTORY_KEY}_${user?.id || 'guest'}`);
       if (saved) return JSON.parse(saved) as ChatMessage[];
     } catch {}
     return [];
@@ -130,20 +86,14 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const [pendingPreview, setPendingPreview] = useState<{items: any[]}|null>(null);
+  const [pendingPreview, setPendingPreview] = useState<{ items: any[] } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
-  const [settingsSaved, setSettingsSaved] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const animatedIndices = useRef<Set<number>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Mark all restored historical messages as already animated so history never replays
-  useEffect(() => {
-    messages.forEach((_, i) => animatedIndices.current.add(i));
-  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -163,13 +113,10 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
         await api.setSetting('openai_api_key', cleanKey);
         await api.setSetting('openai_model', selectedModel);
       } catch {}
-      setSettingsSaved(true);
-      setTimeout(() => {
-        setSettingsSaved(false);
-        setShowSettings(false);
-      }, 1200);
+      toast.success('Pengaturan AI tersimpan');
+      setShowSettings(false);
     } catch (err: any) {
-      toast.error(`Gagal menyimpan pengaturan AI: ${err.message || err}`);
+      toast.error(`Gagal menyimpan: ${err.message || err}`);
     } finally {
       setSavingSettings(false);
     }
@@ -182,21 +129,22 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
     } catch {}
   }, [messages, storageKey]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    if (isOpen) scrollToBottom();
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isOpen]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
+      if (e.key === 'Escape' && isOpen && !confirmClear) {
+        if (showSettings) setShowSettings(false);
+        else onClose();
+      }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
+  }, [isOpen, showSettings, confirmClear, onClose]);
 
   const adjustTextareaHeight = useCallback(() => {
     const ta = textareaRef.current;
@@ -219,9 +167,7 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
 
   const handleSendPrompt = (promptText: string) => {
     setInput(promptText);
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 50);
+    setTimeout(() => textareaRef.current?.focus(), 40);
   };
 
   const handleSubmit = async (_e?: React.MouseEvent | React.KeyboardEvent | null, overrideInput?: string) => {
@@ -232,15 +178,12 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setLoading(true);
 
     try {
       const finalConversation = await sendChatRequest(newMessages, branchId);
 
-      // Look for pending approvals in tool messages
       let foundPreview = null;
       for (const m of finalConversation) {
         if (m.role === 'tool' && m.content) {
@@ -252,19 +195,21 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
           } catch {}
         }
       }
-      if (foundPreview) {
-        setPendingPreview(foundPreview);
-      }
+      if (foundPreview) setPendingPreview(foundPreview);
+
       const filteredMessages = finalConversation.filter(m => {
-        if (m.role === 'system') return false;
-        if (m.role === 'tool') return false;
+        if (m.role === 'system' || m.role === 'tool') return false;
         if (m.role === 'assistant' && !m.content) return false;
         return true;
       });
 
       const combinedMessages: ChatMessage[] = [];
       for (const msg of filteredMessages) {
-        if (msg.role === 'assistant' && combinedMessages.length > 0 && combinedMessages[combinedMessages.length - 1].role === 'assistant') {
+        if (
+          msg.role === 'assistant' &&
+          combinedMessages.length > 0 &&
+          combinedMessages[combinedMessages.length - 1].role === 'assistant'
+        ) {
           combinedMessages[combinedMessages.length - 1].content += '\n\n' + msg.content;
         } else {
           const cleanMsg = { ...msg };
@@ -277,7 +222,7 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
     } catch (error: any) {
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: `**Error:** ${error.message || 'Terjadi kesalahan sistem.'}` }
+        { role: 'assistant', content: `**Error:** ${error.message || 'Terjadi kesalahan sistem.'}` },
       ]);
     } finally {
       setLoading(false);
@@ -287,17 +232,15 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
   const handleCopy = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
-    setTimeout(() => {
-      setCopiedIdx(prev => prev === idx ? null : prev);
-    }, 2000);
+    setTimeout(() => setCopiedIdx(prev => (prev === idx ? null : prev)), 2000);
   };
 
-  const clearHistory = () => {
-    if (confirm('Hapus seluruh riwayat percakapan?')) {
-      setMessages([]);
-      animatedIndices.current.clear();
-      try { localStorage.removeItem(storageKey); } catch {}
-    }
+  const confirmClearHistory = () => {
+    setMessages([]);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {}
+    setConfirmClear(false);
   };
 
   const handleApprovePreview = async () => {
@@ -307,16 +250,15 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
       const sessionId = await api.createOpnameSession(branchId, user?.id || 'guest', 'AI Bulk Adjustment');
       await api.submitOpnameLines(sessionId, pendingPreview.items);
       await api.finalizeOpname(sessionId);
-      
+
       setMessages(prev => [
         ...prev,
-        { role: 'user', content: 'Saya telah menyetujui preview penyesuaian stok. Lanjutkan!' }
+        { role: 'user', content: 'Penyesuaian stok disetujui.' },
       ]);
       setPendingPreview(null);
-      // Let AI know it succeeded (mocking the submit)
-      handleSubmit(null, 'Saya telah menyetujui dan menerapkan perubahan stok. Selesai.');
+      handleSubmit(null, 'Penyesuaian stok telah diterapkan.');
     } catch (e: any) {
-      toast.error(`Gagal menerapkan penyesuaian stok: ${e.message || e}`);
+      toast.error(`Gagal menerapkan stok: ${e.message || e}`);
       setLoading(false);
     }
   };
@@ -325,80 +267,74 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
     setPendingPreview(null);
     setMessages(prev => [
       ...prev,
-      { role: 'user', content: 'Saya telah menolak preview penyesuaian stok. Batalkan aksi.' }
+      { role: 'user', content: 'Penyesuaian stok dibatalkan.' },
     ]);
   };
-  const visibleMessages = messages.filter(m =>
-    (m.role === 'user' || m.role === 'assistant') && m.content
+
+  const visibleMessages = messages.filter(
+    m => (m.role === 'user' || m.role === 'assistant') && m.content
   );
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Backdrop for mobile */}
       <div
-        className="fixed inset-0 z-[100] bg-card/50 sm:hidden animate-fade-in"
+        className="fixed inset-0 z-[100] bg-black/45 sm:hidden animate-fade-in"
         onClick={onClose}
       />
 
-      {/* Main Container */}
       <div
-        className={`fixed z-[110] bottom-0 right-0 sm:bottom-5 sm:right-5 bg-card sm:rounded-2xl rounded-t-2xl shadow-2xl border border-line flex flex-col overflow-hidden transition-all duration-200 ${
+        role="dialog"
+        aria-label="Kivo AI"
+        className={`fixed z-[110] bottom-0 right-0 sm:bottom-4 sm:right-4 bg-elevated sm:rounded-xl rounded-t-xl shadow-lg shadow-black/15 dark:shadow-black/45 border border-line flex flex-col overflow-hidden transition-[width,height] duration-150 ${
           isExpanded
-            ? 'w-full sm:w-[620px] h-[92vh] sm:h-[700px] sm:max-h-[calc(100vh-2.5rem)]'
-            : 'w-full sm:w-[410px] h-[85vh] sm:h-[600px] sm:max-h-[calc(100vh-2.5rem)]'
-        } animate-fade-in`}
+            ? 'w-full sm:w-[580px] h-[90dvh] sm:h-[680px] sm:max-h-[calc(100dvh-2rem)]'
+            : 'w-full sm:w-[400px] h-[82dvh] sm:h-[580px] sm:max-h-[calc(100dvh-2rem)]'
+        } animate-pop-in`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-card z-10 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
-                <MessageSquare size={16} />
-              </div>
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success border-2 border-card"></span>
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h2 className="font-bold text-heading text-sm leading-none">Kivo AI</h2>
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary-soft text-primary border border-primary/20 leading-none">
-                  Smart Assistant
-                </span>
-              </div>
-              <p className="text-[11px] text-dim mt-0.5">Asisten Cerdas Bisnis & Kasir</p>
-            </div>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-elevated shrink-0">
+          <div className="flex items-center gap-2">
+            <MessageSquare size={16} className="text-primary" />
+            <h2 className="font-bold text-heading text-sm">Kivo AI</h2>
           </div>
 
           <div className="flex items-center gap-1">
             <button
+              type="button"
               onClick={() => setShowSettings(true)}
-              className="p-1.5 text-dim hover:text-heading bg-muted hover:bg-line rounded-lg transition-colors cursor-pointer"
-              title="Pengaturan OpenAI API Key & Model"
+              aria-label="Pengaturan API Key"
+              className="w-7 h-7 flex items-center justify-center text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer"
+              title="API Key & Model"
             >
               <Key size={14} />
             </button>
             {visibleMessages.length > 0 && (
               <button
-                onClick={clearHistory}
-                className="p-1.5 text-dim hover:text-danger bg-muted hover:bg-danger-soft rounded-lg transition-colors cursor-pointer"
-                title="Hapus riwayat chat"
+                type="button"
+                onClick={() => setConfirmClear(true)}
+                aria-label="Hapus riwayat"
+                className="w-7 h-7 flex items-center justify-center text-dim hover:text-danger hover:bg-danger-soft rounded-lg transition-colors cursor-pointer"
+                title="Hapus riwayat"
               >
                 <Trash2 size={14} />
               </button>
             )}
             <button
+              type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="hidden sm:flex p-1.5 text-dim hover:text-heading bg-muted hover:bg-line rounded-lg transition-colors cursor-pointer"
-              title={isExpanded ? "Kecilkan tampilan" : "Perbesar tampilan"}
+              aria-label={isExpanded ? 'Kecilkan' : 'Perbesar'}
+              className="hidden sm:flex w-7 h-7 items-center justify-center text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer"
+              title={isExpanded ? 'Kecilkan' : 'Perbesar'}
             >
               {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 text-dim hover:text-heading bg-muted hover:bg-line rounded-lg transition-colors cursor-pointer"
+              aria-label="Tutup"
+              className="w-7 h-7 flex items-center justify-center text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer"
               title="Tutup (Esc)"
             >
               <X size={15} />
@@ -406,224 +342,145 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
           </div>
         </div>
 
-        {/* Settings Modal Overlay */}
+        {/* Inline API Settings */}
         {showSettings && (
-          <div className="absolute inset-0 z-30 bg-black/40 p-4 flex flex-col justify-center animate-fade-in">
-            <div className="bg-card rounded-xl p-4 border border-line shadow-xl space-y-3.5">
-              <div className="flex items-center justify-between border-b border-line pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-primary-soft text-primary rounded-lg">
-                    <Key size={15} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-heading text-xs">Pengaturan OpenAI API</h3>
-                    <p className="text-[10px] text-dim">Konfigurasi API Key & Model AI</p>
-                  </div>
-                </div>
+          <div className="absolute inset-0 z-30 bg-black/45 p-4 flex items-center justify-center animate-fade-in">
+            <form
+              onSubmit={handleSaveAISettings}
+              className="w-full bg-elevated rounded-xl border border-line shadow-lg p-4 space-y-3.5"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-line">
+                <h3 className="font-bold text-heading text-sm">Pengaturan OpenAI</h3>
                 <button
+                  type="button"
                   onClick={() => setShowSettings(false)}
-                  className="p-1 text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                  aria-label="Tutup"
+                  className="w-7 h-7 flex items-center justify-center text-dim hover:text-heading hover:bg-muted rounded-lg cursor-pointer"
                 >
                   <X size={15} />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveAISettings} className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-heading uppercase tracking-wide">
-                    OpenAI API Key
-                  </label>
-                  <input
-                    type="password"
-                    value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="sk-proj-..."
-                    className="w-full bg-muted/50 border border-line rounded-lg px-3 py-2 text-xs font-mono text-heading outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <p className="text-[10px] text-dim">
-                    Dapatkan API Key dari platform.openai.com
-                  </p>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-heading block">API Key</label>
+                <input
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  placeholder="sk-proj-..."
+                  className="w-full h-9 bg-input border border-line rounded-lg px-3 text-xs font-mono text-heading focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-heading uppercase tracking-wide">
-                    Model AI
-                  </label>
-                  <Select
-                    value={selectedModel}
-                    onChange={(v) => setSelectedModel(v)}
-                    className="w-full bg-muted/50 border border-line rounded-lg px-3 py-2 text-xs font-medium text-heading outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="gpt-4o-mini">GPT-4o Mini (Direkomendasikan - Cepat & Hemat)</option>
-                    <option value="gpt-4o">GPT-4o (Paling Cerdas & Akurat)</option>
-                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                  </Select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-heading block">Model</label>
+                <Select value={selectedModel} onChange={(v) => setSelectedModel(v)} className="w-full">
+                  <option value="gpt-4o-mini">GPT-4o Mini</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                </Select>
+              </div>
 
-                <div className="pt-1.5 flex items-center justify-between">
-                  {settingsSaved ? (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-success">
-                      <Check size={13} /> Tersimpan!
-                    </span>
-                  ) : <span />}
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowSettings(false)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={savingSettings}
-                      className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
-                    >
-                      {savingSettings ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                      Simpan
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowSettings(false)}>
+                  Batal
+                </Button>
+                <Button type="submit" variant="primary" size="sm" loading={savingSettings}>
+                  Simpan
+                </Button>
+              </div>
+            </form>
           </div>
         )}
 
-        {/* Messages Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20 custom-scrollbar scroll-smooth">
-          
-          {/* Welcome / Empty State */}
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-background/60 custom-scrollbar">
           {visibleMessages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4 py-6 animate-fade-in">
-              <div className="w-12 h-12 rounded-xl bg-primary-soft text-primary flex items-center justify-center mb-3 shadow-xs">
-                <MessageSquare size={22} />
+            <div className="flex flex-col justify-center h-full px-1 py-4 space-y-4">
+              <div>
+                <h3 className="font-bold text-sm text-heading">Halo, {user?.name || 'Admin'}</h3>
+                <p className="text-xs text-dim mt-0.5">Pilih perintah cepat atau ketik pertanyaan.</p>
               </div>
 
-              <h3 className="font-bold text-base text-heading tracking-tight">
-                Halo, <span className="text-primary">{user?.name || 'Administrator'}</span>!
-              </h3>
-              <p className="text-xs text-dim max-w-[280px] leading-relaxed mt-1 mb-5">
-                Saya <strong className="text-heading">Kivo AI</strong>, asisten cerdas toko Anda. Siap membantu analisis omset, stok kritis, dan rekomendasi promo.
-              </p>
-
-              {/* Quick Prompt Cards */}
-              <div className="w-full max-w-sm space-y-2 text-left">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-dim px-0.5">Saran Pertanyaan:</p>
-                
+              <div className="space-y-1.5">
                 <button
-                  onClick={() => handleSendPrompt('Tampilkan ringkasan penjualan & performa toko hari ini')}
-                  className="w-full p-2.5 bg-card hover:bg-muted/40 border border-line hover:border-primary/40 rounded-xl transition-all group flex items-center justify-between shadow-xs cursor-pointer"
+                  type="button"
+                  onClick={() => handleSendPrompt('Tampilkan ringkasan penjualan hari ini')}
+                  className="w-full px-3 py-2.5 bg-card hover:bg-muted border border-line rounded-lg transition-colors flex items-center gap-2.5 text-left cursor-pointer"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
-                      <BarChart3 size={15} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-heading group-hover:text-primary transition-colors">Ringkasan Penjualan</p>
-                      <p className="text-[11px] text-dim">Cek total omset & statistik hari ini</p>
-                    </div>
-                  </div>
-                  <ArrowRight size={13} className="text-dim group-hover:translate-x-0.5 transition-transform group-hover:text-primary" />
+                  <BarChart3 size={15} className="text-dim shrink-0" />
+                  <span className="text-xs font-semibold text-heading">Ringkasan penjualan hari ini</span>
                 </button>
 
                 <button
-                  onClick={() => handleSendPrompt('Cek produk yang stoknya sudah di bawah batas minimum')}
-                  className="w-full p-2.5 bg-card hover:bg-muted/40 border border-line hover:border-primary/40 rounded-xl transition-all group flex items-center justify-between shadow-xs cursor-pointer"
+                  type="button"
+                  onClick={() => handleSendPrompt('Cek produk yang stoknya di bawah batas minimum')}
+                  className="w-full px-3 py-2.5 bg-card hover:bg-muted border border-line rounded-lg transition-colors flex items-center gap-2.5 text-left cursor-pointer"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
-                      <Package size={15} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-heading group-hover:text-primary transition-colors">Cek Stok Kritis</p>
-                      <p className="text-[11px] text-dim">Daftar produk butuh reorder segera</p>
-                    </div>
-                  </div>
-                  <ArrowRight size={13} className="text-dim group-hover:translate-x-0.5 transition-transform group-hover:text-primary" />
+                  <Package size={15} className="text-dim shrink-0" />
+                  <span className="text-xs font-semibold text-heading">Cek stok menipis</span>
                 </button>
 
                 <button
-                  onClick={() => handleSendPrompt('Rekomendasikan promo bundle menarik dari produk paling laris')}
-                  className="w-full p-2.5 bg-card hover:bg-muted/40 border border-line hover:border-primary/40 rounded-xl transition-all group flex items-center justify-between shadow-xs cursor-pointer"
+                  type="button"
+                  onClick={() => handleSendPrompt('Rekomendasikan promo bundle dari produk terlaris')}
+                  className="w-full px-3 py-2.5 bg-card hover:bg-muted border border-line rounded-lg transition-colors flex items-center gap-2.5 text-left cursor-pointer"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
-                      <Gift size={15} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-heading group-hover:text-primary transition-colors">Buat Promo Bundle</p>
-                      <p className="text-[11px] text-dim">Ide paket bundling item terlaris</p>
-                    </div>
-                  </div>
-                  <ArrowRight size={13} className="text-dim group-hover:translate-x-0.5 transition-transform group-hover:text-primary" />
+                  <Gift size={15} className="text-dim shrink-0" />
+                  <span className="text-xs font-semibold text-heading">Ide promo bundle</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Visible Chat Bubbles */}
           {visibleMessages.map((msg, idx) => {
             const isUser = msg.role === 'user';
             return (
-              <div
-                key={idx}
-                className={`flex gap-2.5 animate-fade-in ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
-              >
-                {/* Avatar */}
-                <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${
-                  isUser
-                    ? 'bg-muted text-heading border border-line'
-                    : 'bg-primary-soft text-primary'
-                }`}>
-                  {isUser ? <User size={14} /> : <MessageSquare size={14} />}
+              <div key={idx} className={`flex gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div
+                  className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 border ${
+                    isUser
+                      ? 'bg-muted text-heading border-line'
+                      : 'bg-primary-soft text-primary border-primary/20'
+                  }`}
+                >
+                  {isUser ? <User size={13} /> : <MessageSquare size={13} />}
                 </div>
 
-                {/* Bubble Container */}
-                <div className={`relative group ${
-                  isUser
-                    ? 'bg-primary text-white rounded-2xl rounded-tr-xs px-3.5 py-2.5 text-xs font-medium leading-relaxed max-w-[82%] shadow-xs'
-                    : 'bg-card border border-line text-heading rounded-2xl rounded-tl-xs px-4 py-3 text-xs leading-relaxed shadow-xs max-w-[85%]'
-                }`}>
+                <div
+                  className={`relative group text-xs leading-relaxed ${
+                    isUser
+                      ? 'bg-primary text-white rounded-xl px-3.5 py-2.5 max-w-[82%]'
+                      : 'bg-card border border-line text-heading rounded-xl px-3.5 py-2.5 max-w-[85%]'
+                  }`}
+                >
                   {isUser ? (
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  ) : (
                     <>
                       <div
-                        className="whitespace-pre-wrap leading-relaxed space-y-1"
+                        className="whitespace-pre-wrap space-y-0.5"
                         dangerouslySetInnerHTML={formatMessageContent(msg.content || '')}
                       />
                       <button
+                        type="button"
                         onClick={() => handleCopy(msg.content || '', idx)}
-                        className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 bg-white/20 hover:bg-white/30 text-white rounded transition-all cursor-pointer"
-                        title="Salin pesan"
-                      >
-                        {copiedIdx === idx ? <Check size={12} className="text-white" /> : <Copy size={12} />}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <TypewriterMessage
-                        text={msg.content || ''}
-                        animate={!animatedIndices.current.has(idx)}
-                      />
-                      
-                      {/* Copy Action Button */}
-                      <button
-                        onClick={() => handleCopy(msg.content || '', idx)}
-                        className="absolute top-2.5 right-2.5 p-1 opacity-0 group-hover:opacity-100 bg-muted hover:bg-line text-dim hover:text-heading rounded transition-all cursor-pointer"
-                        title="Salin jawaban"
+                        aria-label="Salin jawaban"
+                        className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 bg-muted hover:bg-muted-hover text-dim hover:text-heading rounded transition-opacity cursor-pointer"
+                        title="Salin"
                       >
                         {copiedIdx === idx ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                       </button>
 
-                      {/* Direct action button if API Key error */}
-                      {(msg.content?.includes('API Key') || msg.content?.includes('Error') || msg.content?.includes('401') || msg.content?.includes('Unauthorized')) && (
-                        <div className="mt-2.5 pt-2 border-t border-line flex items-center">
-                          <button
-                            onClick={() => setShowSettings(true)}
-                            className="flex items-center gap-1.5 px-2.5 py-1 bg-primary-soft hover:bg-primary/20 text-primary text-xs font-semibold rounded-lg transition-all cursor-pointer"
-                          >
-                            <Key size={12} /> Atur API Key OpenAI
-                          </button>
+                      {(msg.content?.includes('API Key') ||
+                        msg.content?.includes('Error') ||
+                        msg.content?.includes('401') ||
+                        msg.content?.includes('Unauthorized')) && (
+                        <div className="mt-2 pt-2 border-t border-line">
+                          <Button type="button" variant="outline" size="sm" onClick={() => setShowSettings(true)}>
+                            <Key size={12} />
+                            Atur API Key
+                          </Button>
                         </div>
                       )}
                     </>
@@ -633,19 +490,13 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
             );
           })}
 
-          {/* Thinking / Loading Animation */}
           {loading && (
-            <div className="flex gap-2.5 animate-fade-in">
-              <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-soft text-primary flex items-center justify-center mt-0.5">
-                <Loader2 size={14} className="animate-spin" />
+            <div className="flex gap-2">
+              <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-soft text-primary border border-primary/20 flex items-center justify-center">
+                <Loader2 size={13} className="animate-spin" />
               </div>
-              <div className="bg-card border border-line rounded-2xl rounded-tl-xs px-4 py-2.5 flex items-center gap-2.5 shadow-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-                <span className="text-xs font-medium text-dim">Menganalisis data...</span>
+              <div className="bg-card border border-line rounded-xl px-3.5 py-2 text-xs text-dim">
+                Memproses...
               </div>
             </div>
           )}
@@ -653,17 +504,24 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Opname Preview Approval */}
         {pendingPreview && (
-          <div className="p-3 bg-card border-t border-line z-10 shrink-0">
-            <h4 className="font-bold text-xs text-heading mb-1.5">Persetujuan Penyesuaian Stok (AI)</h4>
-            <div className="max-h-32 overflow-y-auto custom-scrollbar mb-2.5 bg-muted/40 rounded-lg p-2 border border-line">
+          <div className="p-3 bg-elevated border-t border-line shrink-0 space-y-2">
+            <p className="font-semibold text-xs text-heading">Konfirmasi penyesuaian stok</p>
+            <div className="max-h-28 overflow-y-auto custom-scrollbar bg-muted/40 rounded-lg p-2 border border-line">
               <table className="w-full text-xs text-left">
-                <thead><tr className="border-b border-line text-dim"><th className="pb-1">Item ID</th><th className="pb-1">Qty</th><th className="pb-1">Batch</th></tr></thead>
+                <thead>
+                  <tr className="border-b border-line text-dim">
+                    <th className="pb-1">Item</th>
+                    <th className="pb-1">Qty</th>
+                    <th className="pb-1">Batch</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {pendingPreview.items.map((it, idx) => (
-                    <tr key={idx} className="border-b border-line/50">
-                      <td className="py-1 font-mono">{it.item_id.substring(0,8)}...</td>
-                      <td className="py-1 font-semibold text-heading">{it.actual_qty}</td>
+                    <tr key={idx} className="border-b border-line/50 last:border-0">
+                      <td className="py-1 font-mono">{it.item_id.substring(0, 8)}</td>
+                      <td className="py-1 font-semibold text-heading tnum">{it.actual_qty}</td>
                       <td className="py-1 text-dim">{it.batch_no || '-'}</td>
                     </tr>
                   ))}
@@ -671,49 +529,55 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
               </table>
             </div>
             <div className="flex gap-2 justify-end">
-              <button onClick={handleRejectPreview} className="px-2.5 py-1.5 bg-muted hover:bg-line text-body text-xs font-semibold rounded-lg transition-colors cursor-pointer">Tolak & Batal</button>
-              <button onClick={handleApprovePreview} className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer">Setujui & Terapkan</button>
+              <Button variant="outline" size="sm" onClick={handleRejectPreview}>
+                Tolak
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleApprovePreview}>
+                Terapkan
+              </Button>
             </div>
           </div>
         )}
 
-        {/* Input Bar */}
-        <div className="p-3 bg-card border-t border-line z-10 shrink-0">
-          <div className="relative flex items-end gap-1.5 bg-muted/50 border border-line rounded-xl p-1.5 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+        {/* Input */}
+        <div className="p-3 bg-elevated border-t border-line shrink-0">
+          <div className="flex items-end gap-1.5 bg-input border border-line rounded-lg p-1.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Tanya Kivo AI... (Tekan Enter untuk kirim)"
+              placeholder="Tulis pertanyaan..."
               disabled={loading}
               autoFocus
               rows={1}
-              className="flex-1 resize-none bg-transparent border-none px-2.5 py-1 text-xs text-heading outline-none placeholder:text-dim disabled:opacity-50 overflow-y-auto leading-relaxed custom-scrollbar"
-              style={{ minHeight: '34px', maxHeight: '100px' }}
+              className="flex-1 resize-none bg-transparent border-none px-2 py-1 text-xs text-heading outline-none placeholder:text-dim disabled:opacity-50 overflow-y-auto leading-relaxed custom-scrollbar"
+              style={{ minHeight: '32px', maxHeight: '100px' }}
             />
             <button
+              type="button"
               onClick={(e) => handleSubmit(e)}
               disabled={!input.trim() || loading}
-              className="shrink-0 w-8 h-8 bg-primary hover:bg-primary-hover text-white rounded-lg disabled:opacity-40 transition-all shadow-xs flex items-center justify-center active:scale-95 cursor-pointer"
-              title="Kirim pesan"
+              aria-label="Kirim pesan"
+              className="shrink-0 w-8 h-8 bg-primary hover:bg-primary-hover text-white rounded-md disabled:opacity-40 transition-colors flex items-center justify-center cursor-pointer"
+              title="Kirim"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             </button>
           </div>
-
-          <div className="flex items-center justify-between px-1 mt-1.5">
-            <p className="text-[10px] text-dim flex items-center gap-1">
-              <MessageSquare size={11} className="text-primary shrink-0" />
-              Kivo AI dapat melakukan kesalahan. Verifikasi data penting.
-            </p>
-            {input.trim() && (
-              <span className="text-[10px] font-mono text-dim shrink-0 hidden sm:inline">Shift+Enter = baris baru</span>
-            )}
-          </div>
         </div>
-
       </div>
+
+      {confirmClear && (
+        <ConfirmModal
+          title="Hapus Riwayat Chat"
+          message="Semua pesan Kivo AI di perangkat ini akan dihapus."
+          confirmLabel="Hapus"
+          variant="danger"
+          onConfirm={confirmClearHistory}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
     </>
   );
 }

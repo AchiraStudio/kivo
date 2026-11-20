@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getCustomers, Customer } from '../../lib/api';
-import { Loader2, Plus, UserCircle, Edit2, Search, Eye, HeartPulse } from 'lucide-react';
+import { Loader2, Plus, UserCircle, Edit2, Search, Eye, HeartPulse, RefreshCw } from 'lucide-react';
+import Button from '../../components/ui/Button';
 import CustomerModal from './CustomerModal';
 import CustomerProfileDrawer, { ProfileTab } from './CustomerProfileDrawer';
+
+const TIER_META: Record<string, { label: string; cls: string }> = {
+  vip: { label: 'VIP', cls: 'bg-warning-soft text-warning border-warning/30' },
+  member: { label: 'Member', cls: 'bg-accent-soft text-accent border-accent/30' },
+  regular: { label: 'Reguler', cls: 'bg-muted text-body border-line' },
+};
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -12,9 +19,12 @@ export default function CustomerList() {
   const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
   const [profileCustomer, setProfileCustomer] = useState<Customer | null>(null);
   const [profileTab, setProfileTab] = useState<ProfileTab>('purchases');
-  const openProfile = (c: Customer, tab: ProfileTab) => { setProfileTab(tab); setProfileCustomer(c); };
-
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const openProfile = (c: Customer, tab: ProfileTab) => {
+    setProfileTab(tab);
+    setProfileCustomer(c);
+  };
 
   const loadData = () => {
     setLoading(true);
@@ -25,88 +35,196 @@ export default function CustomerList() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const openAdd = () => { setCustomerToEdit(null); setIsModalOpen(true); };
-  const openEdit = (c: Customer) => { setCustomerToEdit(c); setIsModalOpen(true); };
-
-  const getTierColor = (tier: string) => {
-    if (tier === 'vip') return 'bg-warning-soft text-warning border-warning/30 ';
-    if (tier === 'member') return 'bg-accent-soft text-accent border-accent/30 ';
-    return 'bg-muted text-body border-line dark:bg-muted dark:text-body dark:border-line-strong';
+  const openAdd = () => {
+    setCustomerToEdit(null);
+    setIsModalOpen(true);
   };
 
+  const openEdit = (c: Customer) => {
+    setCustomerToEdit(c);
+    setIsModalOpen(true);
+  };
+
+  const filteredCustomers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter(
+      c => c.name.toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q)
+    );
+  }, [customers, search]);
+
   return (
-    <div className="flex flex-col gap-4 animate-fade-in h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-heading">Data Pelanggan (CRM)</h1>
-          <p className="text-xs text-dim mt-0.5">Kelola data pelanggan, riwayat transaksi, dan tingkatan membership loyalitas.</p>
+    <div className="flex flex-col gap-4 h-full animate-fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-lg font-bold tracking-tight text-heading">Pelanggan</h1>
+          {!loading && !loadError && (
+            <span className="px-2 py-0.5 rounded-full bg-muted border border-line text-xs font-semibold text-dim tnum">
+              {customers.length}
+            </span>
+          )}
         </div>
-        <button onClick={openAdd} className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white px-3.5 py-1.5 rounded-lg font-semibold text-xs shadow-xs transition-all active:scale-[0.98] cursor-pointer">
+        <Button onClick={openAdd}>
           <Plus size={15} /> Tambah Pelanggan
-        </button>
+        </Button>
       </div>
-      <div className="bg-card rounded-xl border border-line shadow-sm flex-1 overflow-hidden flex flex-col">
-        <div className="p-4 border-b border-line flex gap-4 bg-muted/50 dark:bg-card/30">
-          <div className="flex-1 flex items-center bg-card border border-line rounded-lg px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-            <Search size={16} className="text-dim mr-2" />
-            <input 
-              type="text" 
+
+      <div className="bg-card rounded-xl border border-line flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="p-3 border-b border-line">
+          <div className="flex items-center h-9 bg-input border border-line rounded-lg px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 transition-colors">
+            <Search size={15} className="text-dim mr-2 shrink-0" />
+            <input
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama atau nomor telepon"
-              aria-label="Cari pelanggan" 
-              className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim" 
+              aria-label="Cari pelanggan"
+              className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim"
             />
           </div>
         </div>
-        {loading ? <div className="flex justify-center py-20" role="status" aria-label="Memuat pelanggan"><Loader2 className="animate-spin text-primary" size={32} /></div> : loadError ? (
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-2" role="status" aria-label="Memuat pelanggan">
+            <Loader2 className="animate-spin text-primary" size={24} />
+            <span className="text-xs text-dim">Memuat data pelanggan</span>
+          </div>
+        ) : loadError ? (
           <div className="py-16 text-center px-4">
             <p className="text-sm font-semibold text-danger">Data pelanggan gagal dimuat</p>
-            <p className="text-xs text-body mt-1 break-words">{loadError}</p>
-            <button onClick={loadData} className="mt-3 px-3 py-1.5 rounded-lg border border-line bg-card text-xs font-semibold text-heading hover:bg-muted cursor-pointer">Coba lagi</button>
+            <p className="text-xs text-dim mt-1 break-words max-w-md mx-auto">{loadError}</p>
+            <div className="mt-3">
+              <Button variant="outline" size="sm" onClick={loadData}>
+                <RefreshCw size={14} /> Coba lagi
+              </Button>
+            </div>
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div className="py-16 text-center px-4">
+            <UserCircle size={28} className="mx-auto text-dim mb-2" />
+            <p className="text-sm font-semibold text-heading">
+              {search.trim() ? 'Pelanggan tidak ditemukan' : 'Belum ada pelanggan'}
+            </p>
+            <p className="text-xs text-dim mt-1">
+              {search.trim()
+                ? 'Coba kata kunci nama atau nomor telepon lain.'
+                : 'Tambahkan data pelanggan untuk mencatat riwayat transaksi.'}
+            </p>
+            <div className="mt-3">
+              {search.trim() ? (
+                <Button variant="outline" size="sm" onClick={() => setSearch('')}>
+                  Reset pencarian
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={openAdd}>
+                  <Plus size={14} /> Tambah Pelanggan
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto custom-scrollbar relative"><table className="w-full text-left">
-            <thead className="sticky top-0 bg-background border-b border-line text-xs uppercase text-body font-semibold z-10">
-              <tr><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Nama</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Telepon</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5">Tier dan Masa Berlaku</th><th className="py-2.5 px-3 sm:py-3.5 sm:px-5 text-right">Aksi</th></tr>
-            </thead>
-            <tbody className="divide-y divide-line dark:divide-line/60 text-sm">
-              {customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || (c.phone || '').includes(search)).map(c => (
-                <tr key={c.id} className="hover:bg-muted/40 group fast-render-row">
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-5 font-bold flex items-center gap-2.5">
-                    <UserCircle size={16} className="text-dim shrink-0" />
-                    <span className="truncate">{c.name}</span> {c.id === 'customer_umum' && <span className="text-[10px] bg-primary-soft text-primary px-1.5 py-0.5 rounded shrink-0">DEFAULT</span>}
-                  </td>
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-5 font-mono text-xs text-body">{c.phone || '-'}</td>
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-5">
-                    <div className="flex flex-col items-start gap-1">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getTierColor(c.customer_tier)}`}>
-                        {c.customer_tier}
-                      </span>
-                      {c.membership_expiry && c.customer_tier !== 'regular' && (
-                        <span className="text-[10px] text-dim font-mono" title="Masa berlaku membership">
-                          s/d {c.membership_expiry.split(' ')[0]}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-5 text-right">
-                    <div className="flex justify-end gap-1.5">
-                      {c.id !== 'customer_umum' && <button onClick={() => openProfile(c, 'health')} title="Catatan Kesehatan" aria-label={`Catatan kesehatan ${c.name}`} className="p-1.5 text-primary bg-primary-soft hover:bg-primary/20 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"><HeartPulse size={14} /></button>}
-                      <button onClick={() => openProfile(c, 'purchases')} title="Lihat Profil" aria-label={`Lihat profil ${c.name}`} className="p-1.5 text-primary bg-primary-soft hover:bg-primary/20 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"><Eye size={14} /></button>
-                      <button onClick={() => openEdit(c)} title="Edit Pelanggan" aria-label={`Edit ${c.name}`} className="p-1.5 text-dim hover:text-primary bg-muted hover:bg-line rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"><Edit2 size={14} /></button>
-                    </div>
-                  </td>
+          <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 bg-muted/60 border-b border-line text-xs text-dim font-semibold z-10">
+                <tr>
+                  <th className="py-2.5 px-3 sm:px-4">Nama</th>
+                  <th className="py-2.5 px-3 sm:px-4">Telepon</th>
+                  <th className="py-2.5 px-3 sm:px-4">Tier</th>
+                  <th className="py-2.5 px-3 sm:px-4 text-right hidden md:table-cell">Poin</th>
+                  <th className="py-2.5 px-3 sm:px-4 text-right">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table></div>
+              </thead>
+              <tbody className="divide-y divide-line text-sm">
+                {filteredCustomers.map(c => {
+                  const tier = TIER_META[c.customer_tier] ?? { label: c.customer_tier, cls: 'bg-muted text-body border-line' };
+                  return (
+                    <tr key={c.id} className="hover:bg-muted/40 transition-colors fast-render-row">
+                      <td className="py-2.5 px-3 sm:px-4">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-semibold text-heading truncate">{c.name}</span>
+                          {c.id === 'customer_umum' && (
+                            <span className="text-[11px] font-medium bg-muted text-dim border border-line px-1.5 py-0.5 rounded-md shrink-0">
+                              Default
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 sm:px-4 font-mono text-xs text-body tnum">
+                        {c.phone || '-'}
+                      </td>
+                      <td className="py-2.5 px-3 sm:px-4">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold border ${tier.cls}`}>
+                            {tier.label}
+                          </span>
+                          {c.membership_expiry && c.customer_tier !== 'regular' && (
+                            <span className="text-[11px] text-dim tnum" title="Masa berlaku membership">
+                              s/d {c.membership_expiry.split(' ')[0]}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 sm:px-4 text-right text-xs font-semibold text-body tnum hidden md:table-cell">
+                        {(c.loyalty_points ?? 0).toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-2.5 px-3 sm:px-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          {c.id !== 'customer_umum' && (
+                            <button
+                              type="button"
+                              onClick={() => openProfile(c, 'health')}
+                              title="Catatan Kesehatan"
+                              aria-label={`Catatan kesehatan ${c.name}`}
+                              className="p-1.5 rounded-lg text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            >
+                              <HeartPulse size={15} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => openProfile(c, 'purchases')}
+                            title="Lihat Profil"
+                            aria-label={`Lihat profil ${c.name}`}
+                            className="p-1.5 rounded-lg text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            <Eye size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEdit(c)}
+                            title="Edit Pelanggan"
+                            aria-label={`Edit ${c.name}`}
+                            className="p-1.5 rounded-lg text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
-      <CustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} customerToEdit={customerToEdit} />
-      <CustomerProfileDrawer isOpen={!!profileCustomer} onClose={() => setProfileCustomer(null)} customer={profileCustomer} initialTab={profileTab} />
+
+      <CustomerModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadData}
+        customerToEdit={customerToEdit}
+      />
+      <CustomerProfileDrawer
+        isOpen={!!profileCustomer}
+        onClose={() => setProfileCustomer(null)}
+        customer={profileCustomer}
+        initialTab={profileTab}
+      />
     </div>
   );
 }

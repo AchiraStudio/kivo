@@ -3,32 +3,44 @@ import { Loader2 } from 'lucide-react';
 import { getPurchaseSummary, PurchaseSummaryRow } from '../../lib/api';
 import ReportHeader from '../../components/reports/ReportHeader';
 import { getFirstOfMonthDateString, getTodayDateString } from './reportUtils';
+import Button from '../../components/ui/Button';
 
-interface Props { onBack: () => void; }
+interface Props {
+  onBack: () => void;
+}
 
 export default function LaporanPembelian({ onBack }: Props) {
   const [dateFrom, setDateFrom] = useState(getFirstOfMonthDateString());
   const [dateTo, setDateTo] = useState(getTodayDateString());
   const [data, setData] = useState<PurchaseSummaryRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
-    try { setData(await getPurchaseSummary('branch_001', dateFrom, dateTo)); }
-    catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    setError(null);
+    try {
+      setData(await getPurchaseSummary('branch_001', dateFrom, dateTo));
+    } catch (e) {
+      console.error(e);
+      setError('Gagal memuat laporan pembelian.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const grandTotal = data.reduce((s, r) => s + r.total_amount, 0);
   const grandPaid = data.reduce((s, r) => s + r.paid_amount, 0);
+  const grandCount = data.reduce((s, r) => s + r.purchase_count, 0);
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in h-full">
+    <div className="flex flex-col gap-4 animate-fade-in h-full">
       <ReportHeader
-        title="Laporan Pembelian"
-        subtitle="Ringkasan pembelian per pemasok"
+        title="Rekap Pembelian"
         onBack={onBack}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -37,43 +49,80 @@ export default function LaporanPembelian({ onBack }: Props) {
         onFetch={fetchData}
       />
 
-      <div className="bg-card rounded-xl border border-line shadow-sm flex-1 overflow-hidden">
-        <div className="overflow-x-auto h-full">
-          <table className="w-full text-left">
-            <thead className="bg-muted/50 border-b border-line text-xs uppercase text-dim font-semibold sticky top-0">
+      <div className="bg-card rounded-xl border border-line flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="overflow-x-auto flex-1 custom-scrollbar">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-muted/60 border-b border-line text-xs text-dim font-semibold sticky top-0 z-10">
               <tr>
-                <th className="py-4 px-6">Pemasok</th>
-                <th className="py-4 px-6 text-right">Jumlah PO</th>
-                <th className="py-4 px-6 text-right">Total Pembelian</th>
-                <th className="py-4 px-6 text-right">Sudah Dibayar</th>
-                <th className="py-4 px-6 text-right">Sisa Hutang</th>
+                <th className="py-3 px-4">Pemasok</th>
+                <th className="py-3 px-4 text-right">Jumlah PO</th>
+                <th className="py-3 px-4 text-right">Total Pembelian</th>
+                <th className="py-3 px-4 text-right">Sudah Dibayar</th>
+                <th className="py-3 px-4 text-right">Sisa Hutang</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line dark:divide-line/60 text-sm">
+            <tbody className="divide-y divide-line text-sm">
               {loading ? (
-                <tr><td colSpan={5} className="py-16 text-center"><Loader2 className="animate-spin text-primary mx-auto" size={28}/></td></tr>
-              ) : data.length === 0 ? (
-                <tr><td colSpan={5} className="py-16 text-center text-dim">Tidak ada data pada periode ini.</td></tr>
-              ) : data.map(r => (
-                <tr key={r.supplier_name} className="hover:bg-muted/30">
-                  <td className="py-3 px-6 font-bold text-heading">{r.supplier_name}</td>
-                  <td className="py-3 px-6 text-right font-mono text-heading">{r.purchase_count}</td>
-                  <td className="py-3 px-6 text-right font-mono font-semibold text-heading">Rp {r.total_amount.toLocaleString('id-ID')}</td>
-                  <td className="py-3 px-6 text-right font-mono text-success">Rp {r.paid_amount.toLocaleString('id-ID')}</td>
-                  <td className={`py-3 px-6 text-right font-mono font-bold ${(r.total_amount - r.paid_amount) > 0 ? 'text-danger ' : 'text-dim'}`}>
-                    {(r.total_amount - r.paid_amount) > 0 ? `Rp ${(r.total_amount - r.paid_amount).toLocaleString('id-ID')}` : '-'}
+                <tr>
+                  <td colSpan={5} className="py-16 text-center text-dim">
+                    <Loader2 className="animate-spin text-primary mx-auto mb-2" size={24} />
+                    <span className="text-xs">Memuat data...</span>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-            {data.length > 0 && !loading && (
-              <tfoot className="bg-muted/50 border-t-2 border-line text-sm font-bold">
+              ) : error ? (
                 <tr>
-                  <td className="py-4 px-6 text-heading">TOTAL</td>
-                  <td className="py-4 px-6 text-right text-heading">{data.reduce((s, r) => s + r.purchase_count, 0)}</td>
-                  <td className="py-4 px-6 text-right text-heading">Rp {grandTotal.toLocaleString('id-ID')}</td>
-                  <td className="py-4 px-6 text-right text-success">Rp {grandPaid.toLocaleString('id-ID')}</td>
-                  <td className="py-4 px-6 text-right text-danger">Rp {(grandTotal - grandPaid).toLocaleString('id-ID')}</td>
+                  <td colSpan={5} className="py-16 text-center">
+                    <p className="text-sm text-danger font-medium">{error}</p>
+                    <Button type="button" variant="outline" size="sm" onClick={fetchData} className="mt-3">
+                      Coba Lagi
+                    </Button>
+                  </td>
+                </tr>
+              ) : data.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center text-dim text-sm">
+                    Tidak ada data pada periode ini.
+                  </td>
+                </tr>
+              ) : (
+                data.map((r) => {
+                  const balance = r.total_amount - r.paid_amount;
+                  return (
+                    <tr key={r.supplier_name} className="hover:bg-muted/40 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-heading">{r.supplier_name}</td>
+                      <td className="py-3 px-4 text-right tnum text-heading">{r.purchase_count}</td>
+                      <td className="py-3 px-4 text-right tnum font-semibold text-heading">
+                        Rp {r.total_amount.toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-3 px-4 text-right tnum text-success">
+                        Rp {r.paid_amount.toLocaleString('id-ID')}
+                      </td>
+                      <td
+                        className={`py-3 px-4 text-right tnum font-bold ${
+                          balance > 0 ? 'text-danger' : 'text-dim'
+                        }`}
+                      >
+                        {balance > 0 ? `Rp ${balance.toLocaleString('id-ID')}` : '-'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+            {data.length > 0 && !loading && !error && (
+              <tfoot className="bg-muted/60 border-t border-line text-sm font-bold">
+                <tr>
+                  <td className="py-3 px-4 text-heading">Total</td>
+                  <td className="py-3 px-4 text-right tnum text-heading">{grandCount}</td>
+                  <td className="py-3 px-4 text-right tnum text-heading">
+                    Rp {grandTotal.toLocaleString('id-ID')}
+                  </td>
+                  <td className="py-3 px-4 text-right tnum text-success">
+                    Rp {grandPaid.toLocaleString('id-ID')}
+                  </td>
+                  <td className="py-3 px-4 text-right tnum text-danger">
+                    Rp {(grandTotal - grandPaid).toLocaleString('id-ID')}
+                  </td>
                 </tr>
               </tfoot>
             )}

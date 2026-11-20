@@ -1,8 +1,37 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Loader2, Eye, Trash2, Edit, Upload, Download, HelpCircle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { getItemsFiltered, deleteItem, Item, importItemsExcel, exportItemsExcel, getCategories, Category, setItemPrice, setItemCostPrice, invoke } from '../../lib/api';
+import {
+  Plus,
+  Search,
+  Loader2,
+  Eye,
+  Trash2,
+  Edit,
+  Upload,
+  Download,
+  HelpCircle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  AlertCircle,
+} from 'lucide-react';
+import {
+  getItemsFiltered,
+  deleteItem,
+  Item,
+  importItemsExcel,
+  exportItemsExcel,
+  getCategories,
+  Category,
+  setItemPrice,
+  setItemCostPrice,
+  invoke,
+} from '../../lib/api';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import TourGuide from '../../components/ui/TourGuide';
+import Button from '../../components/ui/Button';
+import Select from '../../components/ui/Select';
+import ConfirmModal from '../../components/ui/ConfirmModal';
+import { toast } from '../../components/ui/Toast';
 import { usePermissions } from '../../lib/permissions';
 
 interface ItemListProps {
@@ -18,15 +47,16 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState<'name' | 'sku' | 'category' | 'price'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Tour State
   const [runTour, setRunTour] = useState(false);
   const inventoryTourSteps = [
     {
@@ -44,8 +74,8 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
     },
     {
       target: '.tour-inv-table',
-      content: 'Tabel ini menampilkan seluruh katalog Anda. Klik icon mata untuk melihat detail pergerakan stok. Anda dapat mengubah harga eceran dan grosir secara langsung di dalam baris tabel ini.',
-    }
+      content: 'Tabel ini menampilkan seluruh katalog Anda. Klik ikon mata untuk melihat detail pergerakan stok. Anda dapat mengubah harga pokok dan eceran secara langsung di baris tabel ini.',
+    },
   ];
 
   useEffect(() => {
@@ -54,25 +84,29 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
 
   const loadData = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       const data = await getItemsFiltered(search, selectedCategory, '', false, page, 20, sortBy, sortOrder);
       setItems(data.items);
       setTotal(data.total);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setErrorMsg(error?.message || String(error));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const delay = setTimeout(() => { loadData(); }, 300);
+    const delay = setTimeout(() => {
+      loadData();
+    }, 300);
     return () => clearTimeout(delay);
   }, [search, selectedCategory, page, sortBy, sortOrder, refreshTrigger]);
 
   const handleSort = (column: 'name' | 'sku' | 'category' | 'price') => {
     if (sortBy === column) {
-      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortBy(column);
       setSortOrder('asc');
@@ -81,19 +115,29 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
 
   const renderSortIcon = (column: 'name' | 'sku' | 'category' | 'price') => {
     if (sortBy !== column) {
-      return <ArrowUpDown size={14} className="text-dim opacity-60 group-hover:opacity-100 transition-opacity" />;
+      return <ArrowUpDown size={13} className="text-dim opacity-60 group-hover:opacity-100 transition-opacity" />;
     }
     return sortOrder === 'asc' ? (
-      <ArrowUp size={14} className="text-primary font-bold" />
+      <ArrowUp size={13} className="text-primary" />
     ) : (
-      <ArrowDown size={14} className="text-primary font-bold" />
+      <ArrowDown size={13} className="text-primary" />
     );
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menonaktifkan item ini?")) {
-      await deleteItem(id);
+  const handleDelete = (id: string) => {
+    setDeleteTargetId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    try {
+      await deleteItem(deleteTargetId);
+      toast.success('Produk dinonaktifkan.');
       loadData();
+    } catch (err) {
+      toast.error('Gagal menonaktifkan produk: ' + err);
+    } finally {
+      setDeleteTargetId(null);
     }
   };
 
@@ -101,7 +145,7 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
     try {
       const file = await open({
         multiple: false,
-        filters: [{ name: 'Excel', extensions: ['xlsx', 'xls'] }]
+        filters: [{ name: 'Excel', extensions: ['xlsx', 'xls'] }],
       });
 
       if (!file) return;
@@ -112,16 +156,16 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
         try {
           await invoke('auto_assign_brands');
         } catch (e) {
-          console.warn("Failed to auto-assign brands", e);
+          console.warn('Failed to auto-assign brands', e);
         }
-        alert(`Berhasil import ${res.rows_imported} baris data!`);
+        toast.success(`Berhasil import ${res.rows_imported} baris data.`);
         loadData();
       } else {
-        alert(`Gagal import: \n${res.errors.join('\n')}`);
+        toast.error(`Gagal import: ${res.errors.join(', ')}`);
       }
     } catch (e) {
       console.error(e);
-      alert(`Error: ${e}`);
+      toast.error(`Error: ${e}`);
     } finally {
       setIsImporting(false);
     }
@@ -136,298 +180,398 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
       if (!filePath) return;
 
       await exportItemsExcel(filePath);
-      alert('Berhasil mengekspor data ke Excel!');
+      toast.success('Data berhasil diekspor ke Excel.');
     } catch (e) {
       console.error(e);
-      alert(`Gagal export: ${e}`);
+      toast.error(`Gagal export: ${e}`);
     }
   };
 
+  const uniqueCategories = Array.from(
+    new Map(categories.map((c) => [c.name.trim().toUpperCase(), c])).values()
+  );
+  const totalPages = Math.ceil(total / 20) || 1;
+
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in duration-500 h-full">
+    <div className="flex flex-col gap-4 animate-fade-in h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-heading tracking-tight">Katalog Produk</h1>
-            <span className="px-2 py-0.5 rounded-full bg-muted text-body text-[11px] font-mono font-bold border border-line">
-              {total} produk
-            </span>
-          </div>
-          <p className="text-xs text-dim mt-0.5">Kelola data obat, barang, harga jual, dan stok.</p>
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-lg font-bold text-heading tracking-tight">Katalog Produk</h1>
+          <span className="px-2 py-0.5 rounded-full bg-muted text-dim text-xs font-semibold border border-line tnum">
+            {total}
+          </span>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           {can('reports.export') && (
-            <button 
-              onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-success-soft text-success hover:bg-success/20 rounded-lg transition-all font-semibold text-xs border border-success/30 active:scale-[0.98] cursor-pointer">
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download size={14} /> Ekspor
-            </button>
+            </Button>
           )}
           {can('items.create') && (
-            <button 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleImport}
-              disabled={isImporting}
-              className="tour-inv-import flex items-center gap-1.5 px-3 py-1.5 bg-primary-soft text-primary hover:bg-primary/20 rounded-lg transition-all font-semibold text-xs disabled:opacity-50 border border-primary/30 active:scale-[0.98] cursor-pointer">
-              {isImporting ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+              loading={isImporting}
+              className="tour-inv-import"
+            >
+              {!isImporting && <Upload size={14} />}
               {isImporting ? 'Mengimpor...' : 'Impor'}
-            </button>
+            </Button>
           )}
           {can('items.create') && (
-            <button onClick={onAddItem} className="tour-inv-add flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white px-3.5 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-xs active:scale-[0.98] cursor-pointer">
-              <Plus size={15} /> Tambah Item
-            </button>
+            <Button variant="primary" size="sm" onClick={onAddItem} className="tour-inv-add">
+              <Plus size={15} /> Tambah Produk
+            </Button>
           )}
-          <button onClick={() => setRunTour(true)} className="p-1.5 text-dim hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer" title="Bantuan & Panduan">
-            <HelpCircle size={16} />
-          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRunTour(true)}
+            className="px-2"
+            title="Panduan"
+            aria-label="Panduan"
+          >
+            <HelpCircle size={15} />
+          </Button>
         </div>
       </div>
 
-      <div className="bg-card rounded-2xl border border-line shadow-sm flex flex-col flex-1 overflow-hidden tour-inv-table">
-        <div className="p-4 border-b border-line flex flex-col sm:flex-row gap-4 bg-muted">
-          <div className="tour-inv-search flex-1 flex items-center bg-card border border-line rounded-lg px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-            <Search size={16} className="text-dim mr-2" />
-            <input 
-              type="text" 
+      <div className="bg-card rounded-xl border border-line flex flex-col flex-1 min-h-0 overflow-hidden tour-inv-table">
+        <div className="p-3 border-b border-line flex flex-col sm:flex-row gap-2.5 bg-muted/40">
+          <div className="tour-inv-search flex-1 flex items-center h-9 bg-input border border-line rounded-lg px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-colors">
+            <Search size={15} className="text-dim mr-2 shrink-0" />
+            <input
+              type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Cari berdasarkan nama, SKU, atau barcode..." 
-              className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim" 
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Cari nama, SKU, atau barcode..."
+              className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim"
             />
           </div>
-          <select
+          <Select
             value={selectedCategory}
-            onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
-            className="bg-card border border-line text-body text-sm font-semibold rounded-lg px-3.5 py-2 outline-none focus:ring-2 focus:ring-primary/20"
+            onChange={(v) => {
+              setSelectedCategory(v);
+              setPage(1);
+            }}
+            className="w-full sm:w-48"
+            ariaLabel="Filter kategori"
           >
             <option value="">Semua Kategori</option>
-            {Array.from(new Map(categories.map(c => [c.name.trim().toUpperCase(), c])).values()).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {uniqueCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
-          </select>
+          </Select>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+        <div className="flex-1 overflow-auto custom-scrollbar relative">
           <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-muted/90 z-10">
-              <tr className="text-dim text-xs uppercase tracking-wider font-semibold border-b border-line select-none">
-                <th 
+            <thead className="sticky top-0 bg-muted z-10 border-b border-line">
+              <tr className="text-dim text-xs font-semibold select-none">
+                <th
                   onClick={() => handleSort('name')}
-                  className="py-2.5 px-3 sm:py-3 sm:px-4 cursor-pointer hover:bg-muted transition-colors group"
+                  className="py-2.5 px-3.5 cursor-pointer hover:text-heading transition-colors group"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Nama Item</span>
+                    <span>Nama Produk</span>
                     {renderSortIcon('name')}
                   </div>
                 </th>
-                <th 
+                <th
                   onClick={() => handleSort('sku')}
-                  className="py-2.5 px-3 sm:py-3 sm:px-4 cursor-pointer hover:bg-muted transition-colors group"
+                  className="py-2.5 px-3.5 cursor-pointer hover:text-heading transition-colors group"
                 >
                   <div className="flex items-center gap-1.5">
                     <span>SKU</span>
                     {renderSortIcon('sku')}
                   </div>
                 </th>
-                <th 
+                <th
                   onClick={() => handleSort('category')}
-                  className="py-2.5 px-3 sm:py-3 sm:px-4 cursor-pointer hover:bg-muted transition-colors group"
+                  className="py-2.5 px-3.5 cursor-pointer hover:text-heading transition-colors group"
                 >
                   <div className="flex items-center gap-1.5">
                     <span>Kategori</span>
                     {renderSortIcon('category')}
                   </div>
                 </th>
-                <th className="py-2.5 px-3 sm:py-3 sm:px-4 text-right w-32 sm:w-36">Harga Pokok</th>
-                <th 
+                <th className="py-2.5 px-3.5 text-right w-32 sm:w-36">HPP</th>
+                <th
                   onClick={() => handleSort('price')}
-                  className="py-2.5 px-3 sm:py-3 sm:px-4 text-right w-36 sm:w-44 cursor-pointer hover:bg-muted transition-colors group"
+                  className="py-2.5 px-3.5 text-right w-36 sm:w-40 cursor-pointer hover:text-heading transition-colors group"
                 >
                   <div className="flex items-center justify-end gap-1.5">
                     <span>Harga Eceran</span>
                     {renderSortIcon('price')}
                   </div>
                 </th>
-                <th className="py-2.5 px-3 sm:py-3 sm:px-4 text-left min-w-[180px] sm:min-w-[220px]">Tier Volume</th>
-                <th className="py-2.5 px-3 sm:py-3 sm:px-4 text-center w-24">Status</th>
-                <th className="py-2.5 px-3 sm:py-3 sm:px-4 text-right w-28 sm:w-36">Aksi</th>
+                <th className="py-2.5 px-3.5 text-left min-w-[180px] sm:min-w-[210px]">Tier Grosir</th>
+                <th className="py-2.5 px-3.5 text-center w-24">Status</th>
+                <th className="py-2.5 px-3.5 text-right w-28 sm:w-32">Aksi</th>
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-line">
               {loading ? (
-                <tr><td colSpan={8} className="py-16 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></td></tr>
-              ) : items.length === 0 ? (
-                <tr><td colSpan={8} className="py-16 text-center text-dim font-medium">Tidak ada item ditemukan.</td></tr>
-              ) : items.map((item) => (
-                <tr key={item.id} className={`hover:bg-muted/40 transition-colors group fast-render-row ${item.is_active === 0 ? 'opacity-50' : ''}`}>
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-4">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-heading">{item.name}</p>
-                      {item.rack_location && (
-                        <span className="px-1.5 py-0.5 rounded bg-muted text-dim text-[10px] font-bold">
-                          Rak: {item.rack_location}
-                        </span>
-                      )}
-                    </div>
-                    {item.generic_name && <p className="text-xs text-dim mt-0.5">{item.generic_name}</p>}
-                  </td>
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-4 font-mono text-xs text-dim">{item.sku}</td>
-
-                  {/* Kategori Column */}
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-4">
-                    {item.category_name ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary-soft text-primary border border-primary/20">
-                        {item.category_name}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-dim font-medium italic">-</span>
-                    )}
-                  </td>
-                  
-                  {/* Harga Pokok (Cost / Buy Price) - Inline Editable */}
-                  <td className="py-2 px-3 sm:py-2.5 sm:px-4 text-right">
-                    {can('items.change_price') ? (
-                      <div className="relative flex items-center bg-card border border-line rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-primary/30" title="Harga Beli / Pokok Modal (HPP)">
-                        <span className="text-xs text-dim font-bold mr-1">Rp</span>
-                        <input
-                          type="number"
-                          defaultValue={item.cost_price || 0}
-                          onBlur={async (e) => {
-                            const val = parseFloat(e.target.value);
-                            if (isNaN(val) || val === item.cost_price) return;
-                            try {
-                              await setItemCostPrice(item.id, val);
-                              item.cost_price = val;
-                            } catch (err) {
-                              alert('Gagal update harga pokok: ' + err);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              (e.target as HTMLInputElement).blur();
-                            }
-                          }}
-                          className="w-full bg-transparent border-none outline-none text-xs font-bold text-heading focus:ring-0 p-0 text-right font-mono"
-                        />
-                      </div>
-                    ) : (
-                      <span className="font-mono text-xs font-semibold text-dim">
-                        Rp {(item.cost_price || 0).toLocaleString('id-ID')}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Inline Retail Price Input */}
-                  <td className="py-2 px-3 sm:py-2.5 sm:px-4 text-right">
-                    {can('items.change_price') ? (
-                      <div className="relative flex items-center bg-card border border-line rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-primary/30">
-                        <span className="text-xs text-dim font-bold mr-1">Rp</span>
-                        <input
-                          type="number"
-                          defaultValue={item.price || 0}
-                          onBlur={async (e) => {
-                            const val = parseFloat(e.target.value);
-                            if (isNaN(val) || val === item.price) return;
-                            try {
-                              await setItemPrice(item.id, item.base_unit_id || 'base', 'regular', val);
-                            } catch (err) {
-                              alert('Gagal update harga retail: ' + err);
-                            }
-                          }}
-                          onKeyDown={async (e) => {
-                            if (e.key === 'Enter') {
-                              (e.target as HTMLInputElement).blur();
-                            }
-                          }}
-                          className="w-full bg-transparent border-none outline-none text-xs font-bold text-heading focus:ring-0 p-0 text-right font-mono"
-                        />
-                      </div>
-                    ) : (
-                      <span className="font-bold text-xs font-mono text-heading">
-                        Rp {(item.price || 0).toLocaleString('id-ID')}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Tier Harga Volume (Badges + Quick Edit) */}
-                  <td className="py-2 px-3 sm:py-2.5 sm:px-4">
-                    <div className="flex flex-wrap items-center gap-1">
-                      {item.price_tiers && item.price_tiers.length > 0 ? (
-                        item.price_tiers.map((t) => (
-                          <span
-                            key={t.id || t.tier_level}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] font-extrabold bg-primary-soft text-primary border border-primary/20 shadow-2xs"
-                            title={`Tier ${t.tier_level}: Maks ${t.max_qty} Pcs @ Rp ${t.price.toLocaleString('id-ID')}`}
-                          >
-                            <span className="text-[9px] opacity-75 font-mono">≤{t.max_qty}</span>
-                            <span>Rp {t.price.toLocaleString('id-ID')}</span>
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-dim font-medium italic">Tanpa Tier</span>
-                      )}
-                      {can('items.change_price') && (
-                        <button
-                          onClick={() => onEditItem(item.id)}
-                          className="p-1 text-dim hover:text-primary hover:bg-muted rounded transition-colors cursor-pointer"
-                          title="Atur Tier Harga"
-                        >
-                          <Edit size={12} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-4 text-center">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${item.is_active ? 'bg-success/15 text-success ring-success/30' : 'bg-muted text-dim ring-line'} ring-1 ring-inset`}>
-                      {item.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 sm:py-3 sm:px-4 text-right relative">
-                    <div className="flex justify-end gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => onViewItem(item.id)} className="p-1.5 text-dim hover:text-primary bg-muted rounded-lg cursor-pointer" title="Lihat Detail">
-                        <Eye size={15} />
-                      </button>
-                      {can('items.edit') && (
-                        <button onClick={() => onEditItem(item.id)} className="p-1.5 text-dim hover:text-warning bg-muted rounded-lg cursor-pointer" title="Edit Item">
-                          <Edit size={15} />
-                        </button>
-                      )}
-                      {can('items.delete') && (
-                        <button onClick={() => handleDelete(item.id)} className="p-1.5 text-dim hover:text-danger bg-muted rounded-lg cursor-pointer" title="Nonaktifkan / Hapus">
-                          <Trash2 size={15} />
-                        </button>
-                      )}
-                    </div>
+                <tr>
+                  <td colSpan={8} className="py-16 text-center">
+                    <Loader2 size={22} className="animate-spin mx-auto text-primary" />
                   </td>
                 </tr>
-              ))}
+              ) : errorMsg ? (
+                <tr>
+                  <td colSpan={8} className="py-14 text-center">
+                    <AlertCircle size={22} className="mx-auto text-danger mb-2" />
+                    <p className="text-sm font-semibold text-heading">Gagal memuat katalog</p>
+                    <p className="text-xs text-dim mt-0.5 mb-3">{errorMsg}</p>
+                    <Button variant="outline" size="sm" onClick={loadData}>
+                      Coba Lagi
+                    </Button>
+                  </td>
+                </tr>
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-16 text-center">
+                    <p className="text-sm font-medium text-dim">Tidak ada produk ditemukan.</p>
+                    {(search || selectedCategory) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          setSearch('');
+                          setSelectedCategory('');
+                          setPage(1);
+                        }}
+                      >
+                        Reset Filter
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ) : (
+                items.map((item) => (
+                  <tr
+                    key={item.id}
+                    className={`hover:bg-muted/40 transition-colors group fast-render-row ${
+                      item.is_active === 0 ? 'opacity-55' : ''
+                    }`}
+                  >
+                    <td className="py-2.5 px-3.5">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-heading text-sm">{item.name}</p>
+                        {item.rack_location && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-muted text-dim text-[11px] font-mono border border-line">
+                            {item.rack_location}
+                          </span>
+                        )}
+                      </div>
+                      {item.generic_name && <p className="text-xs text-dim mt-0.5">{item.generic_name}</p>}
+                    </td>
+                    <td className="py-2.5 px-3.5 font-mono text-xs text-dim">{item.sku}</td>
+
+                    <td className="py-2.5 px-3.5">
+                      {item.category_name ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-body border border-line">
+                          {item.category_name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-dim">-</span>
+                      )}
+                    </td>
+
+                    <td className="py-2 px-3.5 text-right tnum">
+                      {can('items.change_price') ? (
+                        <div
+                          className="flex items-center h-8 bg-input border border-line rounded-lg px-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-colors"
+                          title="Harga Beli / HPP"
+                        >
+                          <span className="text-xs text-dim mr-1">Rp</span>
+                          <input
+                            type="number"
+                            defaultValue={item.cost_price || 0}
+                            onBlur={async (e) => {
+                              const val = parseFloat(e.target.value);
+                              if (isNaN(val) || val === item.cost_price) return;
+                              try {
+                                await setItemCostPrice(item.id, val);
+                                item.cost_price = val;
+                              } catch (err) {
+                                toast.error('Gagal update harga pokok: ' + err);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            className="w-full bg-transparent border-none outline-none text-xs font-semibold text-heading p-0 text-right tnum"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-xs font-medium text-dim tnum">
+                          Rp {(item.cost_price || 0).toLocaleString('id-ID')}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-2 px-3.5 text-right tnum">
+                      {can('items.change_price') ? (
+                        <div className="flex items-center h-8 bg-input border border-line rounded-lg px-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-colors">
+                          <span className="text-xs text-dim mr-1">Rp</span>
+                          <input
+                            type="number"
+                            defaultValue={item.price || 0}
+                            onBlur={async (e) => {
+                              const val = parseFloat(e.target.value);
+                              if (isNaN(val) || val === item.price) return;
+                              try {
+                                await setItemPrice(item.id, item.base_unit_id || 'base', 'regular', val);
+                              } catch (err) {
+                                toast.error('Gagal update harga retail: ' + err);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            className="w-full bg-transparent border-none outline-none text-xs font-semibold text-heading p-0 text-right tnum"
+                          />
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-xs text-heading tnum">
+                          Rp {(item.price || 0).toLocaleString('id-ID')}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-2 px-3.5">
+                      <div className="flex flex-wrap items-center gap-1">
+                        {item.price_tiers && item.price_tiers.length > 0 ? (
+                          item.price_tiers.map((t) => (
+                            <span
+                              key={t.id || t.tier_level}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-muted text-heading border border-line tnum"
+                              title={`Tier ${t.tier_level}: Maks ${t.max_qty} @ Rp ${t.price.toLocaleString('id-ID')}`}
+                            >
+                              <span className="text-dim">≤{t.max_qty}</span>
+                              <span>Rp {t.price.toLocaleString('id-ID')}</span>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-dim">-</span>
+                        )}
+                        {can('items.change_price') && (
+                          <button
+                            type="button"
+                            onClick={() => onEditItem(item.id)}
+                            className="p-1 text-dim hover:text-heading hover:bg-muted rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            title="Atur Tier Harga"
+                            aria-label="Atur Tier Harga"
+                          >
+                            <Edit size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="py-2.5 px-3.5 text-center">
+                      <span
+                        className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold ${
+                          item.is_active
+                            ? 'bg-success-soft text-success'
+                            : 'bg-muted text-dim border border-line'
+                        }`}
+                      >
+                        {item.is_active ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+
+                    <td className="py-2.5 px-3.5 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onViewItem(item.id)}
+                          className="p-1.5 text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          title="Lihat Detail"
+                          aria-label="Lihat Detail"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        {can('items.edit') && (
+                          <button
+                            type="button"
+                            onClick={() => onEditItem(item.id)}
+                            className="p-1.5 text-dim hover:text-heading hover:bg-muted rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            title="Edit Produk"
+                            aria-label="Edit Produk"
+                          >
+                            <Edit size={15} />
+                          </button>
+                        )}
+                        {can('items.delete') && (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            className="p-1.5 text-dim hover:text-danger hover:bg-danger-soft rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            title="Nonaktifkan"
+                            aria-label="Nonaktifkan"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-        <div className="p-3 sm:p-4 border-t border-line flex flex-col sm:flex-row justify-between items-center gap-2.5 bg-muted/40">
-          <p className="text-xs text-dim">
-            Menampilkan {items.length} dari {total} data (Halaman {page} dari {Math.ceil(total / 20) || 1})
+
+        <div className="px-3.5 py-2.5 border-t border-line flex flex-col sm:flex-row justify-between items-center gap-2 bg-muted/40">
+          <p className="text-xs text-dim tnum">
+            {items.length} dari {total} produk (Hal. {page}/{totalPages})
           </p>
           <div className="flex gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 bg-card border border-line rounded-lg text-xs font-semibold text-heading disabled:opacity-50 hover:bg-muted transition-colors cursor-pointer"
             >
               Sebelumnya
-            </button>
-            <button
-              onClick={() => setPage(p => p + 1)}
-              disabled={page >= Math.ceil(total / 20) || items.length === 0}
-              className="px-3 py-1.5 bg-card border border-line rounded-lg text-xs font-semibold text-heading disabled:opacity-50 hover:bg-muted transition-colors cursor-pointer"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPages || items.length === 0}
             >
               Selanjutnya
-            </button>
+            </Button>
           </div>
         </div>
       </div>
+
       <TourGuide steps={inventoryTourSteps} run={runTour} onFinish={() => setRunTour(false)} />
+      {deleteTargetId && (
+        <ConfirmModal
+          title="Nonaktifkan Produk"
+          message="Produk yang dinonaktifkan tidak akan tampil di katalog kasir."
+          confirmLabel="Nonaktifkan"
+          variant="danger"
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTargetId(null)}
+        />
+      )}
     </div>
   );
 }

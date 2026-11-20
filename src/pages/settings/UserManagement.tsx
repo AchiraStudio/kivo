@@ -1,29 +1,28 @@
-// Force HMR reload
 import { useState, useEffect } from 'react';
-import { Loader2, User, Plus, Eye, EyeOff, Power, Save, Pencil, Shield, Sliders, Cloud, Search, Building2, X, AlertTriangle } from 'lucide-react';
+import { Loader2, User, Plus, Eye, EyeOff, Power, Save, Pencil, Shield, Sliders, Search, Building2, X, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../../store/AuthStore';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import Modal from '../../components/ui/Modal';
+import Button from '../../components/ui/Button';
+import Select from '../../components/ui/Select';
 import { sysadminGetWorkspaces, getAvailableWorkspaces, WorkspaceListInfo, assignUserWorkspace, UserRowFull, invoke } from '../../lib/api';
 import UserPermissionsModal from './UserPermissionsModal';
 import RoleDefaultsModal from './RoleDefaultsModal';
 
-import Select from '../../components/ui/Select';
 const ROLES = [
-  { value: 'staff',  label: 'Staff',           desc: 'Akses POS, inventaris, gudang, dan pelanggan' },
-  { value: 'admin',  label: 'Admin',           desc: 'Akses penuh kecuali pengaturan sistem' },
-  { value: 'owner',  label: 'Owner / Pemilik', desc: 'Akses penuh termasuk pengaturan' },
+  { value: 'staff', label: 'Staff', desc: 'POS, inventaris, gudang, dan pelanggan' },
+  { value: 'admin', label: 'Admin', desc: 'Akses penuh kecuali pengaturan sistem' },
+  { value: 'owner', label: 'Owner', desc: 'Akses penuh termasuk pengaturan sistem' },
 ];
 
 function getRoleColor(role: string) {
-  switch (role) {
-    case 'owner': return 'bg-primary-soft text-primary ';
-    case 'admin': return 'bg-primary-soft text-primary';
-    case 'staff': return 'bg-success-soft text-success ';
-    // legacy roles
-    case 'kasir': return 'bg-success-soft text-success ';
-    case 'gudang': return 'bg-warning-soft text-warning ';
-    default: return 'bg-muted text-body dark:bg-muted dark:text-body';
+  switch (role.toLowerCase()) {
+    case 'owner': return 'bg-primary-soft text-primary';
+    case 'admin': return 'bg-info-soft text-info';
+    case 'staff': return 'bg-success-soft text-success';
+    case 'kasir': return 'bg-success-soft text-success';
+    case 'gudang': return 'bg-warning-soft text-warning';
+    default: return 'bg-muted text-body';
   }
 }
 
@@ -32,6 +31,7 @@ export default function UserManagement() {
   const [users, setUsers] = useState<UserRowFull[]>([]);
   const [workspaces, setWorkspaces] = useState<WorkspaceListInfo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editUserModal, setEditUserModal] = useState<UserRowFull | null>(null);
   const [permModalUserId, setPermModalUserId] = useState<string | null>(null);
@@ -52,6 +52,7 @@ export default function UserManagement() {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const [data, wsList] = await Promise.all([
         invoke<UserRowFull[]>('get_users'),
@@ -71,8 +72,12 @@ export default function UserManagement() {
 
       setUsers(sanitizedUsers);
       setWorkspaces(validWsList);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      console.error(e);
+      setLoadError(e?.message || String(e) || 'Gagal memuat daftar pengguna.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchUsers = fetchData;
@@ -81,7 +86,7 @@ export default function UserManagement() {
     if (u.id === currentUser?.id) {
       setConfirmModal({
         title: 'Tidak Dapat Menonaktifkan',
-        message: 'Anda tidak bisa menonaktifkan akun yang sedang digunakan.',
+        message: 'Akun yang sedang digunakan tidak bisa dinonaktifkan.',
         variant: 'warning',
         confirmLabel: 'OK',
         onConfirm: () => setConfirmModal(null),
@@ -90,9 +95,11 @@ export default function UserManagement() {
     }
     setConfirmModal({
       title: `${u.is_active ? 'Nonaktifkan' : 'Aktifkan'} Akun?`,
-      message: `${u.is_active ? 'Nonaktifkan' : 'Aktifkan'} akun "${u.name}"? ${u.is_active ? 'Pengguna tidak akan bisa login.' : 'Pengguna akan bisa login kembali.'}`,
+      message: u.is_active
+        ? `Akun "${u.name}" tidak akan bisa login setelah dinonaktifkan.`
+        : `Aktifkan kembali akun "${u.name}" agar dapat login.`,
       variant: u.is_active ? 'danger' : 'primary',
-      confirmLabel: u.is_active ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan',
+      confirmLabel: u.is_active ? 'Nonaktifkan' : 'Aktifkan',
       onConfirm: async () => {
         setConfirmModal(null);
         try {
@@ -122,74 +129,76 @@ export default function UserManagement() {
     return u.workspace_id === selectedWsFilter;
   });
 
+  const unassignedCount = users.filter(u => !u.workspace_id).length;
+
   return (
-    <div className="flex flex-col flex-1 h-full gap-6 animate-fade-in">
-      
+    <div className="flex flex-col flex-1 h-full gap-4 animate-fade-in">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-lg font-bold text-heading">Daftar Pengguna</h2>
-            <span className="px-2 py-0.5 rounded-full bg-success-soft text-success border border-success/30 text-[10px] font-bold flex items-center gap-1">
-              <Cloud size={11} /> Cloud Auth
-            </span>
-          </div>
-          <p className="text-xs text-dim">
-            Kelola akses, peran, dan penugasan workspace untuk seluruh staf.
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-bold text-heading">Daftar Pengguna</h2>
+          <span className="px-2 py-0.5 rounded-md bg-muted text-dim text-xs font-semibold tnum">
+            {users.length}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="md"
             onClick={() => setShowRoleDefaultsModal(true)}
-            className="btn-secondary text-xs px-3.5 py-2 flex items-center gap-1.5"
           >
-            <Sliders size={14} className="text-primary" /> Atur Default Peran
-          </button>
+            <Sliders size={14} /> Default Peran
+          </Button>
 
-          <button
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
             onClick={() => setShowModal(true)}
-            className="btn-primary text-xs px-3.5 py-2 flex items-center gap-1.5"
           >
             <Plus size={15} /> Tambah Staff
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Search & Workspace Filter Bar */}
-      <div className="bg-card p-4 rounded-xl border border-line shadow-xs flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-        {/* Search Input */}
+      <div className="bg-card p-3.5 rounded-xl border border-line flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dim" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-dim" />
           <input
             type="text"
-            placeholder="Cari staff berdasarkan nama atau username..."
+            placeholder="Cari nama atau username..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-sm bg-muted border border-line rounded-xl outline-none focus:ring-2 focus:ring-primary text-heading"
+            className="w-full h-9 pl-9 pr-8 text-sm bg-input border border-line rounded-lg outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 text-heading placeholder:text-dim transition-colors"
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-heading transition-colors"
+              aria-label="Hapus pencarian"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dim hover:text-heading p-0.5 rounded cursor-pointer"
             >
               <X size={13} />
             </button>
           )}
         </div>
 
-        {/* Workspace Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
+        {/* Workspace Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 md:pb-0 custom-scrollbar">
           <button
+            type="button"
             onClick={() => setSelectedWsFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`h-8 px-3 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               selectedWsFilter === 'all'
-                ? 'bg-primary text-white shadow-xs'
-                : 'bg-muted border border-line text-body hover:bg-muted'
+                ? 'bg-primary-soft text-primary border-primary/30'
+                : 'bg-muted border-line text-body hover:text-heading hover:bg-muted-hover'
             }`}
           >
-            <span>Semua Staff</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${selectedWsFilter === 'all' ? 'bg-card/20 text-white' : 'bg-line text-body'}`}>
+            <span>Semua</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] tnum ${selectedWsFilter === 'all' ? 'bg-primary/15 text-primary' : 'bg-card text-dim'}`}>
               {users.length}
             </span>
           </button>
@@ -200,115 +209,135 @@ export default function UserManagement() {
             return (
               <button
                 key={ws.id}
+                type="button"
                 onClick={() => setSelectedWsFilter(ws.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                className={`h-8 px-3 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                   isSelected
-                    ? 'bg-primary text-white shadow-xs'
-                    : 'bg-muted border border-line text-body hover:bg-muted'
+                    ? 'bg-primary-soft text-primary border-primary/30'
+                    : 'bg-muted border-line text-body hover:text-heading hover:bg-muted-hover'
                 }`}
               >
                 <Building2 size={12} className="shrink-0" />
                 <span>{ws.name}</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${isSelected ? 'bg-card/20 text-white' : 'bg-line text-body'}`}>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] tnum ${isSelected ? 'bg-primary/15 text-primary' : 'bg-card text-dim'}`}>
                   {count}
                 </span>
               </button>
             );
           })}
 
-          <button
-            onClick={() => setSelectedWsFilter('unassigned')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-              selectedWsFilter === 'unassigned'
-                ? 'bg-warning text-white shadow-sm'
-                : 'bg-muted border border-line text-body hover:bg-muted'
-            }`}
-          >
-            <span>Belum Ditugaskan</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${selectedWsFilter === 'unassigned' ? 'bg-card/20 text-white' : 'bg-line text-body'}`}>
-              {users.filter(u => !u.workspace_id).length}
-            </span>
-          </button>
+          {unassignedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setSelectedWsFilter('unassigned')}
+              className={`h-8 px-3 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                selectedWsFilter === 'unassigned'
+                  ? 'bg-warning-soft text-warning border-warning/30'
+                  : 'bg-muted border-line text-body hover:text-heading hover:bg-muted-hover'
+              }`}
+            >
+              <span>Tanpa Workspace</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] tnum ${selectedWsFilter === 'unassigned' ? 'bg-warning/15 text-warning' : 'bg-card text-dim'}`}>
+                {unassignedCount}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-card rounded-xl border border-line shadow-sm flex-1 overflow-hidden flex flex-col">
+      <div className="bg-card rounded-xl border border-line flex-1 overflow-hidden flex flex-col">
         {loading ? (
-          <div className="py-20 text-center flex flex-col items-center justify-center text-dim">
-            <Loader2 className="animate-spin text-primary mb-4" size={32} />
-            <p>Memuat data pengguna...</p>
+          <div className="py-16 text-center flex flex-col items-center justify-center gap-2.5 text-dim">
+            <Loader2 className="animate-spin text-primary" size={24} />
+            <p className="text-xs font-medium">Memuat data pengguna...</p>
+          </div>
+        ) : loadError ? (
+          <div className="py-16 px-4 text-center flex flex-col items-center justify-center gap-2.5">
+            <AlertTriangle size={22} className="text-danger" />
+            <p className="text-sm font-semibold text-heading">Gagal memuat daftar pengguna</p>
+            <p className="text-xs text-dim max-w-sm">{loadError}</p>
+            <Button type="button" variant="outline" size="sm" onClick={fetchData} className="mt-1">
+              <RefreshCw size={13} /> Coba Lagi
+            </Button>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+          <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 z-10 bg-background border-b border-line text-xs uppercase text-dim font-semibold">
+              <thead className="sticky top-0 z-10 bg-muted/60 border-b border-line text-xs text-dim font-semibold">
                 <tr>
-                  <th className="py-4 px-6">Nama & Username</th>
-                  <th className="py-4 px-6">Peran (Role)</th>
-                  <th className="py-4 px-6">Hak Akses</th>
-                  <th className="py-4 px-6">Workspace</th>
-                  <th className="py-4 px-6">Status</th>
-                  <th className="py-4 px-6">Dibuat Pada</th>
-                  <th className="py-4 px-6 text-right">Aksi</th>
+                  <th className="py-3 px-4">Pengguna</th>
+                  <th className="py-3 px-4">Peran</th>
+                  <th className="py-3 px-4">Hak Akses</th>
+                  <th className="py-3 px-4">Workspace</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Dibuat</th>
+                  <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line dark:divide-line">
+              <tbody className="divide-y divide-line">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-dim">
-                      {searchQuery || selectedWsFilter !== 'all'
-                        ? 'Tidak ada pengguna yang cocok dengan filter / pencarian.'
-                        : 'Tidak ada pengguna ditemukan.'}
+                    <td colSpan={7} className="py-12 px-4 text-center">
+                      <p className="text-sm font-semibold text-heading">
+                        {searchQuery || selectedWsFilter !== 'all'
+                          ? 'Tidak ada pengguna yang cocok'
+                          : 'Belum ada pengguna'}
+                      </p>
+                      <p className="text-xs text-dim mt-1">
+                        {searchQuery || selectedWsFilter !== 'all'
+                          ? 'Ubah filter atau kata kunci pencarian.'
+                          : 'Tambahkan akun staff baru untuk mulai mengelola akses.'}
+                      </p>
                     </td>
                   </tr>
                 ) : filteredUsers.map(u => (
-                  <tr key={u.id} className="hover:bg-muted/30 transition-colors group fast-render-row">
-                    
+                  <tr key={u.id} className="hover:bg-muted/35 transition-colors fast-render-row">
                     {/* User Info */}
-                    <td className="py-3 px-6">
+                    <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary-soft text-primary flex items-center justify-center shrink-0 font-bold text-sm">
+                        <div className="w-8 h-8 rounded-full bg-muted border border-line text-heading flex items-center justify-center shrink-0 font-bold text-xs">
                           {u.name.substring(0, 2).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-bold text-heading">{u.name}</p>
-                          <p className="text-xs text-dim">@{u.username}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-heading text-sm truncate">{u.name}</p>
+                          <p className="text-xs text-dim font-mono truncate">@{u.username}</p>
                         </div>
                       </div>
                     </td>
 
                     {/* Role Badge */}
-                    <td className="py-3 px-6">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getRoleColor(u.role)}`}>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold capitalize ${getRoleColor(u.role)}`}>
                         {u.role}
                       </span>
                     </td>
 
                     {/* Permissions Status */}
-                    <td className="py-3 px-6">
+                    <td className="py-3 px-4">
                       {u.role.toLowerCase() === 'owner' ? (
-                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-primary-soft text-primary ">
-                          Akses Penuh
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-primary-soft text-primary">
+                          Penuh
                         </span>
                       ) : u.is_custom_perms ? (
-                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-warning-soft text-warning flex items-center gap-1 w-fit">
-                          <span className="w-1.5 h-1.5 rounded-full bg-warning"></span> Kustom
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-warning-soft text-warning inline-flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-warning" /> Kustom
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-muted text-body dark:bg-muted dark:text-body w-fit block">
-                          Default Role
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-muted text-body">
+                          Default
                         </span>
                       )}
                     </td>
 
                     {/* Workspace Selector */}
                     <td className="py-3 px-4">
-                      <div className="relative flex items-center">
+                      <div className="flex items-center gap-2 min-w-[160px] max-w-[220px]">
                         <Select
+                          size="sm"
                           disabled={updatingUserId === u.id}
                           value={u.workspace_id || ''}
-                          className="text-xs px-2.5 py-1.5 border border-line rounded-lg bg-card text-heading outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                          className="w-full"
                           onChange={async v => {
                             const wsId = v || null;
                             setUpdatingUserId(u.id);
@@ -328,59 +357,65 @@ export default function UserManagement() {
                           ))}
                         </Select>
                         {updatingUserId === u.id && (
-                          <Loader2 size={12} className="animate-spin text-primary ml-2 shrink-0" />
+                          <Loader2 size={13} className="animate-spin text-primary shrink-0" />
                         )}
                       </div>
                     </td>
 
                     {/* Active Status */}
-                    <td className="py-3 px-6">
+                    <td className="py-3 px-4">
                       {u.is_active ? (
-                        <span className="text-success font-semibold text-xs flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span> Aktif
+                        <span className="text-success font-semibold text-xs inline-flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-success" /> Aktif
                         </span>
                       ) : (
-                        <span className="text-dim font-semibold text-xs flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-dim"></span> Nonaktif
+                        <span className="text-dim font-semibold text-xs inline-flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-dim" /> Nonaktif
                         </span>
                       )}
                     </td>
 
                     {/* Created Date */}
-                    <td className="py-3 px-6 text-dim font-mono text-xs">
+                    <td className="py-3 px-4 text-dim text-xs tnum whitespace-nowrap">
                       {new Date(u.created_at).toLocaleDateString('id-ID')}
                     </td>
 
                     {/* Action Buttons */}
-                    <td className="py-3 px-6 text-right">
-                      <div className="flex justify-end gap-1">
-                        
-                        {/* Hak Akses Button */}
-                        <button
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex justify-end items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => setPermModalUserId(u.id)}
-                          title="Atur Hak Akses Pengguna"
-                          className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-primary-soft hover:bg-primary/15 text-primary dark:hover:bg-primary-soft transition-colors flex items-center gap-1.5"
+                          title="Atur Hak Akses"
                         >
                           <Shield size={13} />
-                          <span>Hak Akses</span>
-                        </button>
+                          <span>Akses</span>
+                        </Button>
 
-                        {/* Edit User Button */}
                         <button
+                          type="button"
                           onClick={() => setEditUserModal(u)}
-                          title="Edit User"
-                          className="p-2 rounded-lg text-dim hover:text-primary hover:bg-primary-soft transition-colors"
+                          title="Edit Pengguna"
+                          aria-label={`Edit ${u.name}`}
+                          className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                           <Pencil size={14} />
                         </button>
 
-                        {/* Toggle Active Button */}
                         <button
+                          type="button"
                           onClick={() => handleToggleActive(u)}
                           title={u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                          className={`p-2 rounded-lg transition-colors ${u.is_active ? 'text-dim hover:text-danger hover:bg-danger-soft dark:hover:bg-danger/20' : 'text-dim hover:text-success hover:bg-success-soft dark:hover:bg-success/20'}`}
+                          aria-label={u.is_active ? `Nonaktifkan ${u.name}` : `Aktifkan ${u.name}`}
+                          className={`w-8 h-8 inline-flex items-center justify-center rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                            u.is_active
+                              ? 'text-dim hover:text-danger hover:bg-danger-soft'
+                              : 'text-dim hover:text-success hover:bg-success-soft'
+                          }`}
                         >
-                          <Power size={15} />
+                          <Power size={14} />
                         </button>
                       </div>
                     </td>
@@ -394,24 +429,24 @@ export default function UserManagement() {
 
       {/* Add Staff Modal */}
       {showModal && <AddStaffModal workspaces={workspaces} currentWorkspaceId={currentUser?.workspace_id} onClose={() => setShowModal(false)} onSuccess={fetchUsers} />}
-      
+
       {/* Edit User Modal */}
       {editUserModal && <EditUserModal user={editUserModal} workspaces={workspaces} onClose={() => setEditUserModal(null)} onSuccess={fetchUsers} />}
-      
+
       {/* User Specific Permissions Modal */}
       {permModalUserId && (
-        <UserPermissionsModal 
-          userId={permModalUserId} 
-          onClose={() => setPermModalUserId(null)} 
-          onSuccess={fetchUsers} 
+        <UserPermissionsModal
+          userId={permModalUserId}
+          onClose={() => setPermModalUserId(null)}
+          onSuccess={fetchUsers}
         />
       )}
 
       {/* Role Baseline Permissions Modal */}
       {showRoleDefaultsModal && (
-        <RoleDefaultsModal 
-          onClose={() => setShowRoleDefaultsModal(false)} 
-          onSuccess={fetchUsers} 
+        <RoleDefaultsModal
+          onClose={() => setShowRoleDefaultsModal(false)}
+          onSuccess={fetchUsers}
         />
       )}
 
@@ -421,7 +456,7 @@ export default function UserManagement() {
           title={confirmModal.title}
           message={confirmModal.message}
           variant={confirmModal.variant ?? 'danger'}
-          confirmLabel={confirmModal.confirmLabel ?? 'Ya, Lanjutkan'}
+          confirmLabel={confirmModal.confirmLabel ?? 'Lanjutkan'}
           onConfirm={confirmModal.onConfirm}
           onCancel={() => setConfirmModal(null)}
         />
@@ -434,29 +469,25 @@ function WorkspaceSelect({ value, onChange, workspaces }: { value: string; onCha
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="block text-xs font-bold text-body uppercase tracking-wide">Workspace</label>
+        <label className="block text-xs font-semibold text-heading">Workspace</label>
         {workspaces.length > 0 && (
-          <span className="text-[10px] font-semibold text-primary flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-            {workspaces.length} Workspace Tersedia
+          <span className="text-[11px] font-medium text-dim tnum">
+            {workspaces.length} tersedia
           </span>
         )}
       </div>
       <Select
         value={value}
         onChange={v => onChange(v)}
-        className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+        className="w-full"
       >
-        <option value="">Tidak di-assign ke workspace</option>
+        <option value="">Tidak ditugaskan</option>
         {workspaces.map(ws => (
           <option key={ws.id} value={ws.id}>
             {ws.name} ({ws.code})
           </option>
         ))}
       </Select>
-      <p className="text-[11px] text-dim mt-1">
-        Pilih workspace agar user otomatis terhubung ke database dan sinkron saat login.
-      </p>
     </div>
   );
 }
@@ -466,8 +497,7 @@ function AddStaffModal({ workspaces, currentWorkspaceId, onClose, onSuccess }: {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('staff');
-  
-  // Auto-select active workspace if available
+
   const initialWsId = currentWorkspaceId && workspaces.some(w => w.id === currentWorkspaceId)
     ? currentWorkspaceId
     : (workspaces[0]?.id || '');
@@ -476,8 +506,8 @@ function AddStaffModal({ workspaces, currentWorkspaceId, onClose, onSuccess }: {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!name.trim() || !username.trim() || !password.trim()) { setError('Semua field wajib diisi.'); return; }
     if (password.length < 6) { setError('Password minimal 6 karakter.'); return; }
     setLoading(true); setError('');
@@ -497,57 +527,71 @@ function AddStaffModal({ workspaces, currentWorkspaceId, onClose, onSuccess }: {
       isOpen={true}
       onClose={onClose}
       size="md"
-      title="Tambah Staff Baru"
-      subtitle="Buat akun login untuk anggota tim"
+      title="Tambah Staff"
       icon={User}
+      footer={
+        <>
+          <Button type="button" variant="outline" size="md" onClick={onClose}>
+            Batal
+          </Button>
+          <Button type="submit" form="add-staff-form" variant="primary" size="md" loading={loading}>
+            {loading ? 'Menyimpan...' : 'Buat Akun'}
+          </Button>
+        </>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="add-staff-form" onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="bg-danger-soft border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl">
+          <div className="bg-danger-soft border border-danger/30 text-danger text-xs font-medium px-3.5 py-2.5 rounded-lg">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Nama Lengkap</label>
+          <label className="block text-xs font-semibold text-heading mb-1.5">Nama Lengkap</label>
           <input
             type="text" value={name} onChange={e => setName(e.target.value)} required
-            placeholder="contoh: Budi Santoso"
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Budi Santoso"
+            className="w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading placeholder:text-dim outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Username Login</label>
+          <label className="block text-xs font-semibold text-heading mb-1.5">Username</label>
           <input
             type="text" value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} required
-            placeholder="contoh: budi_kasir"
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary font-mono"
+            placeholder="budi_kasir"
+            className="w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading placeholder:text-dim outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 font-mono transition-colors"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Password</label>
+          <label className="block text-xs font-semibold text-heading mb-1.5">Password</label>
           <div className="relative">
             <input
               type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
               placeholder="Min. 6 karakter"
-              className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 pr-10 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
+              className="w-full h-9 bg-input border border-line rounded-lg pl-3 pr-9 text-sm text-heading placeholder:text-dim outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors"
             />
-            <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-body">
-              {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+            <button
+              type="button"
+              onClick={() => setShowPw(v => !v)}
+              aria-label={showPw ? 'Sembunyikan password' : 'Tampilkan password'}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dim hover:text-heading p-0.5 rounded cursor-pointer"
+            >
+              {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-2">Peran / Role</label>
+          <label className="block text-xs font-semibold text-heading mb-1.5">Peran</label>
           <div className="space-y-2">
             {ROLES.map(r => (
-              <label key={r.value} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${role === r.value ? 'border-primary bg-primary-soft ' : 'border-line hover:border-line-strong'}`}>
+              <label key={r.value} className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors ${role === r.value ? 'border-primary bg-primary-soft/60' : 'border-line hover:border-line-strong bg-card'}`}>
                 <input type="radio" name="role" value={r.value} checked={role === r.value} onChange={() => setRole(r.value)} className="mt-0.5 accent-primary" />
                 <div>
-                  <p className="font-bold text-sm text-heading">{r.label}</p>
+                  <p className="font-semibold text-xs text-heading">{r.label}</p>
                   <p className="text-xs text-dim mt-0.5">{r.desc}</p>
                 </div>
               </label>
@@ -560,15 +604,6 @@ function AddStaffModal({ workspaces, currentWorkspaceId, onClose, onSuccess }: {
           onChange={setWorkspaceId}
           workspaces={workspaces}
         />
-
-        <div className="flex gap-3 pt-3">
-          <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-line rounded-xl text-sm font-bold text-heading hover:bg-muted transition-colors">
-            Batal
-          </button>
-          <button type="submit" disabled={loading} className="flex-[2] py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            {loading ? <><Loader2 size={16} className="animate-spin" /> Menyimpan...</> : <><User size={16} /> Buat Akun</>}
-          </button>
-        </div>
       </form>
     </Modal>
   );
@@ -580,29 +615,30 @@ function EditUserModal({ user, workspaces, onClose, onSuccess }: { user: UserRow
   const [role, setRole] = useState(user.role);
   const [workspaceId, setWorkspaceId] = useState(user.workspace_id || '');
   const [newPassword, setNewPassword] = useState('');
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !username.trim()) { setError('Nama dan Username wajib diisi.'); return; }
     if (newPassword && newPassword.length < 6) { setError('Password minimal 6 karakter.'); return; }
-    
+
     setLoading(true); setError('');
     try {
-      await invoke('update_user', { 
-        id: user.id, 
-        name: name.trim(), 
-        username: username.trim().toLowerCase(), 
-        role, 
-        workspaceId: workspaceId || null 
+      await invoke('update_user', {
+        id: user.id,
+        name: name.trim(),
+        username: username.trim().toLowerCase(),
+        role,
+        workspaceId: workspaceId || null
       });
-      
+
       if (newPassword) {
         await invoke('reset_user_password', { id: user.id, newPassword });
       }
-      
+
       onSuccess();
       onClose();
     } catch (e: any) { setError(e.toString()); }
@@ -610,7 +646,7 @@ function EditUserModal({ user, workspaces, onClose, onSuccess }: { user: UserRow
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus user ${user.name}?`)) return;
+    setConfirmDelete(false);
     setLoading(true); setError('');
     try {
       await invoke('delete_user', { id: user.id });
@@ -623,84 +659,103 @@ function EditUserModal({ user, workspaces, onClose, onSuccess }: { user: UserRow
   };
 
   return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      size="md"
-      title="Edit Pengguna"
-      subtitle="Perbarui profil dan akses user"
-      icon={Pencil}
-    >
-      <form onSubmit={handleUpdate} className="space-y-5">
-        {error && (
-          <div className="bg-danger-soft border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl flex items-start gap-2">
-            <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-            <p>{error}</p>
-          </div>
-        )}
+    <>
+      <Modal
+        isOpen={true}
+        onClose={onClose}
+        size="md"
+        title="Edit Pengguna"
+        icon={Pencil}
+        footer={
+          <div className="flex items-center justify-between gap-2 w-full">
+            <Button
+              type="button"
+              variant="ghost"
+              size="md"
+              onClick={() => setConfirmDelete(true)}
+              disabled={loading}
+              className="text-danger hover:bg-danger-soft hover:text-danger"
+            >
+              <Trash2 size={14} /> Hapus
+            </Button>
 
-        <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="md" onClick={onClose}>
+                Batal
+              </Button>
+              <Button type="submit" form="edit-user-form" variant="primary" size="md" loading={loading}>
+                {!loading && <Save size={14} />} Simpan
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <form id="edit-user-form" onSubmit={handleUpdate} className="space-y-4">
+          {error && (
+            <div className="bg-danger-soft border border-danger/30 text-danger text-xs font-medium px-3.5 py-2.5 rounded-lg flex items-start gap-2">
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+              <p>{error}</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-heading mb-1.5">Nama Lengkap</label>
+              <input
+                type="text" value={name} onChange={e => setName(e.target.value)} required
+                className="w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-heading mb-1.5">Username</label>
+              <input
+                type="text" value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} required
+                className="w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 font-mono transition-colors"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Nama Lengkap</label>
-            <input
-              type="text" value={name} onChange={e => setName(e.target.value)} required
-              className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
-            />
+            <label className="block text-xs font-semibold text-heading mb-1.5">Peran</label>
+            <Select
+              value={role}
+              onChange={v => setRole(v)}
+              className="w-full"
+            >
+              {ROLES.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </Select>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Username</label>
-            <input
-              type="text" value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} required
-              className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary font-mono"
-            />
-          </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Peran (Role)</label>
-          <Select
-            value={role} onChange={v => setRole(v)}
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
-          >
-            {ROLES.map(r => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </Select>
-        </div>
-
-        <WorkspaceSelect
-          value={workspaceId}
-          onChange={setWorkspaceId}
-          workspaces={workspaces}
-        />
-
-        <div className="pt-2 border-t border-line">
-          <label className="block text-xs font-bold text-body uppercase tracking-wide mb-1.5">Reset Password (Opsional)</label>
-          <input
-            type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-            placeholder="Kosongkan jika tidak ingin mengubah password"
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
+          <WorkspaceSelect
+            value={workspaceId}
+            onChange={setWorkspaceId}
+            workspaces={workspaces}
           />
-        </div>
 
-        <div className="flex gap-3 pt-4">
-          <button 
-            type="button" 
-            onClick={handleDelete} 
-            disabled={loading}
-            className="px-4 py-2.5 bg-danger-soft hover:bg-danger-soft text-danger dark:hover:bg-danger/40 rounded-xl text-sm font-bold transition-colors"
-          >
-            Hapus User
-          </button>
-          <div className="flex-1"></div>
-          <button type="button" onClick={onClose} className="px-5 py-2.5 border border-line rounded-xl text-sm font-bold text-heading hover:bg-muted transition-colors">
-            Batal
-          </button>
-          <button type="submit" disabled={loading} className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Simpan
-          </button>
-        </div>
-      </form>
-    </Modal>
+          <div className="pt-3 border-t border-line">
+            <label className="block text-xs font-semibold text-heading mb-1.5">Reset Password (Opsional)</label>
+            <input
+              type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+              placeholder="Kosongkan jika tidak diubah"
+              className="w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading placeholder:text-dim outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors"
+            />
+          </div>
+        </form>
+      </Modal>
+
+      {confirmDelete && (
+        <ConfirmModal
+          title="Hapus Pengguna?"
+          message={`Akun "${user.name}" akan dihapus permanen dan tidak bisa login lagi.`}
+          variant="danger"
+          confirmLabel="Hapus"
+          loading={loading}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
+    </>
   );
 }

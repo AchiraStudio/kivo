@@ -1,13 +1,39 @@
-// src/components/Dashboard.tsx
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, ShoppingCart, PackageCheck, ArrowRight, RefreshCw, Plus, Store, CheckCircle2, ChevronRight, CreditCard, Banknote, Smartphone, ArrowRightLeft, FileSpreadsheet, Eye, BarChart3 } from 'lucide-react';
 import {
-  getLowStockAlerts, LowStockAlert, getSalesSummary, SalesSummaryRow,
-  getSales, Sale, getTopSellingItems, TopItemRow, getSalesByPaymentMethod,
-  PaymentMethodRow, getStockValuation, getExpiringItems, ExpiringItemRow
+  ShoppingCart,
+  PackageCheck,
+  RefreshCw,
+  Plus,
+  CheckCircle2,
+  ChevronRight,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  ArrowRightLeft,
+  FileSpreadsheet,
+  Eye,
+  BarChart3,
+  AlertTriangle,
+  TrendingUp,
+} from 'lucide-react';
+import {
+  getLowStockAlerts,
+  LowStockAlert,
+  getSalesSummary,
+  SalesSummaryRow,
+  getSales,
+  Sale,
+  getTopSellingItems,
+  TopItemRow,
+  getSalesByPaymentMethod,
+  PaymentMethodRow,
+  getStockValuation,
+  getExpiringItems,
+  ExpiringItemRow,
 } from '../lib/api';
 import { useAuthStore } from '../store/AuthStore';
 import SaleDetailModal from './pos/SaleDetailModal';
+import Button from './ui/Button';
 
 interface DashboardProps {
   setActiveMenu: (menu: string) => void;
@@ -15,12 +41,12 @@ interface DashboardProps {
 
 type PeriodType = 'today' | '7days' | 'month';
 
-const PAYMENT_ICON_MAP: Record<string, { label: string; icon: any; color: string; bg: string }> = {
-  cash:     { label: 'Tunai',        icon: Banknote,      color: 'text-success', bg: 'bg-success' },
-  transfer: { label: 'Transfer',     icon: ArrowRightLeft, color: 'text-accent',    bg: 'bg-accent'   },
-  debit:    { label: 'Debit',        icon: CreditCard,    color: 'text-primary',  bg: 'bg-primary'  },
-  credit:   { label: 'Kredit',       icon: CreditCard,    color: 'text-primary',  bg: 'bg-primary'  },
-  qris:     { label: 'QRIS',         icon: Smartphone,    color: 'text-warning',   bg: 'bg-warning'   },
+const PAYMENT_ICON_MAP: Record<string, { label: string; icon: any; tone: string; bar: string }> = {
+  cash:     { label: 'Tunai',    icon: Banknote,       tone: 'text-success', bar: 'bg-success' },
+  transfer: { label: 'Transfer', icon: ArrowRightLeft, tone: 'text-accent',  bar: 'bg-accent' },
+  debit:    { label: 'Debit',    icon: CreditCard,     tone: 'text-primary', bar: 'bg-primary' },
+  credit:   { label: 'Kredit',   icon: CreditCard,     tone: 'text-primary', bar: 'bg-primary' },
+  qris:     { label: 'QRIS',     icon: Smartphone,     tone: 'text-warning', bar: 'bg-warning' },
 };
 
 const formatDateLocal = (date: Date): string => {
@@ -37,8 +63,8 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
   const [period, setPeriod] = useState<PeriodType>('today');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Data states
   const [summary, setSummary] = useState<SalesSummaryRow | null>(null);
   const [weeklySummary, setWeeklySummary] = useState<SalesSummaryRow[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -48,33 +74,29 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
   const [expiringAlerts, setExpiringAlerts] = useState<ExpiringItemRow[]>([]);
   const [totalStockValuation, setTotalStockValuation] = useState<number>(0);
 
-  // Tab inside Alerts Widget
   const [alertTab, setAlertTab] = useState<'lowStock' | 'expiring'>('lowStock');
-
-  // Modal detail for recent transaction click
   const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null);
 
-  // Date range computation
   const dateRange = useMemo(() => {
     const now = new Date();
     const todayStr = formatDateLocal(now);
 
     if (period === 'today') {
       return { from: todayStr, to: todayStr };
-    } else if (period === '7days') {
+    }
+    if (period === '7days') {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(now.getDate() - 6);
       return { from: formatDateLocal(sevenDaysAgo), to: todayStr };
-    } else {
-      // Month
-      const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { from: formatDateLocal(firstOfMonth), to: todayStr };
     }
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: formatDateLocal(firstOfMonth), to: todayStr };
   }, [period]);
 
   const fetchDashboardData = async (isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
     else setLoading(true);
+    setLoadError(null);
 
     try {
       const now = new Date();
@@ -103,7 +125,6 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
         getStockValuation(branchId).catch(() => []),
       ]);
 
-      // Aggregate Summary
       if (summaryRes.length > 0) {
         const aggregated: SalesSummaryRow = summaryRes.reduce(
           (acc, row) => ({
@@ -134,11 +155,10 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
       setPaymentMethods(paymentsRes);
       setLowStockAlerts(lowStockRes);
       setExpiringAlerts(expiringRes);
-
-      const totalVal = valuationRes.reduce((s, r) => s + r.total_value, 0);
-      setTotalStockValuation(totalVal);
-    } catch (e) {
+      setTotalStockValuation(valuationRes.reduce((s, r) => s + r.total_value, 0));
+    } catch (e: any) {
       console.error('Failed to load dashboard data:', e);
+      setLoadError(e?.message || 'Gagal memuat ringkasan.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -149,353 +169,232 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
     fetchDashboardData();
   }, [period, branchId]);
 
-  // Real-time sync listener across LAN devices
   useEffect(() => {
-    const handleSync = () => {
-      fetchDashboardData(true);
-    };
+    const handleSync = () => fetchDashboardData(true);
     window.addEventListener('kivo:sync', handleSync);
     return () => window.removeEventListener('kivo:sync', handleSync);
   }, [period, branchId]);
 
-  // Derived KPI Metrics
   const totalRevenue = summary?.total_revenue || 0;
   const transactionCount = summary?.transaction_count || 0;
   const grossProfit = summary?.gross_profit || 0;
   const avgBasket = transactionCount > 0 ? Math.round(totalRevenue / transactionCount) : 0;
   const profitMargin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : '0';
-
   const totalPaymentsAmount = paymentMethods.reduce((s, p) => s + p.total_amount, 0);
 
-  // Maximum revenue in 7 days for relative chart scaling
   const maxDayRevenue = useMemo(() => {
     if (weeklySummary.length === 0) return 100000;
     const maxVal = Math.max(...weeklySummary.map(d => d.total_revenue));
     return maxVal > 0 ? maxVal : 100000;
   }, [weeklySummary]);
 
+  const totalAlerts = lowStockAlerts.length + expiringAlerts.length;
+
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0 flex flex-col gap-5 animate-fade-in w-full pb-8 pr-1">
-      
-      {/* ─── 1. EXECUTIVE HEADER ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 py-1">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold tracking-tight text-heading">
-              Ringkasan Bisnis
-            </h1>
-            <span className="bg-primary-soft text-primary text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span className={`w-1.5 h-1.5 rounded-full bg-primary ${loading ? 'animate-ping' : ''}`} />
-              {loading ? 'MEMUAT...' : user?.role ? user.role.toUpperCase() : 'ADMIN'}
-            </span>
-          </div>
-          <p className="text-xs text-dim mt-0.5">
-            Ringkasan performa penjualan, laba kotor, dan pergerakan stok real-time.
-          </p>
+    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0 flex flex-col gap-4 w-full pb-6 pr-0.5">
+      {/* Toolbar: Period Switcher & Primary Quick Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="primary" size="sm" onClick={() => setActiveMenu('pos')}>
+            <ShoppingCart size={14} strokeWidth={1.75} />
+            Kasir
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setActiveMenu('inventory')}>
+            <Plus size={14} strokeWidth={1.75} />
+            Barang
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setActiveMenu('purchasing')}>
+            <PackageCheck size={14} strokeWidth={1.75} />
+            Terima Stok
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setActiveMenu('reports')}>
+            <FileSpreadsheet size={14} strokeWidth={1.75} />
+            Laporan
+          </Button>
         </div>
 
-        {/* Period Selector & Refresh */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="bg-muted p-1 rounded-xl flex items-center border border-line">
-            <button
-              onClick={() => setPeriod('today')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                period === 'today'
-                  ? 'bg-card text-primary shadow-xs'
-                  : 'text-dim hover:text-heading'
-              }`}
-            >
-              Hari Ini
-            </button>
-            <button
-              onClick={() => setPeriod('7days')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                period === '7days'
-                  ? 'bg-card text-primary shadow-xs'
-                  : 'text-dim hover:text-heading'
-              }`}
-            >
-              7 Hari
-            </button>
-            <button
-              onClick={() => setPeriod('month')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                period === 'month'
-                  ? 'bg-card text-primary shadow-xs'
-                  : 'text-dim hover:text-heading'
-              }`}
-            >
-              Bulan Ini
-            </button>
+          <div className="bg-muted p-0.5 rounded-lg flex items-center border border-line" role="tablist" aria-label="Periode">
+            {(
+              [
+                { id: 'today', label: 'Hari Ini' },
+                { id: '7days', label: '7 Hari' },
+                { id: 'month', label: 'Bulan Ini' },
+              ] as const
+            ).map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={period === tab.id}
+                onClick={() => setPeriod(tab.id)}
+                className={`px-2.5 h-7 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                  period === tab.id
+                    ? 'bg-card text-heading border border-line'
+                    : 'text-dim hover:text-heading border border-transparent'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           <button
+            type="button"
             onClick={() => fetchDashboardData(true)}
             disabled={refreshing}
-            className="p-2 rounded-xl border border-line hover:bg-muted text-dim hover:text-heading transition-all disabled:opacity-50 cursor-pointer shadow-xs bg-card"
-            title="Muat ulang data"
+            aria-label="Muat ulang data"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-line bg-card hover:bg-muted text-dim hover:text-heading transition-colors disabled:opacity-50 cursor-pointer"
+            title="Muat ulang"
           >
-            <RefreshCw size={15} className={refreshing ? 'animate-spin text-primary' : ''} />
+            <RefreshCw size={14} className={refreshing ? 'animate-spin text-primary' : ''} />
           </button>
         </div>
       </div>
 
-      {/* ─── 2. CORE FINANCIAL KPI CARDS ─────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-        
-        {/* Total Revenue */}
-        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-success/20 shadow-sm flex flex-col justify-between group hover:border-success/40 transition-all">
-          <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <span className="text-[11px] sm:text-xs font-bold text-dim uppercase tracking-wider">Total Pendapatan</span>
-            <div className="p-2 sm:p-2.5 rounded-xl bg-success/10 text-success ">
-              <TrendingUp size={18} />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-xl sm:text-2xl font-black text-heading tracking-tight font-mono">
-              Rp {totalRevenue.toLocaleString('id-ID')}
-            </h3>
-            <p className="text-[10px] sm:text-[11px] text-success font-semibold mt-1 flex items-center gap-1">
-              <CheckCircle2 size={12} /> Penjualan lunas tercatat
-            </p>
-          </div>
+      {loadError && (
+        <div className="px-3.5 py-2.5 rounded-lg bg-danger-soft border border-danger/25 text-danger text-xs font-medium flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <Button variant="outline" size="sm" onClick={() => fetchDashboardData(true)}>
+            Coba Lagi
+          </Button>
+        </div>
+      )}
+
+      {/* Key Operational Strip (Unified Flat Bar, Single Focal Revenue Metric) */}
+      <div className="bg-card border border-line rounded-xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-line">
+        <div className="p-4 flex flex-col justify-between gap-1.5">
+          <span className="text-xs font-medium text-dim">Pendapatan</span>
+          <p className="text-2xl font-bold text-heading tracking-tight tnum">
+            {loading ? '...' : `Rp ${totalRevenue.toLocaleString('id-ID')}`}
+          </p>
+          <span className="text-xs text-dim tnum">
+            {transactionCount} transaksi · rata-rata Rp {avgBasket.toLocaleString('id-ID')}
+          </span>
         </div>
 
-        {/* Transaction Count & Basket */}
-        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-accent/20 shadow-sm flex flex-col justify-between group hover:border-accent/40 transition-all">
-          <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <span className="text-[11px] sm:text-xs font-bold text-dim uppercase tracking-wider">Transaksi Kasir</span>
-            <div className="p-2 sm:p-2.5 rounded-xl bg-accent/10 text-accent ">
-              <ShoppingCart size={18} />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-xl sm:text-2xl font-black text-heading tracking-tight font-mono">
-              {transactionCount} <span className="text-xs sm:text-sm font-semibold text-dim font-sans">Struk</span>
-            </h3>
-            <p className="text-[10px] sm:text-[11px] text-accent font-semibold mt-1">
-              Rata-rata: Rp {avgBasket.toLocaleString('id-ID')} / trx
-            </p>
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5">
+          <span className="text-xs font-medium text-dim">Laba Kotor</span>
+          <p className="text-xl font-bold text-heading tracking-tight tnum">
+            {loading ? '...' : `Rp ${grossProfit.toLocaleString('id-ID')}`}
+          </p>
+          <span className="text-xs text-success font-medium tnum">Margin {profitMargin}%</span>
         </div>
 
-        {/* Gross Profit & Margin */}
-        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-primary/20 shadow-sm flex flex-col justify-between group hover:border-primary/40 transition-all">
-          <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <span className="text-[11px] sm:text-xs font-bold text-dim uppercase tracking-wider">Estimasi Laba Kotor</span>
-            <div className="p-2 sm:p-2.5 rounded-xl bg-primary-soft text-primary">
-              <TrendingUp size={18} />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-xl sm:text-2xl font-black text-heading tracking-tight font-mono">
-              Rp {grossProfit.toLocaleString('id-ID')}
-            </h3>
-            <p className="text-[10px] sm:text-[11px] text-primary font-semibold mt-1">
-              Margin Laba: <strong className="font-bold">{profitMargin}%</strong>
-            </p>
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5">
+          <span className="text-xs font-medium text-dim">Valuasi Stok</span>
+          <p className="text-xl font-bold text-heading tracking-tight tnum">
+            {loading ? '...' : `Rp ${totalStockValuation.toLocaleString('id-ID')}`}
+          </p>
+          <span className="text-xs text-dim">Modal persediaan aktif</span>
         </div>
 
-        {/* Stock Valuation */}
-        <div className="relative overflow-hidden bg-card p-3.5 sm:p-4.5 lg:p-5 rounded-xl border border-warning/20 shadow-sm flex flex-col justify-between group hover:border-warning/40 transition-all">
-          <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <span className="text-[11px] sm:text-xs font-bold text-dim uppercase tracking-wider">Valuasi Persediaan</span>
-            <div className="p-2 sm:p-2.5 rounded-xl bg-warning/10 text-warning ">
-              <PackageCheck size={18} />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-xl sm:text-2xl font-black text-heading tracking-tight font-mono">
-              Rp {totalStockValuation.toLocaleString('id-ID')}
-            </h3>
-            <p className="text-[10px] sm:text-[11px] text-warning font-semibold mt-1">
-              Total modal persediaan aktif
-            </p>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ─── 3. QUICK ACTION SHORTCUTS ──────────────────────────────────── */}
-      <div className="bg-card border border-line rounded-xl p-3 sm:p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-dim uppercase tracking-wider pl-1">
-          <Store size={16} className="text-primary" /> Pintasan Cepat:
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setActiveMenu('pos')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all cursor-pointer"
-          >
-            <ShoppingCart size={14} /> Kasir POS <span className="bg-card/20 px-1.5 py-0.5 rounded text-[10px]">F1</span>
-          </button>
-
-          <button
-            onClick={() => setActiveMenu('inventory')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-muted hover:bg-line dark:hover:bg-line-strong text-body dark:text-heading text-xs font-bold transition-all cursor-pointer"
-          >
-            <Plus size={14} className="text-primary" /> Tambah Barang
-          </button>
-
-          <button
-            onClick={() => setActiveMenu('purchasing')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-muted hover:bg-line dark:hover:bg-line-strong text-body dark:text-heading text-xs font-bold transition-all cursor-pointer"
-          >
-            <PackageCheck size={14} className="text-success" /> Terima Barang
-          </button>
-
-          <button
-            onClick={() => setActiveMenu('inventory')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-muted hover:bg-line dark:hover:bg-line-strong text-body dark:text-heading text-xs font-bold transition-all cursor-pointer"
-          >
-            <FileSpreadsheet size={14} className="text-warning" /> Stok Opname
-          </button>
-
-          <button
-            onClick={() => setActiveMenu('reports')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-muted hover:bg-line dark:hover:bg-line-strong text-body dark:text-heading text-xs font-bold transition-all cursor-pointer"
-          >
-            <TrendingUp size={14} className="text-primary" /> Laporan Penjualan
-          </button>
+        <div className="p-4 flex flex-col justify-between gap-1.5">
+          <span className="text-xs font-medium text-dim">Peringatan Stok</span>
+          <p className={`text-xl font-bold tracking-tight tnum ${totalAlerts > 0 ? 'text-danger' : 'text-heading'}`}>
+            {loading ? '...' : totalAlerts}
+          </p>
+          <span className="text-xs text-dim tnum">
+            {lowStockAlerts.length} menipis · {expiringAlerts.length} kadaluarsa
+          </span>
         </div>
       </div>
 
-      {/* ─── 4. MAIN ANALYTICS GRID (2 COLUMNS) ─────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        
-        {/* ─── LEFT COLUMN (7 Cols): Trend & Recent Transactions & Top Items ─── */}
-        <div className="lg:col-span-7 space-y-5">
-          
-          {/* 7-Day Revenue Mini Chart */}
-          <div className="bg-card rounded-xl border border-line p-5 sm:p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-5">
-              <div>
-                <h3 className="text-base font-extrabold text-heading">Tren Penjualan 7 Hari Terakhir</h3>
-                <p className="text-xs text-dim">Aktivitas omzet dan jumlah transaksi harian</p>
-              </div>
-              <span className="text-xs font-bold text-primary bg-primary-soft px-3 py-1 rounded-full">Live Monitor</span>
-            </div>
-
-            {weeklySummary.length === 0 ? (
-              <div className="py-6 text-center text-xs text-dim flex flex-col items-center justify-center gap-2">
-                <BarChart3 size={28} className="text-dim dark:text-body" />
-                <span>Belum ada data penjualan dalam 7 hari terakhir. Mulai transaksi melalui Kasir POS.</span>
-              </div>
-            ) : (
-              <div className="flex items-end justify-between gap-3 h-36 pt-4 px-2">
-                {weeklySummary.map((day, idx) => {
-                  const heightPercent = Math.max(12, Math.min(100, (day.total_revenue / maxDayRevenue) * 100));
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
-                      {/* Tooltip */}
-                      <div className="absolute -top-10 scale-0 group-hover:scale-100 transition-all bg-heading text-card text-[10px] font-bold py-1 px-2 rounded-lg shadow-xl pointer-events-none z-20 whitespace-nowrap">
-                        Rp {day.total_revenue.toLocaleString('id-ID')} ({day.transaction_count} trx)
-                      </div>
-
-                      <div className="w-full bg-muted/80 rounded-xl h-28 flex items-end p-1 overflow-hidden">
-                        <div
-                          className="w-full bg-primary rounded-lg transition-all duration-500 group-hover:brightness-110"
-                          style={{ height: `${heightPercent}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] font-bold text-dim truncate max-w-full">
-                        {day.period_label.slice(5)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Recent Transactions Table */}
-          <div className="bg-card rounded-xl border border-line shadow-sm overflow-hidden flex flex-col">
-            <div className="px-5 sm:px-6 py-4 border-b border-line flex justify-between items-center">
-              <div>
-                <h3 className="font-extrabold text-heading text-base">Transaksi Kasir Terkini</h3>
-                <p className="text-xs text-dim">Struk penjualan terakhir yang diproses</p>
-              </div>
+      {/* Main 2-Column Operational Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Left: Recent Sales + 7-Day Trend + Top Products */}
+        <div className="lg:col-span-7 space-y-4">
+          {/* Recent Transactions */}
+          <div className="bg-card rounded-xl border border-line overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-line flex justify-between items-center">
+              <h3 className="font-bold text-heading text-sm">Transaksi Terakhir</h3>
               <button
+                type="button"
                 onClick={() => setActiveMenu('pos')}
-                className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
               >
-                Buka Kasir <ArrowRight size={14} />
+                Kasir <ChevronRight size={14} />
               </button>
             </div>
 
-            {sales.length === 0 ? (
-              <div className="py-8 px-6 text-center text-dim text-xs flex flex-col items-center justify-center gap-2">
-                <ShoppingCart size={24} className="text-dim dark:text-body" />
-                <span>Belum ada transaksi tercatat. Tekan Kasir POS untuk membuat transaksi baru.</span>
+            {loading ? (
+              <div className="py-8 text-center text-xs text-dim">Memuat transaksi...</div>
+            ) : sales.length === 0 ? (
+              <div className="py-8 px-4 text-center text-dim text-xs flex flex-col items-center gap-2">
+                <ShoppingCart size={20} className="text-dim" />
+                <span>Belum ada transaksi pada periode ini.</span>
+                <Button variant="outline" size="sm" onClick={() => setActiveMenu('pos')}>
+                  Buka Kasir
+                </Button>
               </div>
             ) : (
               <>
-                {/* Mobile Card List (< sm) */}
                 <div className="sm:hidden divide-y divide-line">
                   {sales.map(s => (
-                    <div
+                    <button
+                      type="button"
                       key={s.id}
                       onClick={() => setSelectedSaleId(s.id)}
-                      className="p-3.5 flex items-center justify-between gap-3 hover:bg-muted/40 active:bg-muted/60 transition-colors cursor-pointer"
+                      className="w-full p-3.5 flex items-center justify-between gap-3 hover:bg-muted/50 transition-colors text-left cursor-pointer"
                     >
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-xs text-heading truncate">
+                          <span className="font-mono font-semibold text-xs text-heading truncate">
                             {s.transaction_no}
                           </span>
-                          <span className="text-[10px] font-mono text-dim shrink-0">
+                          <span className="text-[11px] font-mono text-dim tnum shrink-0">
                             {new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                         <p className="text-xs text-dim mt-0.5 truncate">
-                          {(s as any).customer_name || (s.customer_id ? 'Pelanggan Terdaftar' : 'Pelanggan Umum')}
+                          {(s as any).customer_name || (s.customer_id ? 'Pelanggan' : 'Umum')}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-black text-success font-mono">
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-xs font-bold text-heading font-mono tnum">
                           Rp {s.grand_total.toLocaleString('id-ID')}
                         </span>
                         <ChevronRight size={14} className="text-dim" />
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
-                {/* Tablet & Desktop Table (>= sm) */}
                 <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-muted/70 dark:bg-card/50 border-b border-line text-dim font-bold uppercase tracking-wider">
+                    <thead className="bg-muted/60 border-b border-line text-dim font-semibold">
                       <tr>
-                        <th className="py-2.5 px-4 sm:py-3 sm:px-5">Waktu</th>
-                        <th className="py-2.5 px-4 sm:py-3 sm:px-5">No Transaksi</th>
-                        <th className="py-2.5 px-4 sm:py-3 sm:px-5">Pelanggan</th>
-                        <th className="py-2.5 px-4 sm:py-3 sm:px-5 text-right">Total</th>
-                        <th className="py-2.5 px-4 sm:py-3 sm:px-5 text-center">Aksi</th>
+                        <th className="py-2.5 px-4">Waktu</th>
+                        <th className="py-2.5 px-4">No. Struk</th>
+                        <th className="py-2.5 px-4">Pelanggan</th>
+                        <th className="py-2.5 px-4 text-right">Total</th>
+                        <th className="py-2.5 px-4 text-right w-12"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-line dark:divide-line">
+                    <tbody className="divide-y divide-line">
                       {sales.map(s => (
-                        <tr key={s.id} className="hover:bg-muted/50 dark:hover:bg-card/30 transition-colors">
-                          <td className="py-2.5 px-4 sm:py-3 sm:px-5 font-mono text-dim">
+                        <tr key={s.id} className="hover:bg-muted/40 transition-colors">
+                          <td className="py-2.5 px-4 font-mono text-dim tnum">
                             {new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </td>
-                          <td className="py-2.5 px-4 sm:py-3 sm:px-5 font-mono font-bold text-heading">
+                          <td className="py-2.5 px-4 font-mono font-semibold text-heading">
                             {s.transaction_no}
                           </td>
-                          <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-heading">
-                            {(s as any).customer_name || (s.customer_id ? 'Pelanggan Terdaftar' : 'Pelanggan Umum')}
+                          <td className="py-2.5 px-4 text-body">
+                            {(s as any).customer_name || (s.customer_id ? 'Pelanggan' : 'Umum')}
                           </td>
-                          <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-right font-extrabold text-success font-mono">
+                          <td className="py-2.5 px-4 text-right font-semibold text-heading font-mono tnum">
                             Rp {s.grand_total.toLocaleString('id-ID')}
                           </td>
-                          <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-center">
+                          <td className="py-2.5 px-4 text-right">
                             <button
+                              type="button"
                               onClick={() => setSelectedSaleId(s.id)}
-                              className="p-1.5 text-dim hover:text-primary hover:bg-primary-soft rounded-lg transition-all cursor-pointer"
-                              title="Lihat Detail Struk"
+                              aria-label={`Detail ${s.transaction_no}`}
+                              className="p-1.5 text-dim hover:text-heading hover:bg-muted rounded-md transition-colors cursor-pointer"
+                              title="Detail struk"
                             >
-                              <Eye size={15} />
+                              <Eye size={14} />
                             </button>
                           </td>
                         </tr>
@@ -507,46 +406,79 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
             )}
           </div>
 
-          {/* Top Selling Products Leaderboard */}
-          <div className="bg-card rounded-xl border border-line p-5 sm:p-6 shadow-sm space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-extrabold text-heading text-base">Top 5 Produk Terlaris</h3>
-                <p className="text-xs text-dim">Barang paling diminati berdasarkan volume penjualan</p>
+          {/* 7-Day Revenue Bar Chart */}
+          <div className="bg-card rounded-xl border border-line p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-heading">Pendapatan 7 Hari Terakhir</h3>
+              <span className="text-xs text-dim tnum">
+                Maks Rp {maxDayRevenue.toLocaleString('id-ID')}
+              </span>
+            </div>
+
+            {weeklySummary.length === 0 ? (
+              <div className="py-6 text-center text-xs text-dim flex flex-col items-center gap-1.5">
+                <BarChart3 size={20} className="text-dim" />
+                <span>Belum ada data penjualan 7 hari terakhir.</span>
               </div>
+            ) : (
+              <div className="flex items-end justify-between gap-2.5 h-32 pt-3">
+                {weeklySummary.map((day, idx) => {
+                  const heightPercent = Math.max(8, Math.min(100, (day.total_revenue / maxDayRevenue) * 100));
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group relative">
+                      <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-elevated border border-line text-heading text-[11px] font-semibold py-1 px-2 rounded-md shadow-lg shadow-black/15 dark:shadow-black/45 pointer-events-none z-20 whitespace-nowrap tnum">
+                        Rp {day.total_revenue.toLocaleString('id-ID')} ({day.transaction_count})
+                      </div>
+                      <div className="w-full bg-muted rounded-md h-24 flex items-end p-0.5 overflow-hidden">
+                        <div
+                          className="w-full bg-primary/85 group-hover:bg-primary rounded-sm transition-colors"
+                          style={{ height: `${heightPercent}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] font-mono text-dim tnum truncate max-w-full">
+                        {day.period_label.slice(5)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Top 5 Products */}
+          <div className="bg-card rounded-xl border border-line p-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-heading text-sm">Produk Terlaris</h3>
               <button
+                type="button"
                 onClick={() => setActiveMenu('reports')}
-                className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
               >
-                Semua Produk <ChevronRight size={14} />
+                Semua <ChevronRight size={14} />
               </button>
             </div>
 
             {topItems.length === 0 ? (
-              <p className="text-center text-xs text-dim py-4">Belum ada data barang terjual pada periode ini.</p>
+              <p className="text-center text-xs text-dim py-4">Belum ada produk terjual.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="divide-y divide-line">
                 {topItems.map((item, idx) => {
                   const maxQty = topItems[0]?.qty_sold || 1;
                   const percent = Math.min(100, Math.round((item.qty_sold / maxQty) * 100));
                   return (
-                    <div key={item.sku || idx} className="p-3 rounded-xl bg-muted/40 border border-line flex items-center gap-3">
-                      <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
-                        idx === 0 ? 'bg-warning-soft text-warning border border-warning/40' :
-                        idx === 1 ? 'bg-muted text-body' :
-                        idx === 2 ? 'bg-warning-soft/60 text-warning' :
-                        'bg-muted text-dim'
-                      }`}>
-                        {idx + 1}
-                      </div>
-
+                    <div key={item.sku || idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
+                      <span className="w-5 text-xs font-mono font-semibold text-dim tnum shrink-0">
+                        {idx + 1}.
+                      </span>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-1">
-                          <p className="font-bold text-xs text-heading truncate">{item.item_name}</p>
-                          <span className="font-extrabold text-xs text-primary shrink-0 ml-2">{item.qty_sold} terjual</span>
+                        <div className="flex justify-between items-center gap-2 mb-1">
+                          <p className="font-semibold text-xs text-heading truncate">{item.item_name}</p>
+                          <span className="font-semibold text-xs text-body font-mono tnum shrink-0">
+                            {item.qty_sold}
+                          </span>
                         </div>
-                        <div className="h-1.5 bg-line dark:bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
+                        <div className="h-1 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{ width: `${percent}%` }} />
                         </div>
                       </div>
                     </div>
@@ -555,150 +487,147 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
               </div>
             )}
           </div>
-
         </div>
 
-        {/* ─── RIGHT COLUMN (5 Cols): Contained Alerts Center & Payment Methods ─── */}
-        <div className="lg:col-span-5 space-y-5">
-          
-          {/* Contained Alerts Center (NO ENDLESS SCROLL!) */}
-          <div className="bg-card rounded-xl border border-line shadow-sm p-5 sm:p-6 flex flex-col max-h-[460px]">
-            
-            {/* Header & Tabs */}
-            <div className="flex items-center justify-between pb-3.5 border-b border-line shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-danger"></span>
-                </span>
-                <h3 className="font-extrabold text-heading text-base">Pusat Peringatan</h3>
+        {/* Right: Stock Alerts & Payment Split */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="bg-card rounded-xl border border-line p-4 flex flex-col max-h-[440px]">
+            <div className="flex items-center justify-between gap-2 pb-3 border-b border-line shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle size={15} className={totalAlerts > 0 ? 'text-danger shrink-0' : 'text-dim shrink-0'} />
+                <h3 className="font-bold text-heading text-sm truncate">Peringatan Stok</h3>
               </div>
 
-              {/* Alert Tabs */}
-              <div className="flex items-center bg-muted p-1 rounded-xl">
+              <div className="flex items-center bg-muted p-0.5 rounded-lg border border-line shrink-0">
                 <button
+                  type="button"
                   onClick={() => setAlertTab('lowStock')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
- alertTab === 'lowStock'
- ? 'bg-card dark:bg-muted text-danger shadow-sm'
- : 'text-dim hover:text-heading dark:hover:text-white'
- }`}
+                  className={`px-2 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer tnum ${
+                    alertTab === 'lowStock'
+                      ? 'bg-card text-heading border border-line'
+                      : 'text-dim hover:text-heading border border-transparent'
+                  }`}
                 >
                   Menipis ({lowStockAlerts.length})
                 </button>
                 <button
+                  type="button"
                   onClick={() => setAlertTab('expiring')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
- alertTab === 'expiring'
- ? 'bg-card dark:bg-muted text-warning shadow-sm'
- : 'text-dim hover:text-heading dark:hover:text-white'
- }`}
+                  className={`px-2 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer tnum ${
+                    alertTab === 'expiring'
+                      ? 'bg-card text-heading border border-line'
+                      : 'text-dim hover:text-heading border border-transparent'
+                  }`}
                 >
-                  Kadaluarsa ({expiringAlerts.length})
+                  Exp ({expiringAlerts.length})
                 </button>
               </div>
             </div>
 
-            {/* Alert List Body (Strictly Scroll-Capped!) */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar pt-3 space-y-2.5 pr-1">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pt-2.5 divide-y divide-line pr-0.5">
               {alertTab === 'lowStock' ? (
                 lowStockAlerts.length === 0 ? (
-                  <div className="py-6 text-center flex flex-col items-center justify-center">
-                    <CheckCircle2 size={32} className="text-success mb-1.5 opacity-80" />
-                    <p className="text-xs font-bold text-heading">Semua stok dalam batas aman!</p>
-                    <p className="text-[11px] text-dim mt-0.5">Tidak ada barang di bawah batas minimum.</p>
+                  <div className="py-8 text-center flex flex-col items-center gap-1.5">
+                    <CheckCircle2 size={22} className="text-success" />
+                    <p className="text-xs font-semibold text-heading">Stok aman</p>
                   </div>
                 ) : (
                   lowStockAlerts.map((item, idx) => (
-                    <div key={item.sku || idx} className="p-3 rounded-xl bg-danger-soft/50 border border-danger/20 flex items-center justify-between gap-3">
+                    <div key={item.sku || idx} className="py-2.5 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-bold text-xs text-heading truncate">{item.item_name}</p>
-                        <p className="text-[10px] text-dim font-mono">SKU: {item.sku || '-'}</p>
+                        <p className="font-semibold text-xs text-heading truncate">{item.item_name}</p>
+                        <p className="text-[11px] text-dim font-mono">{item.sku || '-'}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-xs font-extrabold text-danger bg-danger-soft px-2 py-0.5 rounded-md">
+                        <span className="text-xs font-semibold text-danger bg-danger-soft px-2 py-0.5 rounded-md tnum">
                           {item.current_qty} {item.unit_name}
                         </span>
-                        <p className="text-[9px] text-dim mt-0.5 font-semibold">Min: {item.min_stock}</p>
+                        <p className="text-[11px] text-dim mt-0.5 tnum">Min {item.min_stock}</p>
                       </div>
                     </div>
                   ))
                 )
+              ) : expiringAlerts.length === 0 ? (
+                <div className="py-8 text-center flex flex-col items-center gap-1.5">
+                  <CheckCircle2 size={22} className="text-success" />
+                  <p className="text-xs font-semibold text-heading">Tidak ada batch mendekati kadaluarsa</p>
+                </div>
               ) : (
-                expiringAlerts.length === 0 ? (
-                  <div className="py-6 text-center flex flex-col items-center justify-center">
-                    <CheckCircle2 size={32} className="text-success mb-1.5 opacity-80" />
-                    <p className="text-xs font-bold text-heading">Tidak ada obat mendekati expired!</p>
-                    <p className="text-[11px] text-dim mt-0.5">Semua batch dalam masa berlaku &gt; 90 hari.</p>
-                  </div>
-                ) : (
-                  expiringAlerts.map((item, idx) => (
-                    <div key={idx} className="p-3 rounded-xl bg-warning-soft/50 border border-warning/20 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-bold text-xs text-heading truncate">{item.item_name}</p>
-                        <p className="text-[10px] text-dim font-mono">Batch: {item.batch_no || '-'} • Exp: {item.expiry_date}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-xs font-extrabold text-warning bg-warning-soft px-2 py-0.5 rounded-md">
-                          {item.days_left} hari lagi
-                        </span>
-                        <p className="text-[9px] text-dim mt-0.5 font-semibold">Sisa: {item.qty}</p>
-                      </div>
+                expiringAlerts.map((item, idx) => (
+                  <div key={idx} className="py-2.5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs text-heading truncate">{item.item_name}</p>
+                      <p className="text-[11px] text-dim font-mono">
+                        {item.batch_no || '-'} · {item.expiry_date}
+                      </p>
                     </div>
-                  ))
-                )
+                    <div className="text-right shrink-0">
+                      <span className="text-xs font-semibold text-warning bg-warning-soft px-2 py-0.5 rounded-md tnum">
+                        {item.days_left} hari
+                      </span>
+                      <p className="text-[11px] text-dim mt-0.5 tnum">Sisa {item.qty}</p>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
 
-            {/* Footer Shortcut */}
-            <div className="pt-3 mt-2 border-t border-line flex justify-end shrink-0">
+            <div className="pt-2.5 mt-2 border-t border-line flex justify-end shrink-0">
               <button
+                type="button"
                 onClick={() => setActiveMenu('inventory')}
-                className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
               >
-                Kelola Semua Stok di Master Data <ChevronRight size={14} />
+                Buka Inventaris <ChevronRight size={14} />
               </button>
             </div>
           </div>
 
-          {/* Payment Method Distribution */}
-          <div className="bg-card rounded-xl border border-line p-5 sm:p-6 shadow-sm space-y-4">
+          {/* Payment Method Breakdown */}
+          <div className="bg-card rounded-xl border border-line p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-extrabold text-heading text-base">Metode Pembayaran</h3>
-                <p className="text-xs text-dim">Distribusi kas masuk periode ini</p>
-              </div>
+              <h3 className="font-bold text-heading text-sm">Metode Pembayaran</h3>
               <button
+                type="button"
                 onClick={() => setActiveMenu('reports')}
-                className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
               >
                 Detail <ChevronRight size={14} />
               </button>
             </div>
 
             {paymentMethods.length === 0 ? (
-              <p className="text-center text-xs text-dim py-4">Belum ada pembayaran masuk pada periode ini.</p>
+              <p className="text-center text-xs text-dim py-4">Belum ada pembayaran.</p>
             ) : (
               <div className="space-y-3">
                 {paymentMethods.map(pm => {
-                  const info = PAYMENT_ICON_MAP[pm.method] || { label: pm.method, icon: CreditCard, color: 'text-dim', bg: 'bg-dim' };
+                  const info = PAYMENT_ICON_MAP[pm.method] || {
+                    label: pm.method,
+                    icon: TrendingUp,
+                    tone: 'text-dim',
+                    bar: 'bg-line-strong',
+                  };
                   const Icon = info.icon;
-                  const percent = totalPaymentsAmount > 0 ? ((pm.total_amount / totalPaymentsAmount) * 100).toFixed(1) : '0';
+                  const percent =
+                    totalPaymentsAmount > 0
+                      ? ((pm.total_amount / totalPaymentsAmount) * 100).toFixed(1)
+                      : '0';
 
                   return (
                     <div key={pm.method} className="space-y-1.5">
-                      <div className="flex justify-between items-center text-xs">
-                        <div className="flex items-center gap-2">
-                          <Icon size={14} className={info.color} />
-                          <span className="font-bold text-heading">{info.label}</span>
-                          <span className="text-[10px] text-dim">({pm.transaction_count} trx)</span>
+                      <div className="flex justify-between items-center text-xs gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Icon size={14} className={`${info.tone} shrink-0`} />
+                          <span className="font-semibold text-heading truncate">{info.label}</span>
+                          <span className="text-[11px] text-dim tnum">({pm.transaction_count})</span>
                         </div>
-                        <div className="font-extrabold text-heading">
-                          Rp {pm.total_amount.toLocaleString('id-ID')} <span className="text-[10px] text-dim font-medium">({percent}%)</span>
+                        <div className="font-semibold text-heading font-mono tnum shrink-0">
+                          Rp {pm.total_amount.toLocaleString('id-ID')}{' '}
+                          <span className="text-[11px] text-dim font-sans font-normal">{percent}%</span>
                         </div>
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className={`h-full ${info.bg} rounded-full transition-all duration-500`} style={{ width: `${percent}%` }} />
+                      <div className="h-1 bg-muted rounded-full overflow-hidden">
+                        <div className={`h-full ${info.bar} rounded-full`} style={{ width: `${percent}%` }} />
                       </div>
                     </div>
                   );
@@ -706,16 +635,12 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
               </div>
             )}
           </div>
-
         </div>
-
       </div>
 
-      {/* ─── 5. SALE DETAIL MODAL ───────────────────────────────────────── */}
       {selectedSaleId && (
         <SaleDetailModal saleId={selectedSaleId} onClose={() => setSelectedSaleId(null)} />
       )}
-
     </div>
   );
 }

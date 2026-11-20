@@ -49,8 +49,17 @@ const GROUPS: Array<{ key: GroupKey; label: string; icon: typeof Droplet }> = [
 ];
 
 const blank = (): FormState => ({
-  checked_at: nowInputDateTime(), blood_sugar: '', blood_sugar_context: 'fasting', cholesterol_total: '', cholesterol_hdl: '',
-  cholesterol_ldl: '', triglycerides: '', uric_acid: '', systolic: '', diastolic: '', notes: '',
+  checked_at: nowInputDateTime(),
+  blood_sugar: '',
+  blood_sugar_context: 'fasting',
+  cholesterol_total: '',
+  cholesterol_hdl: '',
+  cholesterol_ldl: '',
+  triglycerides: '',
+  uric_acid: '',
+  systolic: '',
+  diastolic: '',
+  notes: '',
 });
 
 const str = (v: number | null | undefined) => (v == null ? '' : String(v));
@@ -59,8 +68,13 @@ const fromRecord = (r: HealthRecord): FormState => ({
   checked_at: toInputDateTime(r.checked_at),
   blood_sugar: str(r.blood_sugar),
   blood_sugar_context: r.blood_sugar_context ?? (r.blood_sugar != null ? 'random' : 'fasting'),
-  cholesterol_total: str(r.cholesterol_total), cholesterol_hdl: str(r.cholesterol_hdl), cholesterol_ldl: str(r.cholesterol_ldl),
-  triglycerides: str(r.triglycerides), uric_acid: str(r.uric_acid), systolic: str(r.systolic), diastolic: str(r.diastolic),
+  cholesterol_total: str(r.cholesterol_total),
+  cholesterol_hdl: str(r.cholesterol_hdl),
+  cholesterol_ldl: str(r.cholesterol_ldl),
+  triglycerides: str(r.triglycerides),
+  uric_acid: str(r.uric_acid),
+  systolic: str(r.systolic),
+  diastolic: str(r.diastolic),
   notes: r.notes ?? '',
 });
 
@@ -76,11 +90,12 @@ const NO_GROUPS: Groups = { sugar: false, bp: false, chol: false, uric: false };
 const filled = (s: string) => s.trim() !== '';
 const num = (s: string): number | null => (filled(s) ? Number(s) : null);
 
-const fieldCls = 'w-full bg-input border border-line rounded-lg px-3 py-2 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25';
+const fieldCls =
+  'w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors';
 
 function StatusBadge({ status }: { status: Status | null }) {
   if (!status) return null;
-  return <span className={`text-[11px] font-semibold ${STATUS_TEXT[status]}`}>{STATUS_LABEL[status]}</span>;
+  return <span className={`text-xs font-semibold ${STATUS_TEXT[status]}`}>{STATUS_LABEL[status]}</span>;
 }
 
 function Field({ label, unit, children }: { label: string; unit?: string; children: React.ReactNode }) {
@@ -95,7 +110,17 @@ function Field({ label, unit, children }: { label: string; unit?: string; childr
   );
 }
 
-function GroupCard({ title, status, onRemove, children }: { title: string; status: Status | null; onRemove: () => void; children: React.ReactNode }) {
+function GroupCard({
+  title,
+  status,
+  onRemove,
+  children,
+}: {
+  title: string;
+  status: Status | null;
+  onRemove: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-xl border border-line bg-card p-3 space-y-2.5">
       <div className="flex items-center justify-between gap-2">
@@ -103,7 +128,12 @@ function GroupCard({ title, status, onRemove, children }: { title: string; statu
           <h4 className="text-sm font-bold text-heading">{title}</h4>
           <StatusBadge status={status} />
         </div>
-        <button type="button" onClick={onRemove} aria-label={`Hapus ${title}`} className="p-1 rounded-md text-dim hover:text-heading hover:bg-muted transition-colors">
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Hapus ${title}`}
+          className="p-1 rounded-md text-dim hover:text-heading hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           <X size={14} />
         </button>
       </div>
@@ -112,7 +142,15 @@ function GroupCard({ title, status, onRemove, children }: { title: string; statu
   );
 }
 
-export default function HealthRecordModal({ isOpen, onClose, onSaved, customer, record, presets, onPresetsChanged }: Props) {
+export default function HealthRecordModal({
+  isOpen,
+  onClose,
+  onSaved,
+  customer,
+  record,
+  presets,
+  onPresetsChanged,
+}: Props) {
   const [form, setForm] = useState<FormState>(blank);
   const [groups, setGroups] = useState<Groups>(NO_GROUPS);
   const [lines, setLines] = useState<MedicineLine[]>([]);
@@ -130,8 +168,14 @@ export default function HealthRecordModal({ isOpen, onClose, onSaved, customer, 
 
   const numField = (k: keyof FormState, step = 'any', placeholder = '', autoFocus = false) => (
     <input
-      className={`${fieldCls} tnum`} type="number" min="0" step={step} inputMode="decimal"
-      value={form[k] as string} placeholder={placeholder} autoFocus={autoFocus}
+      className={`${fieldCls} tnum`}
+      type="number"
+      min="0"
+      step={step}
+      inputMode="decimal"
+      value={form[k] as string}
+      placeholder={placeholder}
+      autoFocus={autoFocus}
       onChange={e => set(k, e.target.value as FormState[typeof k])}
     />
   );
@@ -164,8 +208,12 @@ export default function HealthRecordModal({ isOpen, onClose, onSaved, customer, 
       systolic: groups.bp ? form.systolic : '',
       diastolic: groups.bp ? form.diastolic : '',
     };
-    if (Object.values(v).some(m => filled(m) && !Number.isFinite(Number(m)))) return toast.info('Ada hasil pemeriksaan yang bukan angka.');
-    if (filled(v.systolic) !== filled(v.diastolic)) return toast.info('Tekanan darah diisi sistolik dan diastolik.');
+    if (Object.values(v).some(m => filled(m) && !Number.isFinite(Number(m)))) {
+      return toast.info('Ada hasil pemeriksaan yang bukan angka.');
+    }
+    if (filled(v.systolic) !== filled(v.diastolic)) {
+      return toast.info('Tekanan darah diisi sistolik dan diastolik.');
+    }
 
     const parsed = linesToInput(lines);
     if (!parsed.ok) return toast.info(parsed.error);
@@ -219,32 +267,42 @@ export default function HealthRecordModal({ isOpen, onClose, onSaved, customer, 
       subtitle={customer.name}
       icon={HeartPulse}
       footer={
-        <div className="flex justify-end gap-2 w-full">
-          <Button variant="ghost" onClick={onClose}>Batal</Button>
-          <Button onClick={handleSubmit} loading={saving}>
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            Batal
+          </Button>
+          <Button type="button" onClick={handleSubmit} loading={saving}>
             {!saving && <Save size={15} />} Simpan Catatan
           </Button>
-        </div>
+        </>
       }
     >
       <div className="space-y-5">
         <section aria-labelledby="hr-measure" className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h3 id="hr-measure" className="text-sm font-bold text-heading">Apa yang diperiksa?</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 id="hr-measure" className="text-sm font-bold text-heading">
+              Jenis pemeriksaan
+            </h3>
             <input
-              className={`${fieldCls} !w-auto tnum`} type="datetime-local" aria-label="Waktu pemeriksaan"
-              value={form.checked_at} onChange={e => set('checked_at', e.target.value)}
+              className={`${fieldCls} !w-auto tnum`}
+              type="datetime-local"
+              aria-label="Waktu pemeriksaan"
+              value={form.checked_at}
+              onChange={e => set('checked_at', e.target.value)}
             />
           </div>
 
           <div className="flex flex-wrap gap-2" role="group" aria-label="Jenis pemeriksaan">
             {GROUPS.map(({ key, label, icon: Icon }) => (
               <button
-                key={key} type="button" onClick={() => toggle(key)} aria-pressed={groups[key]}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
+                key={key}
+                type="button"
+                onClick={() => toggle(key)}
+                aria-pressed={groups[key]}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                   groups[key]
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-card text-body border-line hover:border-primary/50 hover:text-heading'
+                    ? 'bg-primary-soft text-primary border-primary/40'
+                    : 'bg-card text-body border-line hover:border-line-strong hover:text-heading'
                 }`}
               >
                 <Icon size={13} /> {label}
@@ -253,36 +311,62 @@ export default function HealthRecordModal({ isOpen, onClose, onSaved, customer, 
           </div>
 
           {!anyGroup && (
-            <p className="text-xs text-dim">Pilih yang diperiksa saja. Boleh satu, boleh semuanya, atau langsung isi obat di bawah.</p>
+            <p className="text-xs text-dim">Pilih jenis pemeriksaan atau langsung isi obat di bawah.</p>
           )}
 
           {groups.sugar && (
-            <GroupCard title="Gula darah" status={sugar != null ? bloodSugarStatus(sugar, form.blood_sugar_context) : null} onRemove={() => toggle('sugar')}>
+            <GroupCard
+              title="Gula darah"
+              status={sugar != null ? bloodSugarStatus(sugar, form.blood_sugar_context) : null}
+              onRemove={() => toggle('sugar')}
+            >
               <div className="flex flex-wrap items-end gap-3">
-                <div className="w-36"><Field label="Hasil" unit="mg/dL">{numField('blood_sugar', 'any', '', !record)}</Field></div>
-                <div className="flex rounded-lg border border-line overflow-hidden" role="radiogroup" aria-label="Kondisi">
-                  {(Object.keys(BLOOD_SUGAR_CONTEXT_LABEL) as BloodSugarContext[]).map(k => (
-                    <button
-                      key={k} type="button" role="radio" aria-checked={form.blood_sugar_context === k}
-                      onClick={() => set('blood_sugar_context', k)}
-                      className={`px-3 py-2 text-xs font-semibold transition-colors ${
-                        form.blood_sugar_context === k ? 'bg-primary-soft text-primary' : 'bg-card text-body hover:bg-muted'
-                      }`}
-                    >
-                      {BLOOD_SUGAR_CONTEXT_LABEL[k]}
-                    </button>
-                  ))}
+                <div className="w-36">
+                  <Field label="Hasil" unit="mg/dL">
+                    {numField('blood_sugar', 'any', '', !record)}
+                  </Field>
+                </div>
+                <div
+                  className="inline-flex bg-muted p-0.5 rounded-lg border border-line gap-0.5"
+                  role="radiogroup"
+                  aria-label="Kondisi"
+                >
+                  {(Object.keys(BLOOD_SUGAR_CONTEXT_LABEL) as BloodSugarContext[]).map(k => {
+                    const active = form.blood_sugar_context === k;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => set('blood_sugar_context', k)}
+                        className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                          active
+                            ? 'bg-card text-heading border border-line'
+                            : 'text-dim hover:text-heading border border-transparent'
+                        }`}
+                      >
+                        {BLOOD_SUGAR_CONTEXT_LABEL[k]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </GroupCard>
           )}
 
           {groups.bp && (
-            <GroupCard title="Tekanan darah" status={sys != null && dia != null ? bloodPressureStatus(sys, dia) : null} onRemove={() => toggle('bp')}>
+            <GroupCard
+              title="Tekanan darah"
+              status={sys != null && dia != null ? bloodPressureStatus(sys, dia) : null}
+              onRemove={() => toggle('bp')}
+            >
               <div className="flex items-end gap-2 w-60">
                 <Field label="Sistolik">{numField('systolic', '1', '120', !record)}</Field>
                 <span className="pb-2 text-dim">/</span>
-                <Field label="Diastolik" unit="mmHg">{numField('diastolic', '1', '80')}</Field>
+                <Field label="Diastolik" unit="mmHg">
+                  {numField('diastolic', '1', '80')}
+                </Field>
               </div>
             </GroupCard>
           )}
@@ -290,37 +374,54 @@ export default function HealthRecordModal({ isOpen, onClose, onSaved, customer, 
           {groups.chol && (
             <GroupCard title="Kolesterol" status={worst(cholStatuses)} onRemove={() => toggle('chol')}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Field label="Total" unit="mg/dL">{numField('cholesterol_total', 'any', '', !record)}</Field>
-                <Field label="HDL" unit="mg/dL">{numField('cholesterol_hdl')}</Field>
-                <Field label="LDL" unit="mg/dL">{numField('cholesterol_ldl')}</Field>
-                <Field label="Trigliserida" unit="mg/dL">{numField('triglycerides')}</Field>
+                <Field label="Total" unit="mg/dL">
+                  {numField('cholesterol_total', 'any', '', !record)}
+                </Field>
+                <Field label="HDL" unit="mg/dL">
+                  {numField('cholesterol_hdl')}
+                </Field>
+                <Field label="LDL" unit="mg/dL">
+                  {numField('cholesterol_ldl')}
+                </Field>
+                <Field label="Trigliserida" unit="mg/dL">
+                  {numField('triglycerides')}
+                </Field>
               </div>
             </GroupCard>
           )}
 
           {groups.uric && (
             <GroupCard title="Asam urat" status={uric != null ? uricAcidStatus(uric) : null} onRemove={() => toggle('uric')}>
-              <div className="w-36"><Field label="Hasil" unit="mg/dL">{numField('uric_acid', 'any', '', !record)}</Field></div>
+              <div className="w-36">
+                <Field label="Hasil" unit="mg/dL">
+                  {numField('uric_acid', 'any', '', !record)}
+                </Field>
+              </div>
             </GroupCard>
           )}
 
-          {anyGroup && (
-            <p className="text-[11px] text-dim">Penanda warna memakai rentang acuan umum orang dewasa dan bukan diagnosis.</p>
-          )}
+          {anyGroup && <p className="text-[11px] text-dim">Acuan umum dewasa, bukan diagnosis.</p>}
         </section>
 
         <section aria-labelledby="hr-meds" className="space-y-3">
-          <h3 id="hr-meds" className="text-sm font-bold text-heading">Obat yang diberikan</h3>
-          <MedicineLinesEditor lines={lines} onChange={setLines} presets={presets} onPresetsChanged={onPresetsChanged} />
+          <h3 id="hr-meds" className="text-sm font-bold text-heading">
+            Obat diberikan
+          </h3>
+          <MedicineLinesEditor
+            lines={lines}
+            onChange={setLines}
+            presets={presets}
+            onPresetsChanged={onPresetsChanged}
+          />
         </section>
 
         <section>
           <Field label="Catatan">
             <textarea
-              className={`${fieldCls} h-16 resize-none`}
+              className="w-full bg-input border border-line rounded-lg px-3 py-2 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors h-16 resize-none"
               value={form.notes}
               onChange={e => set('notes', e.target.value)}
-              placeholder="Keluhan, anjuran, atau jadwal kontrol berikutnya"
+              placeholder="Keluhan, anjuran, atau jadwal kontrol"
             />
           </Field>
         </section>

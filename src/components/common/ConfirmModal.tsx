@@ -1,6 +1,7 @@
-// src/components/common/ConfirmModal.tsx
 import React from 'react';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -18,45 +19,32 @@ export default function ConfirmModal({
   onClose,
   onConfirm,
   title,
-  subtitle = 'Tindakan ini tidak dapat dibatalkan.',
+  subtitle,
   message,
-  confirmText = 'Ya, Hapus',
+  confirmText = 'Hapus',
   loading = false,
 }: ConfirmModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-card rounded-xl shadow-2xl p-6 max-w-sm w-full border border-line animate-fade-in">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-danger-soft flex items-center justify-center text-danger">
-            <AlertTriangle size={20} />
-          </div>
-          <div>
-            <h3 className="font-bold text-heading">{title}</h3>
-            {subtitle && <p className="text-xs text-dim mt-0.5">{subtitle}</p>}
-          </div>
-        </div>
-        <div className="text-sm text-body mb-5">{message}</div>
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 py-2.5 border border-line rounded-xl text-sm font-bold text-body hover:bg-muted transition-colors"
-          >
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      subtitle={subtitle}
+      icon={AlertTriangle}
+      iconBg="bg-danger-soft text-danger"
+      size="sm"
+      footer={
+        <>
+          <Button variant="outline" size="sm" onClick={onClose} disabled={loading}>
             Batal
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className="flex-1 py-2.5 bg-danger hover:bg-danger text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
-          >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : null}
+          </Button>
+          <Button variant="danger" size="sm" onClick={onConfirm} loading={loading}>
             {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    >
+      <div className="text-sm text-body leading-relaxed">{message}</div>
+    </Modal>
   );
 }

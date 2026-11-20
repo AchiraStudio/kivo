@@ -15,6 +15,16 @@ interface TopbarProps {
   onOpenMenuDrawer?: () => void;
 }
 
+const PAGE_TITLES: Record<string, string> = {
+  dashboard: 'Ringkasan',
+  pos: 'Kasir',
+  inventory: 'Inventaris',
+  purchasing: 'Pembelian',
+  customers: 'Pelanggan',
+  reports: 'Laporan',
+  settings: 'Pengaturan',
+};
+
 export default function Topbar({ activeMenu, onOpenAIChat, onOpenHostQr, onOpenMenuDrawer }: TopbarProps) {
   const { theme, setTheme } = useTheme();
   const { status, lastSyncTime } = useSyncStore();
@@ -36,140 +46,162 @@ export default function Topbar({ activeMenu, onOpenAIChat, onOpenHostQr, onOpenM
     };
   }, []);
 
-  const PAGE_TITLES: Record<string, string> = {
-    dashboard: 'Overview',
-    pos: 'Point of Sale',
-    inventory: 'Inventaris & Produk',
-    purchasing: 'Pembelian & Pemasok',
-    customers: 'Pelanggan & Promo',
-    reports: 'Laporan & Keuangan',
-    settings: 'Pengaturan',
-  };
-
   const title = PAGE_TITLES[activeMenu] ?? activeMenu.replace(/-/g, ' ');
 
   return (
-    <header className="h-12 sm:h-13 lg:h-14 bg-card border-b border-line flex items-center px-3 sm:px-4 lg:px-6 justify-between sticky top-0 z-10 shrink-0 select-none">
-
-      {/* Dynamic Page Title */}
-      <div className="min-w-0 mr-2 sm:mr-3">
-        <h2 className="text-xs sm:text-sm lg:text-base font-bold text-heading tracking-tight truncate">
+    <header className="h-12 sm:h-13 bg-card border-b border-line flex items-center px-3 sm:px-5 justify-between sticky top-0 z-10 shrink-0 select-none">
+      <div className="min-w-0 mr-2">
+        <h2 className="text-sm sm:text-[15px] font-bold text-heading tracking-tight truncate">
           {title}
         </h2>
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-2 lg:gap-2.5 shrink-0">
-
-        {/* LAN Mesh Status */}
-        <div 
-          className="hidden sm:flex items-center" 
-          title={`LAN: ${lanPeerCount} perangkat terdeteksi di jaringan lokal`}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* LAN status */}
+        <span
+          className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-dim px-2 py-1 rounded-md border border-line bg-muted/50 tnum"
+          title={`LAN: ${lanPeerCount} perangkat terdeteksi`}
         >
-          <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium text-dim bg-muted/70 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-line">
-            <Radio size={12} className={lanPeerCount > 1 ? "animate-pulse text-success" : "text-dim"} />
-            <span>LAN {lanPeerCount}</span>
-          </span>
-        </div>
+          <Radio size={12} strokeWidth={1.75} className={lanPeerCount > 1 ? 'text-success' : 'text-dim'} />
+          <span>LAN {lanPeerCount}</span>
+        </span>
 
-        {/* Sync Status */}
-        <div 
-          className="hidden sm:flex items-center" 
-          title={status === 'connected' ? (lastSyncTime ? `Online • Terakhir: ${lastSyncTime.toLocaleTimeString('id-ID')}` : 'Online') : status === 'connecting' ? 'Menghubungkan ke Cloud...' : 'Mode Lokal (Offline)'}
+        {/* Cloud sync status */}
+        <span
+          className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md border ${
+            status === 'connected'
+              ? 'text-success bg-success-soft border-success/20'
+              : status === 'connecting'
+              ? 'text-warning bg-warning-soft border-warning/20'
+              : 'text-dim bg-muted/50 border-line'
+          }`}
+          title={
+            status === 'connected'
+              ? lastSyncTime
+                ? `Online (${lastSyncTime.toLocaleTimeString('id-ID')})`
+                : 'Online'
+              : status === 'connecting'
+              ? 'Menyinkronkan...'
+              : 'Mode lokal'
+          }
         >
           {status === 'connected' ? (
-            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-success bg-success-soft px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-success/20">
-              <Cloud size={12} /> Online
-            </span>
+            <>
+              <Cloud size={12} strokeWidth={1.75} />
+              <span>Online</span>
+            </>
           ) : status === 'connecting' ? (
-            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-warning bg-warning-soft px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-warning/20">
-              <RefreshCw size={12} className="animate-spin" /> Sinkron...
-            </span>
+            <>
+              <RefreshCw size={12} strokeWidth={1.75} className="animate-spin" />
+              <span>Sync</span>
+            </>
           ) : (
-            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium text-dim bg-muted/70 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-line">
-              <CloudOff size={12} /> Lokal
-            </span>
+            <>
+              <CloudOff size={12} strokeWidth={1.75} />
+              <span>Lokal</span>
+            </>
           )}
-        </div>
+        </span>
 
-        <div className="h-4 w-px bg-line mx-0.5 hidden lg:block"></div>
+        <div className="h-4 w-px bg-line mx-0.5 hidden lg:block" />
 
-        {/* Zoom Controls (Desktop only > 1024px) */}
-        <div className="hidden lg:flex items-center gap-0.5 bg-muted/60 border border-line rounded-lg p-0.5">
+        {/* Zoom Controls (Desktop >= 1024px) */}
+        <div className="hidden lg:flex items-center bg-muted/60 border border-line rounded-lg p-0.5">
           <button
+            type="button"
             onClick={zoomOut}
-            className="text-dim hover:text-heading transition-colors p-1 rounded hover:bg-card cursor-pointer"
-            title="Perkecil Tampilan (Ctrl -)"
+            aria-label="Perkecil tampilan"
+            className="text-dim hover:text-heading transition-colors p-1 rounded-md hover:bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Perkecil (Ctrl -)"
           >
-            <ZoomOut size={13} />
+            <ZoomOut size={13} strokeWidth={1.75} />
           </button>
           <button
+            type="button"
             onClick={reset}
-            className="text-[11px] font-semibold text-dim hover:text-heading px-1.5 py-0.5 rounded transition-colors hover:bg-card font-mono cursor-pointer"
-            title="Reset Zoom 100% (Ctrl 0)"
+            aria-label="Reset zoom"
+            className="text-[11px] font-semibold text-dim hover:text-heading px-1.5 py-0.5 rounded-md transition-colors hover:bg-card font-mono tnum cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Reset 100% (Ctrl 0)"
           >
             {zoom}%
           </button>
           <button
+            type="button"
             onClick={zoomIn}
-            className="text-dim hover:text-heading transition-colors p-1 rounded hover:bg-card cursor-pointer"
-            title="Perbesar Tampilan (Ctrl +)"
+            aria-label="Perbesar tampilan"
+            className="text-dim hover:text-heading transition-colors p-1 rounded-md hover:bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Perbesar (Ctrl +)"
           >
-            <ZoomIn size={13} />
+            <ZoomIn size={13} strokeWidth={1.75} />
           </button>
         </div>
 
-        {/* Host Server QR Access */}
+        {/* Host QR */}
         {onOpenHostQr && (
           <button
+            type="button"
             onClick={onOpenHostQr}
-            className="text-dim hover:text-heading transition-colors p-1.5 rounded-lg hover:bg-muted cursor-pointer"
-            title="Akses Kasir Mobile & QR Code"
+            aria-label="QR Akses LAN"
+            className="w-8 h-8 flex items-center justify-center text-dim hover:text-heading rounded-lg hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="QR Akses LAN"
           >
-            <QrCode size={17} />
+            <QrCode size={16} strokeWidth={1.75} />
           </button>
         )}
 
-        {/* Available Update Badge */}
-        {updateInfo?.has_update && (
-          <button
-            onClick={openModal}
-            className="flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all animate-pulse cursor-pointer shadow-2xs"
-            title={`Pembaruan Kivo ${updateInfo.latest_version} tersedia`}
-          >
-            <ArrowUpCircle size={14} className="text-primary" />
-            <span className="hidden sm:inline">Update {updateInfo.latest_version}</span>
-          </button>
-        )}
+        {/* Available Update */}
+        {updateInfo?.has_update && (() => {
+          const verLabel = updateInfo.latest_version.startsWith('v')
+            ? updateInfo.latest_version
+            : `v${updateInfo.latest_version}`;
+          return (
+            <button
+              type="button"
+              onClick={openModal}
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 bg-primary-soft hover:bg-primary/15 text-primary border border-primary/25 rounded-lg text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              title={`Update ${verLabel}`}
+            >
+              <ArrowUpCircle size={14} strokeWidth={1.75} />
+              <span className="hidden sm:inline">{verLabel}</span>
+            </button>
+          );
+        })()}
 
         {/* Theme Toggle */}
         <button
+          type="button"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="text-dim hover:text-heading transition-colors p-1.5 rounded-lg hover:bg-muted cursor-pointer"
-          title="Ganti Tema (Light / Dark)"
+          aria-label="Ganti tema"
+          className="w-8 h-8 flex items-center justify-center text-dim hover:text-heading rounded-lg hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
         >
-          {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+          {theme === 'dark' ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
         </button>
 
-        {/* AI Chat button, opens AI Assistant modal */}
+        {/* AI Chat (secondary outline so page primary CTA keeps sole accent focus) */}
         {onOpenAIChat && (
           <button
+            type="button"
             onClick={onOpenAIChat}
-            className="ml-0.5 flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold text-xs transition-all active:scale-[0.98] shadow-xs cursor-pointer"
-            title="Tanya Kivo AI Assistant"
+            aria-label="Buka Kivo AI"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 bg-card hover:bg-muted text-heading border border-line hover:border-line-strong rounded-lg font-semibold text-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Kivo AI"
           >
-            <MessageSquare size={14} aria-hidden="true" />
-            <span className="hidden sm:inline">Tanya Kivo AI</span>
+            <MessageSquare size={14} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
+            <span className="hidden sm:inline">Kivo AI</span>
           </button>
         )}
 
-        {/* Mobile Menu Drawer Toggle (< 768px) */}
+        {/* Mobile Menu Trigger (< 768px) */}
         {onOpenMenuDrawer && (
           <button
+            type="button"
             onClick={onOpenMenuDrawer}
-            className="md:hidden text-dim hover:text-heading transition-colors p-1.5 rounded-lg hover:bg-muted cursor-pointer ml-0.5"
-            title="Buka Menu Navigasi"
+            aria-label="Buka menu"
+            className="md:hidden w-9 h-9 flex items-center justify-center text-dim hover:text-heading rounded-lg hover:bg-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Menu"
           >
-            <Menu size={18} />
+            <Menu size={18} strokeWidth={1.75} />
           </button>
         )}
       </div>

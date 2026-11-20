@@ -16,7 +16,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   secondary:
     'bg-muted text-heading hover:bg-muted-hover border border-line',
   outline:
-    'border border-line bg-card text-heading hover:bg-muted',
+    'border border-line bg-card text-heading hover:bg-muted hover:border-line-strong',
   ghost:
     'text-body hover:bg-muted hover:text-heading',
   danger:
@@ -41,7 +41,7 @@ export default function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-lg font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] ${
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg font-semibold transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] ${
         VARIANT_CLASSES[variant]
       } ${SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
       disabled={disabled || loading}

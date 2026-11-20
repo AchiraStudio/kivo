@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Save, UserCircle, Loader2, CalendarClock } from 'lucide-react';
+import { Save, UserCircle, CalendarClock } from 'lucide-react';
 import { Customer, addCustomer, updateCustomer, getSettings } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
-
+import Button from '../../components/ui/Button';
 import { toast } from '../../components/ui/Toast';
+
 interface CustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,9 +12,27 @@ interface CustomerModalProps {
   customerToEdit?: Customer | null;
 }
 
+const TIERS = [
+  { id: 'regular', label: 'Reguler' },
+  { id: 'member', label: 'Member' },
+  { id: 'vip', label: 'VIP' },
+] as const;
+
+const fieldCls =
+  'w-full h-9 bg-input border border-line rounded-lg px-3 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+
+const labelCls = 'block text-xs font-semibold text-heading mb-1.5';
+
 export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEdit }: CustomerModalProps) {
   const [formData, setFormData] = useState({
-    name: '', phone: '', email: '', address: '', region: '', customer_tier: 'regular', notes: '', membership_expiry: ''
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    region: '',
+    customer_tier: 'regular',
+    notes: '',
+    membership_expiry: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -30,10 +49,19 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
           region: customerToEdit.region || '',
           customer_tier: customerToEdit.customer_tier,
           notes: customerToEdit.notes || '',
-          membership_expiry: customerToEdit.membership_expiry ? customerToEdit.membership_expiry.split(' ')[0] : ''
+          membership_expiry: customerToEdit.membership_expiry ? customerToEdit.membership_expiry.split(' ')[0] : '',
         });
       } else {
-        setFormData({ name: '', phone: '', email: '', address: '', region: '', customer_tier: 'regular', notes: '', membership_expiry: '' });
+        setFormData({
+          name: '',
+          phone: '',
+          email: '',
+          address: '',
+          region: '',
+          customer_tier: 'regular',
+          notes: '',
+          membership_expiry: '',
+        });
       }
     }
   }, [isOpen, customerToEdit]);
@@ -42,7 +70,7 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
     try {
       const data = await getSettings();
       const map: Record<string, string> = {};
-      data.forEach(s => map[s.key] = s.value);
+      data.forEach(s => (map[s.key] = s.value));
       setSettings(map);
     } catch (e) {
       console.error(e);
@@ -51,8 +79,7 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
 
   const handleTierChange = (tier: string) => {
     let newExpiry = formData.membership_expiry;
-    
-    // Only auto-calculate expiry if it's a new assignment or it's empty
+
     if (tier !== 'regular' && (!customerToEdit || customerToEdit.customer_tier === 'regular' || !newExpiry)) {
       const durationMonths = parseInt(settings[`tier_${tier}_duration_months`] || '12', 10);
       const date = new Date();
@@ -61,14 +88,14 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
     } else if (tier === 'regular') {
       newExpiry = '';
     }
-    
+
     setFormData({ ...formData, customer_tier: tier, membership_expiry: newExpiry });
   };
 
   const handleExtend = () => {
     if (formData.customer_tier === 'regular') return;
     const durationMonths = parseInt(settings[`tier_${formData.customer_tier}_duration_months`] || '12', 10);
-    
+
     let baseDate = new Date();
     if (formData.membership_expiry) {
       const currentExpiry = new Date(formData.membership_expiry);
@@ -76,28 +103,50 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
         baseDate = currentExpiry;
       }
     }
-    
+
     baseDate.setMonth(baseDate.getMonth() + durationMonths);
     setFormData({ ...formData, membership_expiry: baseDate.toISOString().split('T')[0] });
   };
 
   const handleSubmit = async () => {
-    if (!formData.name) return toast.info("Nama pelanggan wajib diisi.");
+    if (!formData.name.trim()) return toast.info('Nama pelanggan wajib diisi.');
     setIsSubmitting(true);
     try {
-      const expiry = formData.customer_tier !== 'regular' && formData.membership_expiry ? `${formData.membership_expiry} 23:59:59` : undefined;
-      
-      if (customerToEdit) { 
-        await updateCustomer(customerToEdit.id, formData.name, formData.phone, formData.email, formData.address, formData.region, formData.customer_tier, formData.notes, expiry); 
-      } else { 
-        await addCustomer(formData.name, formData.phone, formData.email, formData.address, formData.region, formData.customer_tier, formData.notes, expiry); 
+      const expiry =
+        formData.customer_tier !== 'regular' && formData.membership_expiry
+          ? `${formData.membership_expiry} 23:59:59`
+          : undefined;
+
+      if (customerToEdit) {
+        await updateCustomer(
+          customerToEdit.id,
+          formData.name,
+          formData.phone,
+          formData.email,
+          formData.address,
+          formData.region,
+          formData.customer_tier,
+          formData.notes,
+          expiry
+        );
+      } else {
+        await addCustomer(
+          formData.name,
+          formData.phone,
+          formData.email,
+          formData.address,
+          formData.region,
+          formData.customer_tier,
+          formData.notes,
+          expiry
+        );
       }
       onSuccess();
       onClose();
-    } catch (error) { 
-      toast.error(`Gagal menyimpan data pelanggan: ${error}`); 
-    } finally { 
-      setIsSubmitting(false); 
+    } catch (error) {
+      toast.error(`Gagal menyimpan data pelanggan: ${error}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -109,96 +158,93 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
       onClose={onClose}
       size="2xl"
       title={customerToEdit ? 'Edit Pelanggan' : 'Pelanggan Baru'}
-      subtitle="Kelola informasi data pelanggan dan status keanggotaan"
       icon={UserCircle}
       footer={
-        <div className="flex justify-end gap-3 w-full">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold text-body hover:bg-muted transition-colors"
-          >
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Batal
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
-          >
-            {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+          </Button>
+          <Button type="button" onClick={handleSubmit} loading={isSubmitting}>
+            {!isSubmitting && <Save size={15} />}
             Simpan Pelanggan
-          </button>
-        </div>
+          </Button>
+        </>
       }
     >
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-heading uppercase tracking-wide mb-1.5">Nama Pelanggan *</label>
+              <label className={labelCls}>
+                Nama Pelanggan <span className="text-danger">*</span>
+              </label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
-                className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                className={fieldCls}
                 disabled={customerToEdit?.id === 'customer_umum'}
-                placeholder="Nama Lengkap"
+                placeholder="Nama lengkap"
               />
             </div>
-            
+
             <div>
-              <label className="block text-xs font-bold text-heading uppercase tracking-wide mb-1.5">Tier / Kategori Pelanggan</label>
-              <div className="flex bg-muted p-1 rounded-xl">
-                {['regular', 'member', 'vip'].map(tier => (
-                  <button
-                    key={tier}
-                    type="button"
-                    onClick={() => handleTierChange(tier)}
-                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
- formData.customer_tier === tier ? 'bg-card dark:bg-muted shadow-sm text-primary' : 'text-dim hover:text-body dark:hover:text-dim'
- }`}
-                  >
-                    {tier}
-                  </button>
-                ))}
+              <span className={labelCls}>Tier Pelanggan</span>
+              <div className="flex bg-muted p-1 rounded-lg border border-line gap-0.5" role="radiogroup" aria-label="Tier pelanggan">
+                {TIERS.map(tier => {
+                  const active = formData.customer_tier === tier.id;
+                  return (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => handleTierChange(tier.id)}
+                      className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        active
+                          ? 'bg-card text-heading border border-line'
+                          : 'text-dim hover:text-heading border border-transparent'
+                      }`}
+                    >
+                      {tier.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {formData.customer_tier !== 'regular' && (
-              <div className="p-4 bg-primary-soft border border-primary-soft rounded-xl space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-primary uppercase mb-1.5">Masa Berlaku Member</label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <CalendarClock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
-                      <input 
-                        type="date" 
-                        value={formData.membership_expiry} 
-                        onChange={e => setFormData({...formData, membership_expiry: e.target.value})}
-                        className="w-full pl-9 pr-3 py-2 bg-card border border-primary/30 rounded-xl text-sm text-heading outline-none focus:border-primary"
-                      />
-                    </div>
-                    <button 
-                      type="button"
-                      onClick={handleExtend}
-                      className="px-3 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
-                      title={`Perpanjang otomatis ${settings['tier_' + formData.customer_tier + '_duration_months'] || '12'} bulan`}
-                    >
-                      Perpanjang
-                    </button>
+              <div className="p-3.5 bg-muted/50 border border-line rounded-xl space-y-2">
+                <label className="block text-xs font-semibold text-heading">Masa Berlaku Member</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <CalendarClock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-dim pointer-events-none" />
+                    <input
+                      type="date"
+                      value={formData.membership_expiry}
+                      onChange={e => setFormData({ ...formData, membership_expiry: e.target.value })}
+                      className={`${fieldCls} pl-9 tnum`}
+                    />
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleExtend}
+                    title={`Perpanjang ${settings['tier_' + formData.customer_tier + '_duration_months'] || '12'} bulan`}
+                  >
+                    Perpanjang
+                  </Button>
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-bold text-heading uppercase tracking-wide mb-1.5">No. Telepon / WhatsApp</label>
+              <label className={labelCls}>No. Telepon / WhatsApp</label>
               <input
                 type="text"
                 value={formData.phone}
-                onChange={e => setFormData({...formData, phone: e.target.value})}
-                className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
+                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                className={`${fieldCls} tnum`}
                 placeholder="08..."
               />
             </div>
@@ -206,47 +252,47 @@ export default function CustomerModal({ isOpen, onClose, onSuccess, customerToEd
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-heading uppercase tracking-wide mb-1.5">Email</label>
+              <label className={labelCls}>Email</label>
               <input
                 type="email"
                 value={formData.email}
-                onChange={e => setFormData({...formData, email: e.target.value})}
-                className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
+                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                className={fieldCls}
                 placeholder="email@example.com"
               />
             </div>
-            
+
             <div>
-              <label className="block text-xs font-bold text-heading uppercase tracking-wide mb-1.5">Wilayah / Kota</label>
+              <label className={labelCls}>Wilayah / Kota</label>
               <input
                 type="text"
                 value={formData.region}
-                onChange={e => setFormData({...formData, region: e.target.value})}
-                className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
+                onChange={e => setFormData({ ...formData, region: e.target.value })}
+                className={fieldCls}
                 placeholder="Jakarta Selatan"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-heading uppercase tracking-wide mb-1.5">Alamat Lengkap</label>
+              <label className={labelCls}>Alamat</label>
               <textarea
                 value={formData.address}
-                onChange={e => setFormData({...formData, address: e.target.value})}
-                className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary h-[106px] resize-none"
-                placeholder="Alamat domisili..."
+                onChange={e => setFormData({ ...formData, address: e.target.value })}
+                className="w-full bg-input border border-line rounded-lg px-3 py-2 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-colors h-[104px] resize-none"
+                placeholder="Alamat domisili"
               />
             </div>
           </div>
         </div>
-        
+
         <div>
-          <label className="block text-xs font-bold text-heading uppercase tracking-wide mb-1.5">Catatan Khusus (Internal)</label>
+          <label className={labelCls}>Catatan Internal</label>
           <input
             type="text"
             value={formData.notes}
-            onChange={e => setFormData({...formData, notes: e.target.value})}
-            className="w-full bg-muted border border-line rounded-xl px-4 py-2.5 text-sm text-heading outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Catatan tambahan perihal pelanggan..."
+            onChange={e => setFormData({ ...formData, notes: e.target.value })}
+            className={fieldCls}
+            placeholder="Catatan tambahan pelanggan"
           />
         </div>
       </div>

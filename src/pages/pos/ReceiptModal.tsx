@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { getSaleDetail, SaleDetail, getSettings, printRawReceipt } from '../../lib/api';
 import { EscPosBuilder } from '../../lib/escpos';
 import Modal from '../../components/ui/Modal';
+import Button from '../../components/ui/Button';
 
 interface ReceiptModalProps {
     saleId: string;
@@ -190,78 +191,82 @@ export default function ReceiptModal({ saleId, onClose }: ReceiptModalProps) {
             isOpen={true}
             onClose={onClose}
             size="md"
-            title="Pencetakan Struk POS"
-            subtitle={detail?.sale?.transaction_no ? `Faktur: ${detail.sale.transaction_no}` : 'Memuat faktur...'}
+            title="Struk Transaksi"
+            subtitle={detail?.sale?.transaction_no}
             icon={Printer}
             footer={
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full gap-3">
                     <div>
                         {timeLeft !== null && printStatus === 'success' && (
-                            <span className="text-xs font-semibold text-dim">
-                                Menutup otomatis dalam <strong className="text-primary">{timeLeft}s</strong>
+                            <span className="text-xs text-dim tnum">
+                                Menutup dalam <strong className="text-heading">{timeLeft}s</strong>
                             </span>
                         )}
                     </div>
                     <div className="flex gap-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-xs font-bold rounded-xl border border-line text-heading hover:bg-muted transition-colors"
-                        >
+                        <Button variant="outline" size="sm" type="button" onClick={onClose}>
                             Tutup
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="primary"
+                            size="sm"
                             type="button"
                             onClick={handleManualPrint}
                             disabled={loadingDetail || printStatus === 'printing'}
-                            className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                         >
-                            <RefreshCw size={13} className={printStatus === 'printing' ? 'animate-spin' : ''} />
+                            <RefreshCw size={14} className={printStatus === 'printing' ? 'animate-spin' : ''} />
                             <span>Cetak Ulang</span>
-                        </button>
+                        </Button>
                     </div>
                 </div>
             }
         >
-            <div className="space-y-4 py-2">
-                {/* Status Indicator Banner */}
+            <div className="space-y-3.5">
+                {loadingDetail && printStatus === 'idle' && (
+                    <div className="py-6 flex flex-col items-center justify-center gap-2">
+                        <Loader2 size={22} className="animate-spin text-primary" />
+                        <span className="text-xs text-dim">Memuat faktur...</span>
+                    </div>
+                )}
+
                 {printStatus === 'printing' && (
-                    <div className="p-4 rounded-xl bg-accent-soft border border-accent/30 flex items-center gap-3 text-accent animate-pulse">
-                        <Loader2 size={20} className="animate-spin text-primary shrink-0" />
+                    <div className="p-3.5 rounded-xl bg-info-soft border border-info/25 flex items-center gap-3 text-info">
+                        <Loader2 size={18} className="animate-spin shrink-0" />
                         <span className="text-xs font-semibold">{printMsg}</span>
                     </div>
                 )}
 
                 {printStatus === 'success' && (
-                    <div className="p-4 rounded-xl bg-success-soft border border-success/30 flex items-center gap-3 text-success ">
-                        <CheckCircle2 size={20} className="text-success shrink-0" />
+                    <div className="p-3.5 rounded-xl bg-success-soft border border-success/25 flex items-center gap-3 text-success">
+                        <CheckCircle2 size={18} className="shrink-0" />
                         <div className="text-xs">
-                            <p className="font-bold">Transaksi Selesai & Dicetak</p>
-                            <p className="text-success/80 mt-0.5">{printMsg}</p>
+                            <p className="font-semibold">Struk Dicetak</p>
+                            <p className="mt-0.5 opacity-90">{printMsg}</p>
                         </div>
                     </div>
                 )}
 
                 {printStatus === 'error' && (
-                    <div className="p-4 rounded-xl bg-danger-soft border border-danger/30 flex items-center gap-3 text-danger ">
-                        <AlertTriangle size={20} className="text-danger shrink-0" />
+                    <div className="p-3.5 rounded-xl bg-danger-soft border border-danger/25 flex items-center gap-3 text-danger">
+                        <AlertTriangle size={18} className="shrink-0" />
                         <div className="text-xs">
-                            <p className="font-bold">Gagal Mencetak Struk</p>
-                            <p className="text-danger/80 mt-0.5">{printMsg}</p>
+                            <p className="font-semibold">Gagal Mencetak</p>
+                            <p className="mt-0.5 opacity-90">{printMsg}</p>
                         </div>
                     </div>
                 )}
 
-                {/* Struk Summary Box */}
                 {detail?.sale && (
-                    <div className="bg-muted/60 p-4 rounded-xl border border-line space-y-2 font-mono text-xs">
+                    <div className="bg-muted/60 p-3.5 rounded-xl border border-line space-y-2 text-xs">
                         <div className="flex justify-between text-dim border-b border-line pb-2">
-                            <span>Faktur: {detail.sale.transaction_no}</span>
-                            <span>{new Date(detail.sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="font-mono font-semibold text-body">{detail.sale.transaction_no}</span>
+                            <span className="tnum">
+                                {new Date(detail.sale.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                         </div>
-                        <div className="flex justify-between font-bold text-heading pt-1">
-                            <span>Total Tagihan:</span>
-                            <span>Rp {Math.round(detail.sale.grand_total).toLocaleString('id-ID')}</span>
+                        <div className="flex justify-between font-bold text-heading pt-0.5">
+                            <span>Total</span>
+                            <span className="tnum">Rp {Math.round(detail.sale.grand_total).toLocaleString('id-ID')}</span>
                         </div>
                     </div>
                 )}

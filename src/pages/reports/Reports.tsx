@@ -1,7 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  ShoppingCart, TrendingUp, CreditCard, Package, AlertTriangle, 
-  FileText, Truck, Users, BarChart3, ChevronRight, ArrowUpRight
+import {
+  ShoppingCart,
+  TrendingUp,
+  CreditCard,
+  Package,
+  AlertTriangle,
+  FileText,
+  Truck,
+  Users,
+  ChevronRight,
+  LayoutGrid,
+  ArrowUpRight,
 } from 'lucide-react';
 import LaporanPenjualan from './LaporanPenjualan';
 import LaporanItemTerlaris from './LaporanItemTerlaris';
@@ -11,111 +20,101 @@ import LaporanKadaluarsa from './LaporanKadaluarsa';
 import LaporanHutang from './LaporanHutang';
 import LaporanPembelian from './LaporanPembelian';
 import LaporanPelanggan from './LaporanPelanggan';
+import TabBar, { TabItem } from '../../components/ui/TabBar';
+import Button from '../../components/ui/Button';
 
 interface ReportCardItem {
   id: string;
   title: string;
   desc: string;
-  tag: string;
-  icon: any;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
 }
 
 interface ReportCategory {
-  id: string;
+  id: CategoryTab;
   categoryTitle: string;
-  categoryDesc: string;
   items: ReportCardItem[];
 }
 
-const REPORT_TABS = [
-  { id: 'all', label: 'Semua Laporan' },
-  { id: 'penjualan', label: 'Penjualan & Kasir' },
-  { id: 'inventaris', label: 'Inventori & Stok' },
-  { id: 'pengadaan', label: 'Pengadaan & Hutang' },
-  { id: 'pelanggan', label: 'Pelanggan & CRM' },
+type CategoryTab = 'all' | 'penjualan' | 'inventaris' | 'pengadaan' | 'pelanggan';
+
+const REPORT_TABS: TabItem<CategoryTab>[] = [
+  { id: 'all', label: 'Semua', icon: LayoutGrid },
+  { id: 'penjualan', label: 'Penjualan', icon: ShoppingCart },
+  { id: 'inventaris', label: 'Inventori', icon: Package },
+  { id: 'pengadaan', label: 'Pengadaan', icon: Truck },
+  { id: 'pelanggan', label: 'Pelanggan', icon: Users },
 ];
 
 const REPORT_CATEGORIES: ReportCategory[] = [
   {
     id: 'penjualan',
-    categoryTitle: 'Penjualan, Kasir & Analisis Omset',
-    categoryDesc: 'Laporan menyeluruh faktur penjualan, kasir, profitabilitas produk, dan cara bayar',
+    categoryTitle: 'Penjualan & Kasir',
     items: [
       {
         id: 'penjualan',
-        title: 'Laporan Penjualan Suite',
-        desc: 'Rekap nota, rincian per item, rekap harian, kinerja per kasir & per pelanggan',
-        tag: 'Paling Lengkap',
+        title: 'Laporan Penjualan',
+        desc: 'Rekap nota, rincian item, harian, per kasir, dan pelanggan.',
         icon: ShoppingCart,
       },
       {
         id: 'item-terlaris',
         title: 'Item Terlaris & Margin',
-        desc: 'Peringkat produk dengan pendapatan dan kontribusi margin kotor tertinggi',
-        tag: 'Fast Moving',
+        desc: 'Peringkat produk berdasarkan omset dan margin kotor.',
         icon: TrendingUp,
       },
       {
         id: 'metode-bayar',
-        title: 'Distribusi Metode Pembayaran',
-        desc: 'Rincian cara bayar: Tunai, QRIS / E-Wallet, Transfer Bank, dan Kartu Debit/Kredit',
-        tag: 'Cashflow',
+        title: 'Metode Pembayaran',
+        desc: 'Distribusi Tunai, QRIS, transfer bank, dan kartu.',
         icon: CreditCard,
       },
     ],
   },
   {
     id: 'inventaris',
-    categoryTitle: 'Inventaris, Valuasi Stok & Kadaluarsa',
-    categoryDesc: 'Monitoring nilai aset gudang, stok menipis, dan peringatan tanggal expired',
+    categoryTitle: 'Inventori & Stok',
     items: [
       {
         id: 'stok',
-        title: 'Valuasi Stok & Nilai Persediaan',
-        desc: 'Perhitungan total nilai modal stok fisik berdasarkan metode HPP rata-rata berjalan',
-        tag: 'Aset Gudang',
+        title: 'Valuasi Stok',
+        desc: 'Nilai persediaan fisik berdasarkan HPP rata-rata berjalan.',
         icon: Package,
       },
       {
         id: 'kadaluarsa',
-        title: 'Laporan Hampir Kadaluarsa',
-        desc: 'Daftar batch obat yang mendekati tanggal expired dalam 30, 60, atau 90 hari',
-        tag: 'Peringatan Dini',
+        title: 'Hampir Kadaluarsa',
+        desc: 'Batch produk yang mendekati tanggal expired.',
         icon: AlertTriangle,
       },
     ],
   },
   {
     id: 'pengadaan',
-    categoryTitle: 'Pengadaan, Hutang & Hubungan Supplier',
-    categoryDesc: 'Riwayat pembelian barang masuk dan pelacakan hutang dagang jatuh tempo',
+    categoryTitle: 'Pengadaan & Hutang',
     items: [
       {
         id: 'pembelian',
-        title: 'Rekap Pembelian Supplier',
-        desc: 'Akumulasi nilai pengadaan barang dan rekap faktur pembelian per pemasok',
-        tag: 'Pembelian',
+        title: 'Rekap Pembelian',
+        desc: 'Total pengadaan dan faktur pembelian per pemasok.',
         icon: Truck,
       },
       {
         id: 'hutang',
         title: 'Hutang Dagang (AP)',
-        desc: 'Tagihan faktur pembelian yang belum lunas beserta sisa saldo hutang pemasok',
-        tag: 'Hutang Dagang',
+        desc: 'Tagihan pembelian belum lunas dan sisa saldo pemasok.',
         icon: FileText,
       },
     ],
   },
   {
     id: 'pelanggan',
-    categoryTitle: 'Pelanggan, CRM & Loyalitas',
-    categoryDesc: 'Analisis segmentasi pelanggan, kebiasaan belanja, dan tier membership',
+    categoryTitle: 'Pelanggan',
     items: [
       {
         id: 'pelanggan',
-        title: 'Laporan Belanja Pelanggan',
-        desc: 'Peringkat pelanggan dengan transaksi terbanyak dan total omset belanja',
-        tag: 'CRM & Loyalitas',
+        title: 'Belanja Pelanggan',
+        desc: 'Peringkat pelanggan berdasarkan transaksi dan total belanja.',
         icon: Users,
       },
     ],
@@ -123,23 +122,23 @@ const REPORT_CATEGORIES: ReportCategory[] = [
 ];
 
 const COMPONENTS: Record<string, React.FC<{ onBack: () => void }>> = {
-  'penjualan':    LaporanPenjualan,
+  penjualan: LaporanPenjualan,
   'item-terlaris': LaporanItemTerlaris,
   'metode-bayar': LaporanMetodePembayaran,
-  'stok':         LaporanStok,
-  'kadaluarsa':   LaporanKadaluarsa,
-  'hutang':       LaporanHutang,
-  'pembelian':    LaporanPembelian,
-  'pelanggan':    LaporanPelanggan,
+  stok: LaporanStok,
+  kadaluarsa: LaporanKadaluarsa,
+  hutang: LaporanHutang,
+  pembelian: LaporanPembelian,
+  pelanggan: LaporanPelanggan,
 };
 
 export default function Reports() {
   const [activeReport, setActiveReport] = useState<string | null>(null);
-  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('all');
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<CategoryTab>('all');
 
   const visibleCategories = useMemo(() => {
     if (selectedCategoryTab === 'all') return REPORT_CATEGORIES;
-    return REPORT_CATEGORIES.filter(c => c.id === selectedCategoryTab);
+    return REPORT_CATEGORIES.filter((c) => c.id === selectedCategoryTab);
   }, [selectedCategoryTab]);
 
   if (activeReport) {
@@ -151,98 +150,64 @@ export default function Reports() {
   }
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in h-full overflow-y-auto custom-scrollbar pr-1 pb-8">
-      {/* Hub Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 bg-card p-4 rounded-xl border border-line">
-        <div>
-          <div className="flex items-center gap-2">
-            <BarChart3 size={18} className="text-primary" />
-            <h1 className="text-base font-bold text-heading tracking-tight">
-              Pusat Laporan & Analisis
-            </h1>
-          </div>
-          <p className="text-xs text-dim mt-0.5">
-            Akses laporan berkala penjualan, persediaan stok, pembelian, dan performa keuangan
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
+    <div className="flex flex-col gap-5 animate-fade-in h-full overflow-y-auto custom-scrollbar pr-1 pb-6">
+      <TabBar
+        tabs={REPORT_TABS}
+        activeTab={selectedCategoryTab}
+        onTabChange={setSelectedCategoryTab}
+        rightAction={
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
             onClick={() => setActiveReport('penjualan')}
-            className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg font-semibold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.98]"
           >
-            <ShoppingCart size={14} /> Laporan Penjualan <ArrowUpRight size={13} />
-          </button>
-        </div>
-      </div>
+            <ShoppingCart size={14} strokeWidth={1.75} />
+            Laporan Penjualan
+            <ArrowUpRight size={14} strokeWidth={1.75} />
+          </Button>
+        }
+      />
 
-      {/* Category Tabs Bar */}
-      <div className="bg-card p-1 rounded-xl border border-line flex items-center gap-1 overflow-x-auto custom-scrollbar shrink-0">
-        {REPORT_TABS.map(tab => {
-          const isActive = selectedCategoryTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setSelectedCategoryTab(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'text-body hover:text-heading hover:bg-muted'
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Categorized Report Cards */}
       <div className="space-y-5">
-        {visibleCategories.map(cat => (
-          <div key={cat.id} className="space-y-2.5">
-            <div>
-              <h2 className="text-xs font-bold text-dim uppercase tracking-wider">
-                {cat.categoryTitle}
-              </h2>
-              <p className="text-[11px] text-dim">
-                {cat.categoryDesc}
-              </p>
-            </div>
+        {visibleCategories.map((cat) => (
+          <section key={cat.id} className="space-y-2.5">
+            <h2 className="text-sm font-bold text-heading">{cat.categoryTitle}</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {cat.items.map(item => {
+              {cat.items.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
                     key={item.id}
+                    type="button"
                     onClick={() => setActiveReport(item.id)}
-                    className="flex flex-col text-left p-4 rounded-xl border border-line bg-card hover:border-primary/50 hover:bg-muted/20 transition-all duration-150 group cursor-pointer shadow-xs"
+                    className="flex items-start gap-3.5 text-left p-4 rounded-xl border border-line bg-card hover:border-line-strong hover:bg-muted/30 transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                        <Icon size={18} />
-                      </div>
-                      <span className="text-[10px] font-semibold text-dim bg-muted px-2 py-0.5 rounded border border-line">
-                        {item.tag}
-                      </span>
+                    <div className="w-9 h-9 rounded-lg bg-muted text-heading group-hover:bg-primary-soft group-hover:text-primary flex items-center justify-center shrink-0 transition-colors">
+                      <Icon size={18} strokeWidth={1.75} />
                     </div>
 
-                    <h3 className="text-sm font-bold text-heading group-hover:text-primary transition-colors tracking-tight">
-                      {item.title}
-                    </h3>
-                    <p className="text-xs text-dim mt-1 leading-relaxed line-clamp-2 flex-1">
-                      {item.desc}
-                    </p>
-
-                    <div className="mt-3.5 pt-2.5 border-t border-line/60 flex items-center justify-between text-xs font-semibold text-dim group-hover:text-primary transition-colors">
-                      <span>Buka Laporan</span>
-                      <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-sm font-bold text-heading group-hover:text-primary transition-colors truncate">
+                          {item.title}
+                        </h3>
+                        <ChevronRight
+                          size={15}
+                          strokeWidth={1.75}
+                          className="text-dim group-hover:text-primary shrink-0 transition-colors"
+                        />
+                      </div>
+                      <p className="text-xs text-dim mt-1 leading-relaxed line-clamp-2">
+                        {item.desc}
+                      </p>
                     </div>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </section>
         ))}
       </div>
     </div>
