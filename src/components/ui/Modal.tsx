@@ -2,6 +2,7 @@ import React, { useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X, LucideIcon } from 'lucide-react';
 import { isTopOverlay, popOverlay, pushOverlay } from './overlayStack';
+import { useMobileBack } from '../../hooks/useMobileBack';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | 'full';
 
@@ -66,6 +67,7 @@ export default function Modal({
   children,
 }: ModalProps) {
   const titleId = useId();
+  useMobileBack(isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;

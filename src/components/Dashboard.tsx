@@ -76,6 +76,7 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
 
   const [alertTab, setAlertTab] = useState<'lowStock' | 'expiring'>('lowStock');
   const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null);
+  const [selectedChartIdx, setSelectedChartIdx] = useState<number | null>(null);
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -191,9 +192,9 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
   const totalAlerts = lowStockAlerts.length + expiringAlerts.length;
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0 flex flex-col gap-3 sm:gap-4 w-full pb-4 pr-0.5">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0 min-w-0 flex flex-col gap-3 sm:gap-4 w-full pb-4 pr-0.5">
       {/* Toolbar: Period Switcher & Desktop Quick Actions */}
-      <div className="flex items-center justify-between gap-2 shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="hidden md:flex items-center gap-2 flex-wrap">
           <Button variant="primary" size="sm" onClick={() => setActiveMenu('pos')}>
             <ShoppingCart size={14} strokeWidth={1.75} />
@@ -261,11 +262,14 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
         </div>
       )}
 
-      {/* Key Operational Strip (Compact 2x2 on mobile, 4-col on desktop) */}
-      <div className="bg-card border border-line rounded-xl grid grid-cols-2 xl:grid-cols-4 overflow-hidden">
-        <div className="p-3 sm:p-4 flex flex-col justify-between gap-1 border-b xl:border-b-0 border-r border-line">
-          <span className="text-[11px] sm:text-xs font-medium text-dim">Pendapatan</span>
-          <p className="text-base sm:text-xl font-bold text-heading tracking-tight tnum truncate">
+      {/* Key Operational Strip (Compact 2x2 on narrow/mobile, 4-col on wide desktop) */}
+      <div className="shrink-0 bg-card border border-line rounded-xl grid grid-cols-1 min-[360px]:grid-cols-2 xl:grid-cols-4 overflow-hidden">
+        <div className="min-w-0 p-3 sm:p-4 flex flex-col justify-between gap-1 border-b xl:border-b-0 min-[360px]:border-r border-line">
+          <span className="text-[11px] sm:text-xs font-medium text-dim truncate">Pendapatan</span>
+          <p
+            className="text-base sm:text-lg lg:text-xl font-bold text-heading tracking-tight tnum truncate"
+            title={loading ? undefined : `Rp ${totalRevenue.toLocaleString('id-ID')}`}
+          >
             {loading ? '...' : `Rp ${totalRevenue.toLocaleString('id-ID')}`}
           </p>
           <span className="text-[11px] text-dim tnum truncate">
@@ -273,25 +277,31 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
           </span>
         </div>
 
-        <div className="p-3 sm:p-4 flex flex-col justify-between gap-1 border-b xl:border-b-0 xl:border-r border-line">
-          <span className="text-[11px] sm:text-xs font-medium text-dim">Laba Kotor</span>
-          <p className="text-base sm:text-xl font-bold text-heading tracking-tight tnum truncate">
+        <div className="min-w-0 p-3 sm:p-4 flex flex-col justify-between gap-1 border-b xl:border-b-0 xl:border-r border-line">
+          <span className="text-[11px] sm:text-xs font-medium text-dim truncate">Laba Kotor</span>
+          <p
+            className="text-base sm:text-lg lg:text-xl font-bold text-heading tracking-tight tnum truncate"
+            title={loading ? undefined : `Rp ${grossProfit.toLocaleString('id-ID')}`}
+          >
             {loading ? '...' : `Rp ${grossProfit.toLocaleString('id-ID')}`}
           </p>
-          <span className="text-[11px] text-success font-medium tnum">Margin {profitMargin}%</span>
+          <span className="text-[11px] text-success font-medium tnum truncate">Margin {profitMargin}%</span>
         </div>
 
-        <div className="p-3 sm:p-4 flex flex-col justify-between gap-1 border-r border-line">
-          <span className="text-[11px] sm:text-xs font-medium text-dim">Valuasi Stok</span>
-          <p className="text-base sm:text-xl font-bold text-heading tracking-tight tnum truncate">
+        <div className="min-w-0 p-3 sm:p-4 flex flex-col justify-between gap-1 border-b min-[360px]:border-b-0 min-[360px]:border-r border-line">
+          <span className="text-[11px] sm:text-xs font-medium text-dim truncate">Valuasi Stok</span>
+          <p
+            className="text-base sm:text-lg lg:text-xl font-bold text-heading tracking-tight tnum truncate"
+            title={loading ? undefined : `Rp ${totalStockValuation.toLocaleString('id-ID')}`}
+          >
             {loading ? '...' : `Rp ${totalStockValuation.toLocaleString('id-ID')}`}
           </p>
           <span className="text-[11px] text-dim truncate">Modal aktif</span>
         </div>
 
-        <div className="p-3 sm:p-4 flex flex-col justify-between gap-1">
-          <span className="text-[11px] sm:text-xs font-medium text-dim">Peringatan</span>
-          <p className={`text-base sm:text-xl font-bold tracking-tight tnum ${totalAlerts > 0 ? 'text-danger' : 'text-heading'}`}>
+        <div className="min-w-0 p-3 sm:p-4 flex flex-col justify-between gap-1">
+          <span className="text-[11px] sm:text-xs font-medium text-dim truncate">Peringatan</span>
+          <p className={`text-base sm:text-lg lg:text-xl font-bold tracking-tight tnum truncate ${totalAlerts > 0 ? 'text-danger' : 'text-heading'}`}>
             {loading ? '...' : totalAlerts}
           </p>
           <span className="text-[11px] text-dim tnum truncate">
@@ -301,9 +311,9 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
       </div>
 
       {/* Main 2-Column Operational Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div className="shrink-0 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left: Recent Sales + 7-Day Trend + Top Products */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 min-w-0 space-y-4">
           {/* Recent Transactions */}
           <div className="bg-card rounded-xl border border-line overflow-hidden flex flex-col">
             <div className="px-4 py-3 border-b border-line flex justify-between items-center">
@@ -421,24 +431,36 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
                 <span>Belum ada data penjualan 7 hari terakhir.</span>
               </div>
             ) : (
-              <div className="flex items-end justify-between gap-2.5 h-32 pt-3">
+              <div className="flex items-end justify-between gap-1.5 sm:gap-2.5 h-32 pt-3">
                 {weeklySummary.map((day, idx) => {
                   const heightPercent = Math.max(8, Math.min(100, (day.total_revenue / maxDayRevenue) * 100));
+                  const isSelected = selectedChartIdx === idx;
                   return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group relative">
-                      <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-elevated border border-line text-heading text-[11px] font-semibold py-1 px-2 rounded-md shadow-lg shadow-black/15 dark:shadow-black/45 pointer-events-none z-20 whitespace-nowrap tnum">
+                    <button
+                      type="button"
+                      key={idx}
+                      onClick={() => setSelectedChartIdx(isSelected ? null : idx)}
+                      className="flex-1 min-w-0 flex flex-col items-center gap-1.5 group relative cursor-pointer focus-visible:outline-none"
+                    >
+                      <div
+                        className={`absolute -top-8 transition-opacity bg-elevated border border-line text-heading text-[11px] font-semibold py-1 px-2 rounded-md shadow-lg shadow-black/15 dark:shadow-black/45 pointer-events-none z-20 whitespace-nowrap tnum ${
+                          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`}
+                      >
                         Rp {day.total_revenue.toLocaleString('id-ID')} ({day.transaction_count})
                       </div>
                       <div className="w-full bg-muted rounded-md h-24 flex items-end p-0.5 overflow-hidden">
                         <div
-                          className="w-full bg-primary/85 group-hover:bg-primary rounded-sm transition-colors"
+                          className={`w-full rounded-sm transition-colors ${
+                            isSelected ? 'bg-primary' : 'bg-primary/85 group-hover:bg-primary'
+                          }`}
                           style={{ height: `${heightPercent}%` }}
                         />
                       </div>
                       <span className="text-[11px] font-mono text-dim tnum truncate max-w-full">
                         {day.period_label.slice(5)}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -490,9 +512,9 @@ export default function Dashboard({ setActiveMenu }: DashboardProps) {
         </div>
 
         {/* Right: Stock Alerts & Payment Split */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 min-w-0 space-y-4">
           <div className="bg-card rounded-xl border border-line p-4 flex flex-col max-h-[440px]">
-            <div className="flex items-center justify-between gap-2 pb-3 border-b border-line shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-line shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <AlertTriangle size={15} className={totalAlerts > 0 ? 'text-danger shrink-0' : 'text-dim shrink-0'} />
                 <h3 className="font-bold text-heading text-sm truncate">Peringatan Stok</h3>

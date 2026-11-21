@@ -38,5 +38,5 @@ fn main() {
         let _ = std::fs::write("crash.log", &msg);
     }));
 
-    kivo::run()
+    kivo_lib::run()
 }

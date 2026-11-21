@@ -5,6 +5,29 @@ export const isTauri = (): boolean => {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 };
 
+export const isAndroid = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  return /android/i.test(navigator.userAgent);
+};
+
+export const isIOS = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
+export const isMobilePlatform = (): boolean => {
+  return isAndroid() || isIOS();
+};
+
+export const isDesktopTauri = (): boolean => {
+  return isTauri() && !isMobilePlatform();
+};
+
+export const isMobileTauri = (): boolean => {
+  return isTauri() && isMobilePlatform();
+};
+
 export const getHostUrl = (): string => {
   // 1. Check custom user-configured host in localStorage
   const custom = localStorage.getItem('kivo_host_url') || localStorage.getItem('kivo_lan_parent_url');

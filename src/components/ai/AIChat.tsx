@@ -7,6 +7,7 @@ import { toast } from '../ui/Toast';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import ConfirmModal from '../ui/ConfirmModal';
+import { useMobileBack } from '../../hooks/useMobileBack';
 
 const CHAT_HISTORY_KEY = 'kivo_chat_history';
 const LEGACY_CHAT_HISTORY_KEY = 'achira_chat_history';
@@ -69,6 +70,7 @@ interface AIChatProps {
 }
 
 export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
+  useMobileBack(isOpen, onClose);
   const { user } = useAuthStore();
   const storageKey = `${CHAT_HISTORY_KEY}_${user?.id || 'guest'}`;
 

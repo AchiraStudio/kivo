@@ -5,11 +5,15 @@ description = "Modern Inventory & Cashier System"
 authors = ["Achira Studios"]
 edition = "2021"
 
+[lib]
+name = "kivo_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
-tauri-build = { version = "2.0.0-rc", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2.0.0-rc", features = ["devtools"] }
+tauri = { version = "2", features = [] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.36", features = ["full"] }
@@ -22,12 +26,15 @@ rust_xlsxwriter = "0.95.0"
 calamine = "0.35.0"
 tauri-plugin-dialog = "2"
 bcrypt = "0.19.1"
-reqwest = { version = "0.13.3", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots", "charset", "http2"] }
 regex = "1.12.4"
 jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors"] }
 lazy_static = "1.5"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri = { version = "2", features = ["devtools"] }
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

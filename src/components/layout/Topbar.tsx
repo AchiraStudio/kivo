@@ -25,7 +25,7 @@ import { useZoomStore } from '../../store/ZoomStore';
 import { useUpdaterStore } from '../../store/UpdaterStore';
 import { getLanPeers, getSettings, LanPeer } from '../../lib/api';
 import { listen } from '../../lib/events';
-import { isTauri } from '../../lib/runtime';
+import { isDesktopTauri } from '../../lib/runtime';
 import KivoLogo from '../common/KivoLogo';
 
 interface TopbarProps {
@@ -82,7 +82,7 @@ export default function Topbar({
     });
 
     let unlistenResize: (() => void) | undefined;
-    if (isTauri()) {
+    if (isDesktopTauri()) {
       try {
         const win = getCurrentWindow();
         win.isMaximized().then(setIsMaximized).catch(() => {});
@@ -107,13 +107,13 @@ export default function Topbar({
   const title = PAGE_TITLES[activeMenu] ?? activeMenu.replace(/-/g, ' ');
 
   const minimize = () => {
-    if (isTauri()) getCurrentWindow().minimize();
+    if (isDesktopTauri()) getCurrentWindow().minimize();
   };
   const toggleMax = () => {
-    if (isTauri()) (isMaximized ? getCurrentWindow().unmaximize() : getCurrentWindow().maximize());
+    if (isDesktopTauri()) (isMaximized ? getCurrentWindow().unmaximize() : getCurrentWindow().maximize());
   };
   const close = () => {
-    if (isTauri()) getCurrentWindow().close();
+    if (isDesktopTauri()) getCurrentWindow().close();
   };
 
   return (
@@ -303,7 +303,7 @@ export default function Topbar({
         </div>
 
         {/* Native Window Controls (Desktop Tauri only) */}
-        {isTauri() && (
+        {isDesktopTauri() && (
           <div className="flex items-center h-full border-l border-line">
             <button
               type="button"

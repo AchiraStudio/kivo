@@ -2,6 +2,7 @@ import React, { useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X, LucideIcon } from 'lucide-react';
 import { isTopOverlay, popOverlay, pushOverlay } from './overlayStack';
+import { useMobileBack } from '../../hooks/useMobileBack';
 
 export type DrawerSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -61,6 +62,7 @@ export default function Drawer({
   children,
 }: DrawerProps) {
   const titleId = useId();
+  useMobileBack(isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;

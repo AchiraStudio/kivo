@@ -7,7 +7,15 @@
     "dev": "vite --host",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "android:init": "tauri android init",
+    "android:dev": "tauri android dev",
+    "android:build": "tauri android build --apk",
+    "android:build:debug": "tauri android build --debug --apk",
+    "android:build:arm64": "tauri android build --debug --apk --target aarch64",
+    "android:apk": "node scripts/build-android-apk.mjs",
+    "android:apk:release": "node scripts/build-android-apk.mjs --release",
+    "android:apk:universal": "node scripts/build-android-apk.mjs --target universal"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",

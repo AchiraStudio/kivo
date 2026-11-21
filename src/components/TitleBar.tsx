@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, X, Copy } from 'lucide-react';
-import { isTauri } from '../lib/runtime';
+import { isDesktopTauri } from '../lib/runtime';
 
 interface TitleBarProps {
   className?: string;
@@ -20,7 +20,7 @@ export default function TitleBar({
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
-    if (!isTauri()) return;
+    if (!isDesktopTauri()) return;
     try {
       const win = getCurrentWindow();
       win.isMaximized().then(setIsMaximized);
@@ -37,13 +37,13 @@ export default function TitleBar({
     }
   }, []);
 
-  if (!isTauri()) {
+  if (!isDesktopTauri()) {
     return null;
   }
 
-  const minimize  = () => { if (isTauri()) getCurrentWindow().minimize(); };
-  const toggleMax = () => { if (isTauri()) (isMaximized ? getCurrentWindow().unmaximize() : getCurrentWindow().maximize()); };
-  const close     = () => { if (isTauri()) getCurrentWindow().close(); };
+  const minimize  = () => { if (isDesktopTauri()) getCurrentWindow().minimize(); };
+  const toggleMax = () => { if (isDesktopTauri()) (isMaximized ? getCurrentWindow().unmaximize() : getCurrentWindow().maximize()); };
+  const close     = () => { if (isDesktopTauri()) getCurrentWindow().close(); };
 
   return (
     <div

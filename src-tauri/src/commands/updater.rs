@@ -109,7 +109,14 @@ pub async fn check_for_updates() -> Result<UpdateCheckResult, String> {
     let latest_version = release.tag_name.trim_start_matches('v').trim_start_matches('V').to_string();
     let has_update = is_version_newer(&latest_version, &current_version);
 
-    // Prefer NSIS .exe installer on Windows, with .msi fallback
+    // Prefer platform-appropriate installer (.apk on Android, NSIS .exe with .msi fallback on Windows)
+    #[cfg(target_os = "android")]
+    let best_asset = release.assets.iter().find(|a| {
+        let lower = a.name.to_lowercase();
+        lower.ends_with(".apk") && !lower.contains(".sig") && !lower.contains(".sha256")
+    });
+
+    #[cfg(not(target_os = "android"))]
     let best_asset = pick_windows_installer(&release.assets);
 
     let (download_url, asset_name, asset_size) = if let Some(asset) = best_asset {
@@ -204,6 +211,15 @@ pub async fn download_and_install_update(
     );
 
     // Launch the downloaded installer
+    #[cfg(target_os = "android")]
+    {
+        let _ = (&file_path, &app);
+        return Ok(format!(
+            "File pembaruan {} siap diunduh melalui browser Android Anda.",
+            asset_name
+        ));
+    }
+
     #[cfg(target_os = "windows")]
     {
         if asset_name.to_lowercase().ends_with(".msi") {
@@ -219,7 +235,7 @@ pub async fn download_and_install_update(
         }
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(any(target_os = "windows", target_os = "android")))]
     {
         std::process::Command::new("open")
             .arg(&file_path)
@@ -227,14 +243,17 @@ pub async fn download_and_install_update(
             .map_err(|e| format!("Gagal membuka installer: {}", e))?;
     }
 
-    // Delay briefly then exit the current process so the installer can update the files
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(1500)).await;
-        app_clone.exit(0);
-    });
+    #[cfg(not(target_os = "android"))]
+    {
+        // Delay briefly then exit the current process so the installer can update the files
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(1500)).await;
+            app_clone.exit(0);
+        });
 
-    Ok(format!("Installer {} berhasil dijalankan!", asset_name))
+        Ok(format!("Installer {} berhasil dijalankan!", asset_name))
+    }
 }
 
 #[cfg(test)]

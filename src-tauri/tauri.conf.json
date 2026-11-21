@@ -26,6 +26,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "android": {
+      "minSdkVersion": 24
+    },
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"

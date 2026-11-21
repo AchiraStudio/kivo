@@ -25,7 +25,7 @@ import MobileNav from './components/layout/MobileNav';
 import MobileMenuDrawer from './components/layout/MobileMenuDrawer';
 import HostQrModal from './components/common/HostQrModal';
 import { logoutUser, setSetting } from './lib/api';
-import { isTauri, getHostUrl } from './lib/runtime';
+import { isTauri, isDesktopTauri, isMobilePlatform, getHostUrl } from './lib/runtime';
 import { useUpdaterStore } from './store/UpdaterStore';
 import UpdateModal from './components/updater/UpdateModal';
 
@@ -118,8 +118,9 @@ export default function App() {
   const [isHostQrOpen, setIsHostQrOpen] = useState(false);
   const { updateInfo, isModalOpen, closeModal, checkUpdates } = useUpdaterStore();
 
-  // Non-intrusive background check for updates on startup
+  // Non-intrusive background check for updates on startup (desktop only)
   useEffect(() => {
+    if (!isDesktopTauri()) return;
     const timer = setTimeout(() => {
       checkUpdates(false);
     }, 3500);
@@ -171,6 +172,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (isMobilePlatform() || window.innerWidth < 1024) {
+      (document.documentElement.style as any).zoom = '100%';
+      return;
+    }
     (document.documentElement.style as any).zoom = `${zoom}%`;
   }, [zoom]);
 
@@ -375,7 +380,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-background">
-      <ContextMenu />
+      {!isMobilePlatform() && <ContextMenu />}
       {/* Unified Desktop TitleBar + Topbar (hidden on mobile < 768px) */}
       <Topbar
         activeMenu={activeMenu}
@@ -393,8 +398,8 @@ export default function App() {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
         />
-        <main className="flex-1 flex flex-col h-full min-h-0 relative overflow-hidden bg-background">
-          <div className={`flex-1 min-h-0 overflow-hidden relative flex flex-col ${activeMenu === 'pos' ? 'p-0' : 'p-2.5 sm:p-3.5 md:p-4 lg:p-5'}`}>
+        <main className="flex-1 flex flex-col h-full min-h-0 min-w-0 relative overflow-hidden bg-background">
+          <div className={`flex-1 min-h-0 min-w-0 overflow-hidden relative flex flex-col ${activeMenu === 'pos' ? 'p-0' : 'p-2.5 sm:p-3.5 md:p-4 lg:p-5'}`}>
             <MainContent
               activeMenu={activeMenu}
               setActiveMenu={setActiveMenu}

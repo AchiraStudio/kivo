@@ -45,11 +45,14 @@ pub async fn export_database(state: State<'_, AppState>, target_path: String) ->
 }
 
 #[tauri::command]
-pub async fn open_devtools(webview: tauri::WebviewWindow) -> Result<(), String> {
-    if webview.is_devtools_open() {
-        webview.close_devtools();
-    } else {
-        webview.open_devtools();
+pub async fn open_devtools(#[allow(unused_variables)] webview: tauri::WebviewWindow) -> Result<(), String> {
+    #[cfg(desktop)]
+    {
+        if webview.is_devtools_open() {
+            webview.close_devtools();
+        } else {
+            webview.open_devtools();
+        }
     }
     Ok(())
 }
@@ -57,6 +60,11 @@ pub async fn open_devtools(webview: tauri::WebviewWindow) -> Result<(), String> 
 /// Detect system printers via PowerShell (Windows) or lpstat (Linux/macOS)
 #[tauri::command]
 pub async fn list_printers() -> Result<Vec<serde_json::Value>, String> {
+    #[cfg(target_os = "android")]
+    {
+        return Ok(vec![]);
+    }
+
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
@@ -95,7 +103,7 @@ pub async fn list_printers() -> Result<Vec<serde_json::Value>, String> {
         Ok(printers)
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(any(target_os = "windows", target_os = "android")))]
     {
         use std::process::Command;
         let output = Command::new("lpstat")
@@ -238,6 +246,12 @@ pub async fn kick_cash_drawer_with_pool(
         }
     }
 
+    #[cfg(target_os = "android")]
+    {
+        let _ = resolved_printer;
+        Err("Laci kasir lokal tidak tersedia di Android. Hubungkan ke Host Kasir LAN untuk membuka laci kasir jarak jauh.".to_string())
+    }
+
     #[cfg(target_os = "windows")]
     {
         // Standard ESC/POS cash drawer kick pulses:
@@ -253,7 +267,7 @@ pub async fn kick_cash_drawer_with_pool(
         Ok("Cash drawer kick pulse sent instantly!".to_string())
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(any(target_os = "windows", target_os = "android")))]
     {
         // Linux/macOS fallback
         use std::process::Command;
@@ -288,6 +302,12 @@ pub async fn kick_cash_drawer(
 /// Send raw byte array directly to printer via Windows Spooler C-FFI
 #[tauri::command]
 pub async fn print_raw_receipt(printer_name: String, bytes: Vec<u8>) -> Result<String, String> {
+    #[cfg(target_os = "android")]
+    {
+        let _ = (printer_name, bytes);
+        Err("Cetak spooler USB lokal tidak didukung langsung di Android. Gunakan LAN Remote Print ke Host Kasir atau cetak sistem.".to_string())
+    }
+
     #[cfg(target_os = "windows")]
     {
         unsafe {
@@ -296,7 +316,7 @@ pub async fn print_raw_receipt(printer_name: String, bytes: Vec<u8>) -> Result<S
         Ok("Print job sent instantly!".to_string())
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(any(target_os = "windows", target_os = "android")))]
     {
         // Linux/macOS fallback: pipe bytes directly to lp
         use std::process::{Command, Stdio};

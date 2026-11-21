@@ -1,0 +1,8 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base dark application theme (matches Kivo dark navy surface). -->
+    <style name="Theme.kivo" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">#081028</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>
