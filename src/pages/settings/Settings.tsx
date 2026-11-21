@@ -4,7 +4,7 @@ import {
   Building2, MapPin, Lock, Printer, Sliders, UserCheck, Download, Trash2, UploadCloud,
   DownloadCloud, ChevronDown, ChevronUp, Network, Link2, Flame, Activity, Plus,
   Eye, EyeOff, ExternalLink, Copy, CheckCheck, Server, Cloud, ShieldCheck,
-  ArrowUpCircle, Plug, Layers
+  ArrowUpCircle, Plug, Layers, Cpu
 } from 'lucide-react';
 import {
   optimizeDatabase, exportDatabase, getSettings, setSetting, getSyncStatus, SyncStatus,
@@ -22,6 +22,7 @@ import { supabase, updateSupabaseCredentials, getSavedSupabaseCredentials } from
 import UserManagement from './UserManagement';
 import HardwareSettings from './HardwareSettings';
 import LanSyncSettings from './LanSyncSettings';
+import McpSettings from './McpSettings';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
@@ -30,7 +31,7 @@ import Select from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
 import { usePermissions } from '../../lib/permissions';
 
-const APP_VERSION = '1.5.3';
+const APP_VERSION = '1.5.4';
 
 // Keys that render as a unified <Select> instead of a text input
 const SELECT_OPTIONS: Record<string, { label: string; value: string }[]> = {
@@ -162,7 +163,7 @@ export default function Settings() {
   const [successMsg, setSuccessMsg] = useState('');
   const [configs, setConfigs] = useState<{ key: string; value: string; description?: string }[]>([]);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'system' | 'users' | 'sync' | 'lan' | 'hardware'>(() => {
+  const [activeTab, setActiveTab] = useState<'system' | 'users' | 'sync' | 'lan' | 'hardware' | 'mcp'>(() => {
     if (can('settings.general')) return 'system';
     if (can('settings.lan')) return 'lan';
     if (can('settings.hardware')) return 'hardware';
@@ -656,7 +657,7 @@ export default function Settings() {
   );
   const memberConfigs = configs.filter(c => MEMBER_KEYS.includes(c.key));
 
-  type TabType = 'system' | 'hardware' | 'sync' | 'lan' | 'users';
+  type TabType = 'system' | 'hardware' | 'sync' | 'lan' | 'mcp' | 'users';
   type SyncSubTabType = 'connection' | 'manage';
 
   const settingTabs: TabItem<TabType>[] = [
@@ -664,6 +665,7 @@ export default function Settings() {
     ...(can('settings.hardware') ? [{ id: 'hardware' as TabType, label: 'Hardware POS', icon: Printer }] : []),
     ...(can('settings.database') ? [{ id: 'sync' as TabType, label: 'Cloud & Workspace', icon: Globe, badge: syncStatus?.pending_count ? syncStatus.pending_count : undefined }] : []),
     { id: 'lan' as TabType, label: 'Jaringan LAN', icon: Network },
+    { id: 'mcp' as TabType, label: 'MCP & AI', icon: Cpu },
     ...((can('settings.users') || isAdmin) ? [{ id: 'users' as TabType, label: 'Pengguna', icon: UserCheck }] : []),
   ];
 
@@ -693,6 +695,8 @@ export default function Settings() {
         <UserManagement />
       ) : activeTab === 'lan' ? (
         <LanSyncSettings />
+      ) : activeTab === 'mcp' ? (
+        <McpSettings />
       ) : activeTab === 'sync' ? (
         <div className="flex flex-col gap-4 w-full">
           {/* Sub Tab Switcher */}

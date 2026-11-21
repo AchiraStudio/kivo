@@ -959,6 +959,24 @@ export const downloadAndInstallUpdate = async (downloadUrl: string, assetName: s
   return await invoke('download_and_install_update', { downloadUrl, assetName });
 };
 
+// --- Embedded MCP Server ---
+export interface McpStatus {
+  running: boolean;
+  enabled: boolean;
+  port: number;
+  url: string;
+  token: string;
+  tool_count: number;
+  last_call_at?: string | null;
+  total_calls: number;
+}
+
+export const getMcpStatus = async (): Promise<McpStatus> => invoke('get_mcp_status');
+export const setMcpEnabled = async (enabled: boolean): Promise<McpStatus> =>
+  invoke('set_mcp_enabled', { enabled });
+export const regenerateMcpToken = async (): Promise<string> => invoke('regenerate_mcp_token');
+export const listMcpTools = async (): Promise<any[]> => invoke('list_mcp_tools');
+
 
 
 

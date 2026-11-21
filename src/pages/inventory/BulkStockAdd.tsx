@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Save, Layers, Loader2, Search, AlertCircle } from 'lucide-react';
+import { Save, Layers, Loader2, Search, AlertCircle, ScanBarcode } from 'lucide-react';
 import { getCategories, getItemsFiltered, Category, Item, invoke } from '../../lib/api';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
+import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
+import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 
 interface BulkStockAddProps {
   isOpen: boolean;
@@ -32,6 +34,31 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
   const [bulkQty, setBulkQty] = useState('');
   const [bulkCat, setBulkCat] = useState('');
   const [isApplyingBulk, setIsApplyingBulk] = useState(false);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+
+  const handleBarcodeScan = async (code: string) => {
+    const clean = code.trim();
+    if (!clean) return;
+    let found = items.find((i) => i.sku === clean || i.barcode === clean);
+    if (!found) {
+      try {
+        const res = await getItemsFiltered(clean, '', '', true, 1, 5);
+        found = res.items.find((i) => i.sku === clean || i.barcode === clean);
+      } catch {}
+    }
+    if (found) {
+      const nextQty = (qtys[found.id] ?? 0) + 1;
+      setQtys((prev) => ({ ...prev, [found!.id]: nextQty }));
+      setSearch(found.sku || found.name);
+      toast.success(`+1 ${found.name} (Qty masuk: ${nextQty})`);
+    } else {
+      playScanBeep(false);
+      setSearch(clean);
+      toast.info(`Barcode "${clean}" tidak ditemukan.`);
+    }
+  };
+
+  useBarcodeScanner(handleBarcodeScan, { enabled: isOpen && !showCameraScanner });
 
   useEffect(() => {
     if (isOpen) {
@@ -182,11 +209,20 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dim" size={15} />
               <input
                 type="text"
-                placeholder="Cari produk..."
+                placeholder="Cari atau scan barcode..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-9 pr-3 bg-input border border-line rounded-lg text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                className="w-full h-9 pl-9 pr-9 bg-input border border-line rounded-lg text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
               />
+              <button
+                type="button"
+                onClick={() => setShowCameraScanner(true)}
+                aria-label="Scan barcode"
+                title="Scan Barcode (+1 Qty)"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-dim hover:text-primary hover:bg-muted transition-colors cursor-pointer"
+              >
+                <ScanBarcode size={15} />
+              </button>
             </div>
             <Select value={selectedCategory} onChange={(v) => setSelectedCategory(v)} className="w-full sm:w-48">
               <option value="all">Semua Kategori</option>
@@ -337,6 +373,12 @@ export default function BulkStockAdd({ isOpen, onClose, branchId, onSuccess }: B
           )}
         </div>
       </div>
+      <BarcodeCameraModal
+        isOpen={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onDetected={handleBarcodeScan}
+        title="Scan Barcode Tambah Stok"
+      />
     </Modal>
   );
 }

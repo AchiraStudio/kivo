@@ -17,5 +17,6 @@ pub mod lan;
 pub mod ai;
 pub mod updater;
 pub mod health;
+pub mod mcp;
 
 

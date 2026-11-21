@@ -73,7 +73,7 @@ export default function LoginPage({ onOpenSetupWizard }: LoginPageProps) {
             <KivoLogo size={34} />
             <div>
               <h1 className="text-base font-bold text-heading leading-tight">Masuk Kivo</h1>
-              <p className="text-xs text-dim">v1.5.3</p>
+              <p className="text-xs text-dim">v1.5.4</p>
             </div>
           </div>
 

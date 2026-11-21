@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, User, Loader2, Minimize2, Maximize2, Trash2, Copy, Check, X, BarChart3, Package, Gift, Key, MessageSquare } from 'lucide-react';
+import { Send, User, Loader2, Minimize2, Maximize2, Trash2, Copy, Check, X, BarChart3, Package, Gift, Key, MessageSquare, PlusCircle, Boxes, Cpu } from 'lucide-react';
 import { ChatMessage, sendChatRequest, getOpenAIApiKey, getSelectedAIModel } from '../../lib/aiClient';
 import * as api from '../../lib/api';
+import { isDesktopTauri } from '../../lib/runtime';
 import { useAuthStore } from '../../store/AuthStore';
 import { toast } from '../ui/Toast';
 import Select from '../ui/Select';
@@ -72,6 +73,12 @@ interface AIChatProps {
 export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
   useMobileBack(isOpen, onClose);
   const { user } = useAuthStore();
+  const [mcpStatus, setMcpStatus] = useState<api.McpStatus | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !isDesktopTauri()) return;
+    api.getMcpStatus().then(setMcpStatus).catch(() => {});
+  }, [isOpen]);
   const storageKey = `${CHAT_HISTORY_KEY}_${user?.id || 'guest'}`;
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -297,9 +304,18 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-elevated shrink-0">
-          <div className="flex items-center gap-2">
-            <MessageSquare size={16} className="text-primary" />
-            <h2 className="font-bold text-heading text-sm">Kivo AI</h2>
+          <div className="flex items-center gap-2 min-w-0">
+            <MessageSquare size={16} className="text-primary shrink-0" />
+            <h2 className="font-bold text-heading text-sm truncate">Kivo AI</h2>
+            {mcpStatus?.running && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success-soft text-success text-[10px] font-semibold tnum shrink-0"
+                title={`MCP Server aktif di ${mcpStatus.url}`}
+              >
+                <Cpu size={10} />
+                MCP · {mcpStatus.tool_count}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -405,6 +421,27 @@ export default function AIChat({ isOpen, onClose, branchId }: AIChatProps) {
               </div>
 
               <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => setInput('Tambah barang baru:\n1. Paracetamol 500mg | harga 5000 | modal 3000 | stok 50 | kategori Obat\n2. Vitamin C 1000mg | harga 15000 | modal 10000 | stok 30 | kategori Vitamin')}
+                  className="w-full px-3 py-2.5 bg-card hover:bg-muted border border-line rounded-lg transition-colors flex items-center gap-2.5 text-left cursor-pointer"
+                >
+                  <PlusCircle size={15} className="text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold text-heading block">Input banyak barang sekaligus</span>
+                    <span className="text-[11px] text-dim block truncate">Ketik daftar barang, harga, dan stok — SKU & kategori otomatis</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setInput('Update stok barang: ')}
+                  className="w-full px-3 py-2.5 bg-card hover:bg-muted border border-line rounded-lg transition-colors flex items-center gap-2.5 text-left cursor-pointer"
+                >
+                  <Boxes size={15} className="text-dim shrink-0" />
+                  <span className="text-xs font-semibold text-heading">Edit / tambah stok cepat</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => handleSendPrompt('Tampilkan ringkasan penjualan hari ini')}

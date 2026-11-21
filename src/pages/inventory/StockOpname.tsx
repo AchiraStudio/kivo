@@ -23,11 +23,14 @@ import {
   Filter,
   AlertCircle,
   X,
+  ScanBarcode,
 } from 'lucide-react';
 import TourGuide from '../../components/ui/TourGuide';
 import Button from '../../components/ui/Button';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import { toast } from '../../components/ui/Toast';
+import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
+import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 
 export default function StockOpname() {
   const DEFAULT_BRANCH = 'branch_001';
@@ -47,6 +50,36 @@ export default function StockOpname() {
 
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [bulkQtyInput, setBulkQtyInput] = useState('');
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+
+  const handleBarcodeScan = async (code: string) => {
+    const clean = code.trim();
+    if (!clean) return;
+    let target = items.find((i) => i.sku === clean);
+    if (!target) {
+      try {
+        const res = await getItemsFiltered(clean, '', '', true, 1, 5);
+        const matched = res.items.find((i) => i.sku === clean || i.barcode === clean);
+        if (matched) {
+          target = items.find((row) => row.item_id === matched.id);
+        }
+      } catch {}
+    }
+    if (target) {
+      const nextVal = (actualQty[target.item_id] ?? 0) + 1;
+      setActualQty((prev) => ({ ...prev, [target!.item_id]: nextVal }));
+      setSearch(target.sku || target.item_name);
+      toast.success(`Opname: ${target.item_name} → ${nextVal}`);
+    } else {
+      playScanBeep(false);
+      setSearch(clean);
+      toast.info(`Barcode "${clean}" tidak ditemukan di daftar stok.`);
+    }
+  };
+
+  useBarcodeScanner(handleBarcodeScan, {
+    enabled: !confirmResetOpen && !pendingSubmitLines && !showCameraScanner,
+  });
 
   const [runTour, setRunTour] = useState(false);
   const opnameTourSteps = [
@@ -314,6 +347,15 @@ export default function StockOpname() {
                   <X size={14} />
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setShowCameraScanner(true)}
+                aria-label="Scan barcode"
+                title="Scan Barcode (+1 Qty Fisik)"
+                className="ml-1 p-1 text-dim hover:text-primary hover:bg-muted rounded-md cursor-pointer transition-colors shrink-0"
+              >
+                <ScanBarcode size={15} />
+              </button>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
@@ -535,6 +577,12 @@ export default function StockOpname() {
         </div>
       </div>
 
+      <BarcodeCameraModal
+        isOpen={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onDetected={handleBarcodeScan}
+        title="Scan Barcode Stock Opname"
+      />
       <TourGuide steps={opnameTourSteps} run={runTour} onFinish={() => setRunTour(false)} />
       {confirmResetOpen && (
         <ConfirmModal

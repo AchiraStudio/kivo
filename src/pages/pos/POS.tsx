@@ -3,7 +3,7 @@ import {
   ShoppingCart, Search, Plus, Minus, Trash2, UserCheck, 
   PauseCircle, PlayCircle, Loader2, HelpCircle, Edit3, Check, 
   X as XIcon, Crown, LayoutGrid, List, ArrowRight, RotateCcw,
-  Activity, Pill, Package, Baby
+  Activity, Pill, Package, Baby, ScanBarcode
 } from 'lucide-react';
 import { usePosStore, PosLine, PosHold } from './POSStore';
 import { 
@@ -11,7 +11,9 @@ import {
   resolveTierPrice, getCategories, Category 
 } from '../../lib/api';
 import { applyDiscountsToCart } from '../../lib/discountEngine';
-import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
+import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
+import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
+import { toast } from '../../components/ui/Toast';
 import PaymentModal from './PaymentModal';
 import ReceiptModal from './ReceiptModal';
 import CustomerPickerModal from './CustomerPickerModal';
@@ -196,30 +198,39 @@ export default function POS() {
     };
   }, [fetchItems]);
 
-  // Hardware Barcode Scanner Hook
-  useBarcodeScanner(async (barcode) => {
-    if (showPayment || showCustomerPicker || receiptSaleId || showHistory || showClearConfirm) return;
-    
-    // Check locally first
-    const exact = items.find(i => i.sku === barcode || i.barcode === barcode);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+
+  const handleBarcodeScan = useCallback(async (barcode: string) => {
+    const clean = barcode.trim();
+    if (!clean) return;
+
+    const exact = items.find((i) => i.sku === clean || i.barcode === clean);
     if (exact) {
       addToCart(exact);
       setSearch('');
-    } else {
-      setLoading(true);
-      try {
-        const res = await getItemsFiltered(barcode, '', '', true, 1, 5);
-        const match = res.items.find(i => i.sku === barcode || i.barcode === barcode);
-        if (match) {
-          addToCart(match);
-          setSearch('');
-        } else {
-          setSearch(barcode);
-        }
-      } finally {
-        setLoading(false);
-      }
+      return;
     }
+
+    setLoading(true);
+    try {
+      const res = await getItemsFiltered(clean, '', '', true, 1, 5);
+      const match = res.items.find((i) => i.sku === clean || i.barcode === clean);
+      if (match) {
+        addToCart(match);
+        setSearch('');
+      } else {
+        playScanBeep(false);
+        setSearch(clean);
+        toast.info(`Barcode "${clean}" tidak ditemukan. Menampilkan hasil pencarian.`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [items]);
+
+  // Hardware Barcode Scanner Hook
+  useBarcodeScanner(handleBarcodeScan, {
+    enabled: !showPayment && !showCustomerPicker && !receiptSaleId && !showHistory && !showClearConfirm && !showCameraScanner,
   });
 
   // Start Line Price Edit
@@ -762,19 +773,30 @@ export default function POS() {
               onChange={e => { setSearch(e.target.value); setActiveItemIdx(-1); }}
               onKeyDown={handleBarcodeEnter}
               placeholder="Cari produk atau scan barcode..."
-              className="w-full h-9 pl-9 pr-8 bg-input border border-line rounded-lg text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-heading placeholder:text-dim transition-colors"
+              className="w-full h-9 pl-9 pr-16 bg-input border border-line rounded-lg text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-heading placeholder:text-dim transition-colors"
               autoFocus
             />
-            {search && (
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Hapus pencarian"
+                  className="text-dim hover:text-heading p-1 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <XIcon size={14} />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setSearch('')}
-                aria-label="Hapus pencarian"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-dim hover:text-heading p-1 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                onClick={() => setShowCameraScanner(true)}
+                aria-label="Scan barcode dengan kamera"
+                title="Scan Barcode"
+                className="text-dim hover:text-primary hover:bg-muted p-1 rounded-md cursor-pointer transition-colors"
               >
-                <XIcon size={14} />
+                <ScanBarcode size={15} />
               </button>
-            )}
+            </div>
           </div>
 
           {/* Controls Row: Pricing Switcher, View Mode & Help */}
@@ -1621,6 +1643,13 @@ export default function POS() {
         title="Kosongkan Keranjang?"
         message="Semua item di keranjang transaksi ini akan dihapus."
         confirmText="Kosongkan"
+      />
+
+      <BarcodeCameraModal
+        isOpen={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onDetected={handleBarcodeScan}
+        title="Scan Barcode Kasir"
       />
 
       <TourGuide

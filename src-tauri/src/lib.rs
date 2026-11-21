@@ -46,6 +46,21 @@ pub fn run() {
             commands::sync::spawn_sync_worker(pool.clone());
             commands::sync::spawn_pull_worker(pool.clone(), handle.clone());
 
+            // Auto-start Embedded MCP Server on Desktop app load (127.0.0.1:3700/mcp)
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            {
+                let pool_for_mcp = pool.clone();
+                let handle_for_mcp = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    commands::mcp::start_mcp_server(
+                        pool_for_mcp,
+                        handle_for_mcp,
+                        commands::mcp::DEFAULT_MCP_PORT,
+                    )
+                    .await;
+                });
+            }
+
             // Spawn LAN Auto-Discovery and Embedded Local Server only if setup completed and enabled
             let pool_for_lan = pool.clone();
             let handle_for_lan = handle.clone();
@@ -262,6 +277,12 @@ pub fn run() {
             // App Updater
             commands::updater::check_for_updates,
             commands::updater::download_and_install_update,
+
+            // Embedded MCP Server
+            commands::mcp::get_mcp_status,
+            commands::mcp::set_mcp_enabled,
+            commands::mcp::regenerate_mcp_token,
+            commands::mcp::list_mcp_tools,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,46 +1,110 @@
 import { useEffect, useRef } from 'react';
 
+export interface BarcodeScannerOptions {
+  enabled?: boolean;
+  minLength?: number;
+  maxKeyIntervalMs?: number;
+  allowInInputs?: boolean;
+  playBeep?: boolean;
+}
+
+let sharedAudioCtx: AudioContext | null = null;
+
+export function playScanBeep(success = true) {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!sharedAudioCtx) sharedAudioCtx = new AudioCtx();
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+    const osc = sharedAudioCtx.createOscillator();
+    const gain = sharedAudioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = success ? 1480 : 420;
+    gain.gain.value = 0.06;
+    osc.connect(gain);
+    gain.connect(sharedAudioCtx.destination);
+    osc.start();
+    osc.stop(sharedAudioCtx.currentTime + (success ? 0.07 : 0.14));
+  } catch {
+    // Ignore audio context errors on restricted devices
+  }
+}
+
 /**
- * Hook to listen for hardware barcode scanner inputs globally.
- * Hardware scanners emulate keyboards but type extremely fast (<50ms between keys)
- * and usually suffix the string with an "Enter" key.
+ * Global hardware barcode scanner listener (USB / Bluetooth HID keyboard wedge).
+ * Detects rapid keystroke bursts (< 65ms between chars) terminated by Enter or Tab.
  */
-export function useBarcodeScanner(onScan: (barcode: string) => void) {
+export function useBarcodeScanner(
+  onScan: (barcode: string) => void,
+  options: BarcodeScannerOptions = {}
+) {
+  const {
+    enabled = true,
+    minLength = 3,
+    maxKeyIntervalMs = 65,
+    allowInInputs = false,
+    playBeep = true,
+  } = options;
+
   const buffer = useRef('');
-  const lastKeyTime = useRef(Date.now());
+  const lastKeyTime = useRef(0);
   const onScanRef = useRef(onScan);
 
-  // Always keep the latest callback without re-binding the listener
   useEffect(() => {
     onScanRef.current = onScan;
   }, [onScan]);
 
   useEffect(() => {
+    if (!enabled) {
+      buffer.current = '';
+      return;
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        Boolean(target?.isContentEditable);
+
+      if (isEditable && !allowInInputs) {
+        buffer.current = '';
         return;
       }
 
-      const currentTime = Date.now();
-      const timeElapsed = currentTime - lastKeyTime.current;
+      const now = Date.now();
+      const elapsed = now - lastKeyTime.current;
 
-      if (timeElapsed > 50) {
+      if (lastKeyTime.current > 0 && elapsed > maxKeyIntervalMs) {
         buffer.current = '';
       }
 
-      if (e.key === 'Enter') {
-        if (buffer.current.length > 2) {
-          onScanRef.current(buffer.current);
-          buffer.current = '';
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        const scanned = buffer.current.trim();
+        buffer.current = '';
+        lastKeyTime.current = 0;
+
+        if (scanned.length >= minLength) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (playBeep) playScanBeep(true);
+          onScanRef.current(scanned);
         }
-      } else if (e.key.length === 1) {
-        buffer.current += e.key;
+        return;
       }
 
-      lastKeyTime.current = currentTime;
+      if (e.key.length === 1) {
+        buffer.current += e.key;
+        lastKeyTime.current = now;
+      }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [enabled, minLength, maxKeyIntervalMs, allowInInputs, playBeep]);
 }

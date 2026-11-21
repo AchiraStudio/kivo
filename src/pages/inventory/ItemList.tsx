@@ -13,6 +13,7 @@ import {
   ArrowUp,
   ArrowDown,
   AlertCircle,
+  ScanBarcode,
 } from 'lucide-react';
 import {
   getItemsFiltered,
@@ -28,6 +29,8 @@ import {
 } from '../../lib/api';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import TourGuide from '../../components/ui/TourGuide';
+import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
+import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import ConfirmModal from '../../components/ui/ConfirmModal';
@@ -52,6 +55,14 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+
+  const handleBarcodeScan = (code: string) => {
+    setSearch(code);
+    setPage(1);
+  };
+
+  useBarcodeScanner(handleBarcodeScan, { enabled: !showCameraScanner });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState<'name' | 'sku' | 'category' | 'price'>('name');
@@ -252,6 +263,15 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
               placeholder="Cari nama, SKU, atau barcode..."
               className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim"
             />
+            <button
+              type="button"
+              onClick={() => setShowCameraScanner(true)}
+              aria-label="Scan barcode"
+              title="Scan Barcode"
+              className="ml-1.5 p-1 rounded-md text-dim hover:text-primary hover:bg-muted transition-colors cursor-pointer shrink-0"
+            >
+              <ScanBarcode size={15} />
+            </button>
           </div>
           <Select
             value={selectedCategory}
@@ -560,6 +580,13 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
           </div>
         </div>
       </div>
+
+      <BarcodeCameraModal
+        isOpen={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onDetected={handleBarcodeScan}
+        title="Scan Barcode Inventaris"
+      />
 
       <TourGuide steps={inventoryTourSteps} run={runTour} onFinish={() => setRunTour(false)} />
       {deleteTargetId && (

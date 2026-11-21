@@ -10,6 +10,7 @@ import {
   Layers,
   Tags,
   Percent,
+  ScanBarcode,
 } from 'lucide-react';
 import {
   getCategories,
@@ -28,6 +29,8 @@ import {
 import { usePermissions } from '../../lib/permissions';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
+import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
+import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 import TabBar, { TabItem } from '../../components/ui/TabBar';
 import { toast } from '../../components/ui/Toast';
 import Select from '../../components/ui/Select';
@@ -65,6 +68,14 @@ export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }:
   const [brands, setBrands] = useState<Brand[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingEdit, setIsLoadingEdit] = useState(false);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+
+  useBarcodeScanner(
+    (code) => {
+      setFormData((prev) => ({ ...prev, barcode: code }));
+    },
+    { enabled: isOpen && !showCameraScanner }
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -494,13 +505,24 @@ export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }:
                         <label className="block text-xs font-semibold text-heading mb-1">
                           Barcode / EAN
                         </label>
-                        <input
-                          type="text"
-                          value={formData.barcode}
-                          onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                          className="w-full h-9 bg-input border border-line rounded-lg px-3 text-xs font-mono text-heading focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                          placeholder="Scan atau ketik barcode"
-                        />
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={formData.barcode}
+                            onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                            className="flex-1 min-w-0 h-9 bg-input border border-line rounded-lg px-3 text-xs font-mono text-heading focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                            placeholder="Scan atau ketik barcode"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCameraScanner(true)}
+                            aria-label="Scan barcode dengan kamera"
+                            title="Scan Barcode"
+                            className="h-9 w-9 flex items-center justify-center rounded-lg border border-line bg-card hover:bg-muted text-dim hover:text-primary transition-colors cursor-pointer shrink-0"
+                          >
+                            <ScanBarcode size={15} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -892,6 +914,12 @@ export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }:
           </div>
         </div>
       )}
+      <BarcodeCameraModal
+        isOpen={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onDetected={(code) => setFormData((prev) => ({ ...prev, barcode: code }))}
+        title="Scan Barcode Produk"
+      />
     </Modal>
   );
 }

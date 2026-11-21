@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   AlertTriangle,
   X,
+  ScanBarcode,
 } from 'lucide-react';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import {
@@ -28,6 +29,8 @@ import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
+import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
+import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 
 interface DirectReceiveModalProps {
   isOpen: boolean;
@@ -78,6 +81,60 @@ export default function DirectReceiveModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isParsingExcel, setIsParsingExcel] = useState(false);
   const [isExportingTemplate, setIsExportingTemplate] = useState(false);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+
+  const handleBarcodeScan = useCallback(async (code: string) => {
+    const clean = code.trim();
+    if (!clean) return;
+    try {
+      const res = await getItemsFiltered(clean, '', '', true, 1, 5);
+      const match = res.items.find((i) => i.sku === clean || i.barcode === clean);
+      if (!match) {
+        playScanBeep(false);
+        toast.info(`Barcode "${clean}" tidak ditemukan.`);
+        return;
+      }
+
+      const existingIdx = lines.findIndex((l) => l.item_id === match.id);
+      if (existingIdx >= 0) {
+        setLines((prev) =>
+          prev.map((l, idx) =>
+            idx === existingIdx ? { ...l, qty_received: l.qty_received + 1 } : l
+          )
+        );
+        toast.success(`+1 ${match.name}`);
+        return;
+      }
+
+      const detail = await getItem(match.id);
+      const baseUnit = detail.units.find((u) => u.is_base === 1) || detail.units[0];
+      const newLine: DirectLine = {
+        id: Math.random().toString(),
+        item_id: match.id,
+        item_name: match.name,
+        unit_id: baseUnit?.id || '',
+        unit_name: baseUnit?.unit_name || 'Pcs',
+        available_units: detail.units,
+        qty_received: 1,
+        price_per_unit: match.cost_price || 0,
+        batch_no: '',
+        expiry_date: '',
+      };
+
+      setLines((prev) => {
+        const emptyIdx = prev.findIndex((l) => !l.item_id);
+        if (emptyIdx >= 0) {
+          return prev.map((l, idx) => (idx === emptyIdx ? newLine : l));
+        }
+        return [...prev, newLine];
+      });
+      toast.success(`Ditambahkan: ${match.name}`);
+    } catch (e: any) {
+      toast.error(`Gagal memindai: ${e?.message || e}`);
+    }
+  }, [lines]);
+
+  useBarcodeScanner(handleBarcodeScan, { enabled: isOpen && !showCameraScanner });
 
   // Item Search Popup State
   const [searchQuery, setSearchQuery] = useState('');
@@ -448,6 +505,10 @@ export default function DirectReceiveModal({
                 {!isParsingExcel && <FileSpreadsheet size={14} />}
                 Import Excel
               </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowCameraScanner(true)}>
+                <ScanBarcode size={14} />
+                Scan
+              </Button>
               <Button type="button" variant="outline" size="sm" onClick={addLine}>
                 <Plus size={14} />
                 Tambah Baris
@@ -676,6 +737,12 @@ export default function DirectReceiveModal({
           </div>,
           document.body,
         )}
+      <BarcodeCameraModal
+        isOpen={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onDetected={handleBarcodeScan}
+        title="Scan Barcode Terima Barang"
+      />
     </Modal>
   );
 }
