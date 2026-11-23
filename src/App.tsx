@@ -9,6 +9,7 @@ import PurchasingPage from './pages/purchasing/PurchasingPage';
 import CustomerPromoPage from './pages/customers/CustomerPromoPage';
 import ReportsAccountingPage from './pages/reports/ReportsAccountingPage';
 import ItemDrawer from './pages/inventory/ItemDrawer';
+import RapidRegisterModal from './pages/inventory/RapidRegisterModal';
 import POS from './pages/pos/POS';
 import Settings from './pages/settings/Settings';
 import LoginPage from './pages/auth/LoginPage';
@@ -35,6 +36,8 @@ interface MainContentProps {
   refreshTrigger: number;
   setEditItemId: (id: string | null) => void;
   setIsDrawerOpen: (open: boolean) => void;
+  registerBarcode: (barcode: string) => void;
+  openRapidRegister: () => void;
 }
 
 function MainContent({
@@ -43,12 +46,14 @@ function MainContent({
   refreshTrigger,
   setEditItemId,
   setIsDrawerOpen,
+  registerBarcode,
+  openRapidRegister,
 }: MainContentProps) {
   switch (activeMenu) {
     case 'dashboard':
       return <Dashboard setActiveMenu={setActiveMenu} />;
     case 'pos':
-      return <POS />;
+      return <POS onRegisterBarcode={registerBarcode} />;
     case 'inventory':
     case 'opname':
     case 'stock-opname':
@@ -63,6 +68,8 @@ function MainContent({
             setEditItemId(null);
             setIsDrawerOpen(true);
           }}
+          onRegisterBarcode={registerBarcode}
+          onRapidRegister={openRapidRegister}
         />
       );
     case 'purchasing':
@@ -94,6 +101,25 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [editItemId, setEditItemId] = useState<string | null>(null);
+  // Barcode handed to the "new product" form when registering straight from a scan.
+  const [drawerBarcode, setDrawerBarcode] = useState<string | null>(null);
+  // Rapid registration (scan -> assign to existing product, or create a new one).
+  const [rapidOpen, setRapidOpen] = useState(false);
+  const [rapidBarcode, setRapidBarcode] = useState<string | null>(null);
+  const registerBarcode = useCallback((barcode: string) => {
+    setRapidBarcode(barcode);
+    setRapidOpen(true);
+  }, []);
+  const openRapidRegister = useCallback(() => {
+    setRapidBarcode(null);
+    setRapidOpen(true);
+  }, []);
+  const openFullFormWithBarcode = useCallback((barcode: string) => {
+    setRapidOpen(false);
+    setEditItemId(null);
+    setDrawerBarcode(barcode);
+    setIsDrawerOpen(true);
+  }, []);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const { token, user, setAuth, clearAuth } = useAuthStore();
@@ -406,6 +432,8 @@ export default function App() {
               refreshTrigger={refreshTrigger}
               setEditItemId={setEditItemId}
               setIsDrawerOpen={setIsDrawerOpen}
+              registerBarcode={registerBarcode}
+              openRapidRegister={openRapidRegister}
             />
           </div>
 
@@ -421,9 +449,21 @@ export default function App() {
             onClose={() => {
               setIsDrawerOpen(false);
               setEditItemId(null);
+              setDrawerBarcode(null);
             }}
             onItemAdded={() => setRefreshTrigger(prev => prev + 1)}
             editItemId={editItemId}
+            initialBarcode={drawerBarcode}
+          />
+          <RapidRegisterModal
+            isOpen={rapidOpen}
+            onClose={() => {
+              setRapidOpen(false);
+              setRapidBarcode(null);
+            }}
+            initialBarcode={rapidBarcode}
+            onChanged={() => setRefreshTrigger(prev => prev + 1)}
+            onOpenFullForm={openFullFormWithBarcode}
           />
           <AIChat
             isOpen={isAIChatOpen}
