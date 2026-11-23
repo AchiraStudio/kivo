@@ -1,6 +1,6 @@
 [package]
 name = "kivo"
-version = "1.5.4"
+version = "1.5.5"
 description = "Modern Inventory & Cashier System"
 authors = ["Achira Studios"]
 edition = "2021"
