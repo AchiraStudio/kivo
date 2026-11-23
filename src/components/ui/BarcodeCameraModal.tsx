@@ -59,9 +59,16 @@ export default function BarcodeCameraModal({
           return;
         }
 
-        const detector = new (window as any).BarcodeDetector({
-          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'],
-        });
+        // Only request formats this device can decode: the constructor throws on an unsupported one.
+        const wanted = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code', 'data_matrix'];
+        let formats = wanted;
+        try {
+          const supported: string[] | undefined = await (window as any).BarcodeDetector.getSupportedFormats?.();
+          if (supported?.length) formats = wanted.filter((f) => supported.includes(f));
+        } catch {
+          // Fall back to the full list
+        }
+        const detector = new (window as any).BarcodeDetector({ formats });
 
         const scanFrame = async () => {
           if (cancelled || !videoRef.current) return;

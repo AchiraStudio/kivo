@@ -29,7 +29,9 @@ import {
 } from '../../lib/api';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import TourGuide from '../../components/ui/TourGuide';
-import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
+import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
+import { parseScan, toRegistrationCode } from '../../lib/barcode';
+import { findItemByScan } from '../../lib/itemLookup';
 import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
@@ -41,10 +43,12 @@ interface ItemListProps {
   onViewItem: (id: string) => void;
   onEditItem: (id: string) => void;
   onAddItem: () => void;
+  /** Open product registration with this barcode prefilled. */
+  onRegisterBarcode?: (barcode: string) => void;
   refreshTrigger: number;
 }
 
-export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTrigger }: ItemListProps) {
+export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegisterBarcode, refreshTrigger }: ItemListProps) {
   const { can } = usePermissions();
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -57,12 +61,41 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
   const [search, setSearch] = useState('');
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
-  const handleBarcodeScan = (code: string) => {
-    setSearch(code);
+  // Barcode that matched no product; offered for registration.
+  const [unregisteredCode, setUnregisteredCode] = useState<string | null>(null);
+
+  const handleBarcodeScan = async (raw: string) => {
+    const parsed = parseScan(raw);
+    if (parsed.candidates.length === 0) return;
+
+    let match: Item | null = null;
+    try {
+      match = await findItemByScan(parsed, { activeOnly: false });
+    } catch (e) {
+      console.error(e);
+    }
+
     setPage(1);
+    if (match) {
+      setSearch(match.sku);
+      return;
+    }
+
+    // Unknown code: show the (empty) result for it and offer to register it as a new product.
+    playScanBeep(false);
+    setSearch(parsed.raw);
+    if (onRegisterBarcode && can('items.create')) {
+      setUnregisteredCode(toRegistrationCode(raw));
+    } else {
+      toast.info('Barcode belum terdaftar', parsed.raw);
+    }
   };
 
-  useBarcodeScanner(handleBarcodeScan, { enabled: !showCameraScanner });
+  useBarcodeScanner(handleBarcodeScan, {
+    enabled: !showCameraScanner && !unregisteredCode,
+    allowInInputs: (el) => el.hasAttribute('data-scan-target'),
+    playBeep: false,
+  });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState<'name' | 'sku' | 'category' | 'price'>('name');
@@ -261,6 +294,7 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
                 setPage(1);
               }}
               placeholder="Cari nama, SKU, atau barcode..."
+              data-scan-target
               className="bg-transparent border-none outline-none text-sm w-full text-heading placeholder:text-dim"
             />
             <button
@@ -587,6 +621,21 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, refreshTri
         onDetected={handleBarcodeScan}
         title="Scan Barcode Inventaris"
       />
+
+      {unregisteredCode && (
+        <ConfirmModal
+          title="Barcode Belum Terdaftar"
+          message={`Barcode "${unregisteredCode}" belum ada di katalog. Daftarkan sebagai produk baru?`}
+          confirmLabel="Daftarkan Produk"
+          variant="primary"
+          onConfirm={() => {
+            const code = unregisteredCode;
+            setUnregisteredCode(null);
+            onRegisterBarcode?.(code);
+          }}
+          onCancel={() => setUnregisteredCode(null)}
+        />
+      )}
 
       <TourGuide steps={inventoryTourSteps} run={runTour} onFinish={() => setRunTour(false)} />
       {deleteTargetId && (

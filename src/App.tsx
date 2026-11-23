@@ -35,6 +35,7 @@ interface MainContentProps {
   refreshTrigger: number;
   setEditItemId: (id: string | null) => void;
   setIsDrawerOpen: (open: boolean) => void;
+  registerBarcode: (barcode: string) => void;
 }
 
 function MainContent({
@@ -43,12 +44,13 @@ function MainContent({
   refreshTrigger,
   setEditItemId,
   setIsDrawerOpen,
+  registerBarcode,
 }: MainContentProps) {
   switch (activeMenu) {
     case 'dashboard':
       return <Dashboard setActiveMenu={setActiveMenu} />;
     case 'pos':
-      return <POS />;
+      return <POS onRegisterBarcode={registerBarcode} />;
     case 'inventory':
     case 'opname':
     case 'stock-opname':
@@ -63,6 +65,7 @@ function MainContent({
             setEditItemId(null);
             setIsDrawerOpen(true);
           }}
+          onRegisterBarcode={registerBarcode}
         />
       );
     case 'purchasing':
@@ -94,6 +97,13 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [editItemId, setEditItemId] = useState<string | null>(null);
+  // Barcode handed to the "new product" form when registering straight from a scan.
+  const [drawerBarcode, setDrawerBarcode] = useState<string | null>(null);
+  const registerBarcode = useCallback((barcode: string) => {
+    setEditItemId(null);
+    setDrawerBarcode(barcode);
+    setIsDrawerOpen(true);
+  }, []);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const { token, user, setAuth, clearAuth } = useAuthStore();
@@ -406,6 +416,7 @@ export default function App() {
               refreshTrigger={refreshTrigger}
               setEditItemId={setEditItemId}
               setIsDrawerOpen={setIsDrawerOpen}
+              registerBarcode={registerBarcode}
             />
           </div>
 
@@ -421,9 +432,11 @@ export default function App() {
             onClose={() => {
               setIsDrawerOpen(false);
               setEditItemId(null);
+              setDrawerBarcode(null);
             }}
             onItemAdded={() => setRefreshTrigger(prev => prev + 1)}
             editItemId={editItemId}
+            initialBarcode={drawerBarcode}
           />
           <AIChat
             isOpen={isAIChatOpen}

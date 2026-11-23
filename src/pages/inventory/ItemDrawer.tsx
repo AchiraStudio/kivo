@@ -29,7 +29,9 @@ import {
 import { usePermissions } from '../../lib/permissions';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
-import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
+import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
+import { toRegistrationCode } from '../../lib/barcode';
+import { findItemByScan } from '../../lib/itemLookup';
 import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 import TabBar, { TabItem } from '../../components/ui/TabBar';
 import { toast } from '../../components/ui/Toast';
@@ -40,6 +42,8 @@ interface ItemDrawerProps {
   onClose: () => void;
   onItemAdded: () => void;
   editItemId?: string | null;
+  /** Barcode to prefill when registering a new product straight from a scan. */
+  initialBarcode?: string | null;
 }
 
 interface DraftUnit {
@@ -61,7 +65,7 @@ interface DraftPrices {
 
 type ActiveTab = 'info' | 'pricing' | 'inventory';
 
-export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }: ItemDrawerProps) {
+export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId, initialBarcode }: ItemDrawerProps) {
   const { can } = usePermissions();
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -70,12 +74,37 @@ export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }:
   const [isLoadingEdit, setIsLoadingEdit] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
-  useBarcodeScanner(
-    (code) => {
-      setFormData((prev) => ({ ...prev, barcode: code }));
-    },
-    { enabled: isOpen && !showCameraScanner }
-  );
+  // Returns the matching product when `code` already belongs to a different item.
+  const findBarcodeOwner = async (code: string) => {
+    const owner = await findItemByScan(
+      { raw: code, gs1: null, candidates: [code] },
+      { activeOnly: false }
+    ).catch(() => null);
+    return owner && owner.id !== editItemId ? owner : null;
+  };
+
+  // A scan (hardware 1D/2D scanner or camera) fills the barcode field. 2D GS1 codes also carry
+  // batch/serial/expiry that differ per pack, so only the stable GTIN is stored.
+  const handleScannedBarcode = async (raw: string) => {
+    const code = toRegistrationCode(raw);
+    if (!code) return;
+    setFormData((prev) => ({ ...prev, barcode: code }));
+
+    const owner = await findBarcodeOwner(code);
+    if (owner) {
+      playScanBeep(false);
+      toast.warning('Barcode sudah terdaftar', `Dipakai oleh "${owner.name}" (${owner.sku}).`);
+    } else {
+      playScanBeep(true);
+    }
+  };
+
+  // Accept scans wherever focus is, except the per-unit barcode cells (those take typed/scanned input as-is).
+  useBarcodeScanner(handleScannedBarcode, {
+    enabled: isOpen && !showCameraScanner,
+    allowInInputs: (el) => !el.hasAttribute('data-unit-barcode'),
+    playBeep: false,
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -168,7 +197,7 @@ export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }:
           sku: `MED-${Math.floor(1000 + Math.random() * 9000)}`,
           name: '',
           generic_name: '',
-          barcode: '',
+          barcode: initialBarcode || '',
           category_id: '',
           brand_id: '',
           hpp_method: 'avg',
@@ -270,6 +299,15 @@ export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }:
 
     setIsSubmitting(true);
     try {
+      const barcodeToSave = formData.barcode.trim();
+      if (barcodeToSave) {
+        const owner = await findBarcodeOwner(barcodeToSave);
+        if (owner) {
+          setIsSubmitting(false);
+          return toast.error('Barcode sudah terdaftar', `Dipakai oleh "${owner.name}" (${owner.sku}).`);
+        }
+      }
+
       const cleanPayload = {
         ...formData,
         barcode: formData.barcode.trim() || undefined,
@@ -752,9 +790,16 @@ export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }:
                                   <input
                                     type="text"
                                     value={unit.barcode || ''}
+                                    data-unit-barcode
                                     onChange={(e) =>
                                       updateDraftUnit(unit.tempId, 'barcode', e.target.value)
                                     }
+                                    onBlur={(e) => {
+                                      const normalized = toRegistrationCode(e.target.value);
+                                      if (normalized !== e.target.value) {
+                                        updateDraftUnit(unit.tempId, 'barcode', normalized);
+                                      }
+                                    }}
                                     className="w-full h-8 bg-input border border-line rounded-lg px-2 text-xs font-mono text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                                     placeholder="Opsional"
                                   />
@@ -917,7 +962,7 @@ export default function ItemDrawer({ isOpen, onClose, onItemAdded, editItemId }:
       <BarcodeCameraModal
         isOpen={showCameraScanner}
         onClose={() => setShowCameraScanner(false)}
-        onDetected={(code) => setFormData((prev) => ({ ...prev, barcode: code }))}
+        onDetected={handleScannedBarcode}
         title="Scan Barcode Produk"
       />
     </Modal>

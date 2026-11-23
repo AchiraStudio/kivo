@@ -12,6 +12,9 @@ import {
 } from '../../lib/api';
 import { applyDiscountsToCart } from '../../lib/discountEngine';
 import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
+import { parseScan, toRegistrationCode } from '../../lib/barcode';
+import { findItemByScan } from '../../lib/itemLookup';
+import { usePermissions } from '../../lib/permissions';
 import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 import { toast } from '../../components/ui/Toast';
 import PaymentModal from './PaymentModal';
@@ -55,8 +58,14 @@ function getCategoryAvatar(categoryName?: string) {
   };
 }
 
-export default function POS() {
+interface POSProps {
+  /** Open product registration with this barcode prefilled (shown when a scanned code is unknown). */
+  onRegisterBarcode?: (barcode: string) => void;
+}
+
+export default function POS({ onRegisterBarcode }: POSProps = {}) {
   useGlobalArrowNav();
+  const { can } = usePermissions();
 
   // Item catalog states
   const [items, setItems] = useState<Item[]>([]);
@@ -67,6 +76,9 @@ export default function POS() {
   const [priceType, setPriceType] = useState<'retail' | 'wholesale'>('retail');
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [barcodeSound, setBarcodeSound] = useState(true);
+  // Last scanned code that matched no product; drives the "register this barcode" shortcut.
+  const [unknownScan, setUnknownScan] = useState<string | null>(null);
 
   // Cart & Pricing states
   const [cart, setCart] = useState<PosLine[]>([]);
@@ -153,6 +165,7 @@ export default function POS() {
       setTaxRate(rate);
       setTierMemberDiscount(memberDisc);
       setTierVipDiscount(vipDisc);
+      setBarcodeSound(settings.find(s => s.key === 'barcode_sound')?.value !== 'false');
     }).catch(console.error);
 
     getCategories().then(setCategories).catch(console.error);
@@ -200,37 +213,45 @@ export default function POS() {
 
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
-  const handleBarcodeScan = useCallback(async (barcode: string) => {
-    const clean = barcode.trim();
-    if (!clean) return;
+  // A scan (hardware 1D/2D scanner or camera) adds the matching product to the cart straight away.
+  // The logic lives in a ref so the callback handed to the scanner hook and the camera modal keeps
+  // a stable identity (the camera restarts if it changes) yet always sees the current price type.
+  const scanLogicRef = useRef<(raw: string) => Promise<void>>(async () => {});
+  scanLogicRef.current = async (raw: string) => {
+    const parsed = parseScan(raw);
+    if (parsed.candidates.length === 0) return;
 
-    const exact = items.find((i) => i.sku === clean || i.barcode === clean);
-    if (exact) {
-      addToCart(exact);
-      setSearch('');
+    let match: Item | null = null;
+    try {
+      match = await findItemByScan(parsed, { localItems: items });
+    } catch (e) {
+      console.error(e);
+      if (barcodeSound) playScanBeep(false);
+      toast.error('Gagal mencari produk', 'Coba scan ulang.');
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await getItemsFiltered(clean, '', '', true, 1, 5);
-      const match = res.items.find((i) => i.sku === clean || i.barcode === clean);
-      if (match) {
-        addToCart(match);
-        setSearch('');
-      } else {
-        playScanBeep(false);
-        setSearch(clean);
-        toast.info(`Barcode "${clean}" tidak ditemukan. Menampilkan hasil pencarian.`);
-      }
-    } finally {
-      setLoading(false);
+    if (match) {
+      addToCart(match);
+      setSearch('');
+      setUnknownScan(null);
+      if (barcodeSound) playScanBeep(true);
+      return;
     }
-  }, [items]);
 
-  // Hardware Barcode Scanner Hook
+    if (barcodeSound) playScanBeep(false);
+    setSearch(parsed.raw);
+    setUnknownScan(toRegistrationCode(raw));
+    toast.warning('Produk belum terdaftar', `Barcode "${parsed.raw}" tidak ditemukan di katalog.`);
+  };
+  const handleBarcodeScan = useCallback((raw: string) => scanLogicRef.current(raw), []);
+
+  // Hardware scanner hook. The search box is auto-focused and is where scans usually land, so it is
+  // explicitly allowed; other fields (price edit, qty, ...) are left alone.
   useBarcodeScanner(handleBarcodeScan, {
     enabled: !showPayment && !showCustomerPicker && !receiptSaleId && !showHistory && !showClearConfirm && !showCameraScanner,
+    allowInInputs: (el) => el === searchInputRef.current,
+    playBeep: false,
   });
 
   // Start Line Price Edit
@@ -770,7 +791,7 @@ export default function POS() {
               ref={searchInputRef}
               type="text"
               value={search}
-              onChange={e => { setSearch(e.target.value); setActiveItemIdx(-1); }}
+              onChange={e => { setSearch(e.target.value); setActiveItemIdx(-1); setUnknownScan(null); }}
               onKeyDown={handleBarcodeEnter}
               placeholder="Cari produk atau scan barcode..."
               className="w-full h-9 pl-9 pr-16 bg-input border border-line rounded-lg text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-heading placeholder:text-dim transition-colors"
@@ -780,7 +801,7 @@ export default function POS() {
               {search && (
                 <button
                   type="button"
-                  onClick={() => setSearch('')}
+                  onClick={() => { setSearch(''); setUnknownScan(null); }}
                   aria-label="Hapus pencarian"
                   className="text-dim hover:text-heading p-1 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
@@ -923,6 +944,19 @@ export default function POS() {
               </div>
               <p className="text-sm font-semibold text-heading">Produk tidak ditemukan</p>
               <p className="text-xs text-dim mt-1">Ubah kata kunci atau pilih kategori lain.</p>
+              {unknownScan && onRegisterBarcode && can('items.create') && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => {
+                    onRegisterBarcode(unknownScan);
+                    setUnknownScan(null);
+                  }}
+                >
+                  Daftarkan barcode {unknownScan.length > 24 ? `${unknownScan.slice(0, 24)}…` : unknownScan}
+                </Button>
+              )}
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5">
