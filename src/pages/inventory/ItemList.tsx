@@ -43,12 +43,14 @@ interface ItemListProps {
   onViewItem: (id: string) => void;
   onEditItem: (id: string) => void;
   onAddItem: () => void;
-  /** Open product registration with this barcode prefilled. */
+  /** Open rapid registration with this barcode (an unknown scan). */
   onRegisterBarcode?: (barcode: string) => void;
+  /** Open rapid registration with nothing scanned yet. */
+  onRapidRegister?: () => void;
   refreshTrigger: number;
 }
 
-export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegisterBarcode, refreshTrigger }: ItemListProps) {
+export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegisterBarcode, onRapidRegister, refreshTrigger }: ItemListProps) {
   const { can } = usePermissions();
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -84,7 +86,7 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegister
     // Unknown code: show the (empty) result for it and offer to register it as a new product.
     playScanBeep(false);
     setSearch(parsed.raw);
-    if (onRegisterBarcode && can('items.create')) {
+    if (onRegisterBarcode && (can('items.create') || can('items.edit'))) {
       setUnregisteredCode(toRegistrationCode(raw));
     } else {
       toast.info('Barcode belum terdaftar', parsed.raw);
@@ -262,6 +264,11 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegister
             >
               {!isImporting && <Upload size={14} />}
               {isImporting ? 'Mengimpor...' : 'Impor'}
+            </Button>
+          )}
+          {onRapidRegister && (can('items.create') || can('items.edit')) && (
+            <Button variant="outline" size="sm" onClick={onRapidRegister} title="Scan barcode lalu pasangkan atau buat produk">
+              <ScanBarcode size={14} /> Registrasi Cepat
             </Button>
           )}
           {can('items.create') && (
@@ -625,8 +632,8 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegister
       {unregisteredCode && (
         <ConfirmModal
           title="Barcode Belum Terdaftar"
-          message={`Barcode "${unregisteredCode}" belum ada di katalog. Daftarkan sebagai produk baru?`}
-          confirmLabel="Daftarkan Produk"
+          message={`Barcode "${unregisteredCode}" belum ada di katalog. Pasangkan ke produk yang sudah ada, atau buat produk baru?`}
+          confirmLabel="Registrasi Cepat"
           variant="primary"
           onConfirm={() => {
             const code = unregisteredCode;

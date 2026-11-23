@@ -59,7 +59,7 @@ function getCategoryAvatar(categoryName?: string) {
 }
 
 interface POSProps {
-  /** Open product registration with this barcode prefilled (shown when a scanned code is unknown). */
+  /** Open rapid registration with this barcode (shown when a scanned code is unknown). */
   onRegisterBarcode?: (barcode: string) => void;
 }
 
@@ -944,7 +944,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
               </div>
               <p className="text-sm font-semibold text-heading">Produk tidak ditemukan</p>
               <p className="text-xs text-dim mt-1">Ubah kata kunci atau pilih kategori lain.</p>
-              {unknownScan && onRegisterBarcode && can('items.create') && (
+              {unknownScan && onRegisterBarcode && (can('items.create') || can('items.edit')) && (
                 <Button
                   variant="primary"
                   size="sm"
@@ -954,7 +954,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
                     setUnknownScan(null);
                   }}
                 >
-                  Daftarkan barcode {unknownScan.length > 24 ? `${unknownScan.slice(0, 24)}…` : unknownScan}
+                  Registrasi barcode {unknownScan.length > 24 ? `${unknownScan.slice(0, 24)}…` : unknownScan}
                 </Button>
               )}
             </div>

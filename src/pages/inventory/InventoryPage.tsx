@@ -14,6 +14,7 @@ interface InventoryPageProps {
   onEditItem: (id: string) => void;
   onAddItem: () => void;
   onRegisterBarcode?: (barcode: string) => void;
+  onRapidRegister?: () => void;
 }
 
 type TabType = 'catalog' | 'stock' | 'opname' | 'master';
@@ -31,6 +32,7 @@ export default function InventoryPage({
   onEditItem,
   onAddItem,
   onRegisterBarcode,
+  onRapidRegister,
 }: InventoryPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>(
     (activeSubTab as TabType) || 'catalog'
@@ -61,6 +63,7 @@ export default function InventoryPage({
             onEditItem={onEditItem}
             onAddItem={onAddItem}
             onRegisterBarcode={onRegisterBarcode}
+            onRapidRegister={onRapidRegister}
           />
         )}
         {activeTab === 'stock' && (
