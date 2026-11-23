@@ -31,7 +31,7 @@ import Select from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
 import { usePermissions } from '../../lib/permissions';
 
-const APP_VERSION = '1.5.4';
+const APP_VERSION = '1.5.5';
 
 // Keys that render as a unified <Select> instead of a text input
 const SELECT_OPTIONS: Record<string, { label: string; value: string }[]> = {

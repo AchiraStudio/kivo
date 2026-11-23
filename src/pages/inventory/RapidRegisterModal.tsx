@@ -473,7 +473,10 @@ export default function RapidRegisterModal({
                         </div>
                       )}
                       {results.map((r) => {
-                        const hasOther = Boolean(r.barcode);
+                        // Imports without real barcodes store the internal code (SKU) as the barcode; that is
+                        // a placeholder, not something worth confirming before replacing.
+                        const internalOnly = Boolean(r.barcode) && r.barcode === r.sku;
+                        const hasOther = Boolean(r.barcode) && !internalOnly;
                         const confirming = confirmId === r.id;
                         return (
                           <div
@@ -491,7 +494,11 @@ export default function RapidRegisterModal({
                                 {r.category_name ? ` · ${r.category_name}` : ''} · {rupiah(r.price)}
                               </p>
                               <p className={`text-[11px] truncate ${hasOther ? 'text-warning' : 'text-success'}`}>
-                                {hasOther ? `Sudah punya barcode: ${r.barcode}` : 'Belum punya barcode'}
+                                {hasOther
+                                  ? `Sudah punya barcode: ${r.barcode}`
+                                  : internalOnly
+                                    ? 'Belum punya barcode (baru kode internal)'
+                                    : 'Belum punya barcode'}
                               </p>
                             </div>
                             {confirming ? (

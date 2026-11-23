@@ -1,4 +1,4 @@
-# 🚀 Kivo — Modern Multi-Branch POS & ERP Platform (v1.5.4)
+# 🚀 Kivo — Modern Multi-Branch POS & ERP Platform (v1.5.5)
 
 <div align="center">
 
@@ -7,7 +7,7 @@
 **Next-Generation Offline-First Point of Sale & Enterprise Resource Planning**  
 *Engineered with Rust, Tauri 2.0, React 19, SQLite, and Supabase Cloud Sync.*
 
-[![Release](https://img.shields.io/badge/version-1.5.4-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
+[![Release](https://img.shields.io/badge/version-1.5.5-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/tauri-v2.0-24C8D8.svg)](https://tauri.app/)
 [![React](https://img.shields.io/badge/react-v19-61DAFB.svg)](https://react.dev/)
@@ -45,7 +45,27 @@ Anda juga **tidak perlu menginstal aplikasi di setiap kasir**: nyalakan **Host Q
 
 ---
 
-## ✨ Apa yang Baru di Versi 1.5.4?
+## ✨ Apa yang Baru di Versi 1.5.5?
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                         HIGHLIGHT RILIS KIVO v1.5.5                    │
+├────────────────────────────────────────────────────────────────────────┤
+│ 🔫 Scan Langsung ke Keranjang · Scanner USB/Bluetooth 1D & 2D di kasir │
+│ 🧾 Kode 2D GS1               · QR / DataMatrix dikenali lewat GTIN     │
+│ ⚡ Registrasi Cepat          · Scan, pasangkan ke produk / buat baru   │
+│ 🛡️ Anti Duplikat             · Peringatan bila barcode sudah dipakai    │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+* **Scanner 2D (QR / DataMatrix GS1):** Scan di kasir langsung menambah produk ke keranjang meski kursor ada di kotak pencarian. Kode GS1 (GTIN + batch + kedaluwarsa) dikenali lewat GTIN-nya, pencocokan SKU/barcode tidak peka huruf besar-kecil, dan barcode yang belum terdaftar bisa langsung didaftarkan dari kasir atau Daftar Produk. Saat registrasi, scan mengisi kolom Barcode di mana pun kursor berada, dengan peringatan bila barcode sudah dipakai produk lain.
+* **Registrasi Cepat:** Tombol **Registrasi Cepat** di Daftar Produk (juga muncul otomatis saat scan barcode yang belum terdaftar di kasir). Scan barcode, lalu cari produk berdasarkan nama untuk **memasangkan** barcode ke produk yang sudah ada, atau **buat produk baru** hanya dengan nama dan harga. Setelah disimpan langsung siap untuk scan berikutnya.
+* **Scan Langsung ke Keranjang:** Di kasir, hasil scan kini langsung masuk keranjang walau kursor sedang di kotak pencarian (sebelumnya diabaikan). Bunyi beep mengikuti pengaturan *Suara Beep Barcode*.
+* **Pembacaan Scan Lebih Andal:** Waktu antar-karakter dihitung dari waktu kejadian tombol, sehingga layar yang lambat tidak lagi memotong hasil scan menjadi potongan. Saat laci/jendela produk terbuka, hanya jendela itu yang menerima scan.
+
+Catatan rilis lengkap: [`RELEASE_NOTES_v1.5.5.md`](RELEASE_NOTES_v1.5.5.md).
+
+### Sorotan v1.5.4
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -62,8 +82,6 @@ Anda juga **tidak perlu menginstal aplikasi di setiap kasir**: nyalakan **Host Q
 * **MCP Server Bawaan:** Server MCP (*Streamable HTTP*) berjalan otomatis bersama aplikasi desktop di `http://127.0.0.1:3700/mcp`, diamankan dengan Bearer token. Lihat [panduan MCP](#-kivo-mcp-server-hubungkan-claude--cursor).
 * **Scan Barcode via Kamera:** Tombol scan ditambahkan di **POS**, **Daftar Produk**, **Form Produk**, **Tambah Stok Massal**, **Stock Opname**, dan **Penerimaan Langsung**. Tersedia input manual sebagai cadangan bila kamera tidak tersedia.
 * **Hook Scanner Hardware Baru:** Opsi `enabled`, `minLength`, `maxKeyIntervalMs`, `allowInInputs`, dan `playBeep`; scan diakhiri `Enter` atau `Tab`, mengabaikan kombinasi Ctrl/Alt/Meta, dan memberi nada beep saat berhasil/gagal.
-* **Scanner 2D (QR / DataMatrix GS1):** Scan di kasir langsung menambah produk ke keranjang meski kursor ada di kotak pencarian. Kode GS1 (GTIN + batch + kedaluwarsa) dikenali lewat GTIN-nya, pencocokan SKU/barcode tidak peka huruf besar-kecil, dan barcode yang belum terdaftar bisa langsung didaftarkan dari kasir atau Daftar Produk. Saat registrasi, scan mengisi kolom Barcode di mana pun kursor berada, dengan peringatan bila barcode sudah dipakai produk lain.
-* **Registrasi Cepat:** Tombol **Registrasi Cepat** di Daftar Produk (juga muncul otomatis saat scan barcode yang belum terdaftar di kasir). Scan barcode, lalu cari produk berdasarkan nama untuk **memasangkan** barcode ke produk yang sudah ada, atau **buat produk baru** hanya dengan nama dan harga. Setelah disimpan langsung siap untuk scan berikutnya.
 * **Kivo AI Diperkuat:** Toolset AI naik menjadi 45 tool (termasuk `bulk_add_items`, `bulk_stock_opname`, edit harga eceran/grosir/HPP, buat & hapus promo). AI memakai default cerdas dan tidak lagi menanyakan field opsional berulang kali.
 
 Catatan rilis lengkap: [`RELEASE_NOTES_v1.5.4.md`](RELEASE_NOTES_v1.5.4.md) · versi sebelumnya: [v1.5.3](RELEASE_NOTES_v1.5.3.md), [v1.5.2](RELEASE_NOTES_v1.5.2.md), [v1.4.0](RELEASE_NOTES_v1.4.0.md), [v1.3.2](RELEASE_NOTES_v1.3.2.md).
@@ -156,7 +174,7 @@ Catatan rilis lengkap: [`RELEASE_NOTES_v1.5.4.md`](RELEASE_NOTES_v1.5.4.md) · v
 
 ## 🔌 Kivo MCP Server (Hubungkan Claude / Cursor)
 
-Kivo v1.5.4 menyertakan server **Model Context Protocol (MCP)** bawaan sehingga klien AI eksternal dapat membaca dan mengelola data Kivo Anda.
+Sejak v1.5.4, Kivo menyertakan server **Model Context Protocol (MCP)** bawaan sehingga klien AI eksternal dapat membaca dan mengelola data Kivo Anda.
 
 | | |
 | :--- | :--- |
