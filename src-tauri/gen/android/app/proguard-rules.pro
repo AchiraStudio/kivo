@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# In-app updater: the WebView calls these by name through window.KivoAndroid.
+-keepattributes JavascriptInterface
+-keep class com.kivo.app.KivoBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}

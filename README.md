@@ -332,6 +332,9 @@ Aplikasi Android punya dua cara pakai, dipilih saat pertama dibuka:
 
 Antarmuka HP memakai bilah bawah dengan tombol **Kasir** di tengah, penanda koneksi ke komputer kasir, menu bergaya *bottom sheet*, dan tombol Kembali Android yang menutup panel sebelum keluar aplikasi. Pemindaian barcode memakai kamera HP (izin kamera diminta saat pertama dipakai).
 
+* **Pembaruan otomatis:** aplikasi memeriksa rilis GitHub saat dibuka dan saat kembali ke latar depan. Bila ada versi baru, muncul panel *Pembaruan tersedia*; ketuk **Perbarui** dan APK diunduh, diperiksa (checksum dan kunci tanda tangan), lalu dibuka di pemasang Android. Android meminta izin *Pasang aplikasi tidak dikenal* untuk Kivo satu kali saja. Agar pembaruan bisa menimpa versi lama, setiap rilis harus ditandatangani dengan kunci yang sama (lihat di bawah).
+* **Input pelanggan cepat:** tombol **+ Pelanggan** membuka formulir bergaya *bottom sheet* dengan keypad nomor HP, pilihan tier satu ketukan, masa berlaku member (+1/3/6/12 bulan), dan **Simpan + Baru** untuk memasukkan banyak pelanggan berturut-turut. Daftar pelanggan menampilkan filter tier, penanda member yang akan habis, tombol telepon/WhatsApp, dan **Perpanjang** satu ketukan. Di kasir, **Pelanggan baru** langsung memilih pelanggan yang baru dibuat untuk transaksi berjalan.
+
 ### 🚢 Rilis (Windows + Android sekaligus)
 
 Mendorong tag versi membangun installer Windows **dan** APK Android, lalu menerbitkannya dalam satu GitHub Release:

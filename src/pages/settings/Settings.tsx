@@ -33,7 +33,6 @@ import { isMobilePlatform } from '../../lib/runtime';
 import { usePermissions } from '../../lib/permissions';
 
 const APP_VERSION = __APP_VERSION__;
-const RELEASES_URL = 'https://github.com/AchiraStudio/kivo/releases/latest';
 
 // Keys that render as a unified <Select> instead of a text input
 const SELECT_OPTIONS: Record<string, { label: string; value: string }[]> = {
@@ -1299,21 +1298,11 @@ export default function Settings() {
                   type="button"
                   variant="primary"
                   size="sm"
-                  onClick={
-                    isMobilePlatform()
-                      ? () => {
-                          // Android installs APKs from the browser, so hand over the release link.
-                          navigator.clipboard
-                            .writeText(RELEASES_URL)
-                            .then(() => toast.success('Tautan rilis disalin', 'Tempel di browser HP untuk mengunduh APK terbaru.'))
-                            .catch(() => toast.info('Unduh APK terbaru di', RELEASES_URL));
-                        }
-                      : openModal
-                  }
+                  onClick={openModal}
                   className="w-full sm:w-auto"
                 >
                   <Download size={14} />
-                  <span>{isMobilePlatform() ? `Salin tautan v${updateInfo.latest_version.replace(/^v/i, '')}` : `Perbarui (${updateInfo.latest_version})`}</span>
+                  <span>Perbarui ({updateInfo.latest_version})</span>
                 </Button>
               ) : (
                 <Button

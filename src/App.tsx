@@ -32,6 +32,7 @@ import { isTauri, isDesktopTauri, isMobilePlatform, isMobileTauri, isRemoteClien
 import MobileConnect from './pages/mobile/MobileConnect';
 import { useUpdaterStore } from './store/UpdaterStore';
 import UpdateModal from './components/updater/UpdateModal';
+import AndroidUpdateSheet from './components/updater/AndroidUpdateSheet';
 
 interface MainContentProps {
   activeMenu: string;
@@ -165,14 +166,28 @@ export default function App() {
   const [isHostQrOpen, setIsHostQrOpen] = useState(false);
   const { updateInfo, isModalOpen, closeModal, checkUpdates } = useUpdaterStore();
 
-  // Non-intrusive background check for updates on startup (desktop only)
+  // Non-intrusive background check for updates on startup (desktop and the Android app)
   useEffect(() => {
-    if (!isDesktopTauri()) return;
+    if (!isDesktopTauri() && !isMobileTauri()) return;
     const timer = setTimeout(() => {
       checkUpdates(false);
     }, 3500);
     return () => clearTimeout(timer);
   }, [checkUpdates]);
+
+  // The Android app stays in memory for days: look again when it comes back to the foreground.
+  useEffect(() => {
+    if (!isMobileTauri()) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const { lastChecked, isChecking } = useUpdaterStore.getState();
+      if (!isChecking && (!lastChecked || Date.now() - lastChecked.getTime() > 6 * 60 * 60 * 1000)) {
+        useUpdaterStore.getState().checkUpdates(false);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   // Auto-collapse sidebar on tablet screens (< 1024px)
   useEffect(() => {
@@ -534,11 +549,11 @@ export default function App() {
             onClose={() => setIsHostQrOpen(false)}
           />
 
-          <UpdateModal
-            isOpen={isModalOpen}
-            onClose={closeModal}
-            updateInfo={updateInfo}
-          />
+          {isMobileTauri() ? (
+            <AndroidUpdateSheet isOpen={isModalOpen} onClose={closeModal} updateInfo={updateInfo} />
+          ) : (
+            <UpdateModal isOpen={isModalOpen} onClose={closeModal} updateInfo={updateInfo} />
+          )}
         </main>
       </div>
     </div>
