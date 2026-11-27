@@ -28,7 +28,7 @@ Useful URLs while developing:
 
 `.github/workflows/demo.yml` publishes `demo/dist` to GitHub Pages. The release workflow dispatches it after a release is published, so the site always matches the newest version; it also runs on pushes to `main` that touch `src/` or `demo/`. The download section additionally asks the GitHub API for the latest release at runtime.
 
-One-time setup: **Settings -> Pages -> Build and deployment -> Source: GitHub Actions**.
+GitHub Pages publishing is opt-in: set Pages source to "GitHub Actions" and add the repository variable `DEMO_GITHUB_PAGES=true`. Hosts that build from `demo/` (Cloudflare Pages, Netlify, Vercel) work as-is: `demo/package.json` forwards `npm run build` to the root build, and the output is `demo/dist`.
 
 ## Add a scene
 

@@ -8,7 +8,11 @@ name: Demo site
 #   - on pushes to main that touch the app or the site,
 #   - on demand from the Actions tab.
 #
-# One-time setup: Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+# Publishing to GitHub Pages is opt-in so it cannot fail a repo that hosts the site elsewhere
+# (for example Cloudflare Pages, which rebuilds on every push to main). To turn it on:
+#   1. Settings -> Pages -> Build and deployment -> Source: "GitHub Actions"
+#   2. Settings -> Secrets and variables -> Actions -> Variables: DEMO_GITHUB_PAGES = true
+# The build job always runs, so the site is type-checked and built either way.
 
 on:
   release:
@@ -50,8 +54,6 @@ jobs:
       - name: Typecheck and build the site
         run: npm run demo:build
 
-      - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: demo/dist
@@ -59,6 +61,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
+    if: ${{ vars.DEMO_GITHUB_PAGES == 'true' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages

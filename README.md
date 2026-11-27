@@ -311,7 +311,7 @@ Kivo menerapkan model keamanan zero-trust:
    npm run demo:dev      # http://localhost:1430
    npm run demo:build    # hasil di demo/dist
    ```
-   Situs ini menjalankan **UI Kivo yang asli** (dari `src/`) di browser dengan host tiruan di memori, jadi selalu mengikuti tampilan terbaru. Setelah rilis diterbitkan, situs otomatis dibangun ulang dan dipublikasikan ke GitHub Pages (aktifkan sekali di *Settings → Pages → Source: GitHub Actions*). Detail di [`demo/README.md`](demo/README.md).
+   Situs ini menjalankan **UI Kivo yang asli** (dari `src/`) di browser dengan host tiruan di memori, jadi selalu mengikuti tampilan terbaru. Situs bisa dihosting di Cloudflare Pages/Netlify/Vercel (root `demo`, build `npm run build`, output `dist`) atau di GitHub Pages (opsional: Source *GitHub Actions* + variabel repo `DEMO_GITHUB_PAGES=true`); tombol unduh selalu membaca rilis terbaru dari GitHub. Detail di [`demo/README.md`](demo/README.md).
 
 5. **Build Installer Windows (.exe / .msi):**
    ```bash

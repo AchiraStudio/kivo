@@ -1,0 +1,11 @@
+{
+  "name": "kivo-demo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Showcase site. It builds from the repository root because it renders the real Kivo UI (../src); this file only lets hosts that build from demo/ (Cloudflare Pages, Netlify, Vercel) run `npm run build`.",
+  "scripts": {
+    "dev": "cd .. && npm run demo:dev",
+    "build": "cd .. && npm ci --include=dev && npm run demo:build",
+    "preview": "cd .. && npm run demo:preview"
+  }
+}
