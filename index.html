@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/kivo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#081028" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#f4f6fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e1013" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -14,7 +14,9 @@
       // Apply the persisted theme before first paint to avoid a light flash.
       (function () {
         try {
-          var t = localStorage.getItem("kivo-theme") || localStorage.getItem("kivo-ui-theme") || "dark";
+          // Phones follow the system theme until the user picks one (keeps the Android system bars seamless).
+          var fallback = /android/i.test(navigator.userAgent) ? "system" : "dark";
+          var t = localStorage.getItem("kivo-theme") || localStorage.getItem("kivo-ui-theme") || fallback;
           if (t === "system") {
             t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
           }

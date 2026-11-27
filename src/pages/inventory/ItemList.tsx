@@ -37,6 +37,7 @@ import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import { toast } from '../../components/ui/Toast';
+import { isMobilePlatform } from '../../lib/runtime';
 import { usePermissions } from '../../lib/permissions';
 
 interface ItemListProps {
@@ -249,12 +250,12 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegister
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {can('reports.export') && (
+          {can('reports.export') && !isMobilePlatform() && (
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download size={14} /> Ekspor
             </Button>
           )}
-          {can('items.create') && (
+          {can('items.create') && !isMobilePlatform() && (
             <Button
               variant="outline"
               size="sm"
@@ -291,7 +292,7 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegister
 
       <div className="bg-card rounded-xl border border-line flex flex-col flex-1 min-h-0 overflow-hidden tour-inv-table">
         <div className="p-3 border-b border-line flex flex-col sm:flex-row gap-2.5 bg-muted/40">
-          <div className="tour-inv-search flex-1 flex items-center h-9 bg-input border border-line rounded-lg px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-colors">
+          <div className="tour-inv-search flex-1 flex items-center h-11 md:h-9 bg-input border border-line rounded-lg px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-colors">
             <Search size={15} className="text-dim mr-2 shrink-0" />
             <input
               type="text"
@@ -309,7 +310,7 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegister
               onClick={() => setShowCameraScanner(true)}
               aria-label="Scan barcode"
               title="Scan Barcode"
-              className="ml-1.5 p-1 rounded-md text-dim hover:text-primary hover:bg-muted transition-colors cursor-pointer shrink-0"
+              className="ml-1.5 w-9 h-9 md:w-6 md:h-6 flex items-center justify-center rounded-md text-primary md:text-dim hover:text-primary hover:bg-muted transition-colors cursor-pointer shrink-0"
             >
               <ScanBarcode size={15} />
             </button>
@@ -333,7 +334,81 @@ export default function ItemList({ onViewItem, onEditItem, onAddItem, onRegister
         </div>
 
         <div className="flex-1 overflow-auto custom-scrollbar relative">
-          <table className="w-full text-left border-collapse">
+          {/* Phone layout: one tappable card per product instead of an 8-column table */}
+          <div className="md:hidden divide-y divide-line">
+            {loading ? (
+              <div className="py-16 text-center">
+                <Loader2 size={22} className="animate-spin mx-auto text-primary" />
+              </div>
+            ) : errorMsg ? (
+              <div className="py-14 text-center px-4">
+                <AlertCircle size={22} className="mx-auto text-danger mb-2" />
+                <p className="text-sm font-semibold text-heading">Gagal memuat katalog</p>
+                <p className="text-xs text-dim mt-0.5 mb-3">{errorMsg}</p>
+                <Button variant="outline" size="sm" onClick={loadData}>
+                  Coba Lagi
+                </Button>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="py-16 text-center px-4">
+                <p className="text-sm font-medium text-dim">Tidak ada produk ditemukan.</p>
+                {(search || selectedCategory) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      setSearch('');
+                      setSelectedCategory('');
+                      setPage(1);
+                    }}
+                  >
+                    Reset Filter
+                  </Button>
+                )}
+              </div>
+            ) : (
+              items.map((item) => (
+                <div
+                  key={item.id}
+                  className={`flex items-center gap-2 pl-3.5 pr-2 py-1 ${item.is_active === 0 ? 'opacity-55' : ''}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onViewItem(item.id)}
+                    className="flex-1 min-w-0 py-2 text-left cursor-pointer"
+                  >
+                    <p className="font-semibold text-heading text-sm leading-snug line-clamp-2">{item.name}</p>
+                    <p className="text-xs text-dim truncate mt-0.5">
+                      <span className="font-mono">{item.sku}</span>
+                      {item.category_name ? ` · ${item.category_name}` : ''}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm font-bold text-heading tnum">Rp {(item.price || 0).toLocaleString('id-ID')}</span>
+                      {can('items.change_price') && (
+                        <span className="text-[11px] text-dim tnum">HPP Rp {(item.cost_price || 0).toLocaleString('id-ID')}</span>
+                      )}
+                      {item.is_active === 0 && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-muted text-dim text-[11px] font-semibold border border-line">Nonaktif</span>
+                      )}
+                    </div>
+                  </button>
+                  {can('items.edit') && (
+                    <button
+                      type="button"
+                      onClick={() => onEditItem(item.id)}
+                      aria-label={`Edit ${item.name}`}
+                      className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl text-dim active:bg-muted cursor-pointer"
+                    >
+                      <Edit size={17} />
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <table className="hidden md:table w-full text-left border-collapse">
             <thead className="sticky top-0 bg-muted z-10 border-b border-line">
               <tr className="text-dim text-xs font-semibold select-none">
                 <th

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Loader2, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { getStockValuation, StockValuationRow, exportStockExcel, getCategories, Category } from '../../lib/api';
 import { downloadCsv } from '../../lib/exportCsv';
+import { isMobilePlatform } from '../../lib/runtime';
 import { save } from '@tauri-apps/plugin-dialog';
 import ReportHeader from '../../components/reports/ReportHeader';
 import { toast } from '../../components/ui/Toast';
@@ -113,10 +114,12 @@ export default function LaporanStok({ onBack }: Props) {
           ))}
         </Select>
 
-        <Button type="button" variant="primary" size="sm" onClick={handleExportExcel} disabled={loading}>
-          <FileSpreadsheet size={14} strokeWidth={1.75} />
-          Export Excel
-        </Button>
+        {!isMobilePlatform() && (
+          <Button type="button" variant="primary" size="sm" onClick={handleExportExcel} disabled={loading}>
+            <FileSpreadsheet size={14} strokeWidth={1.75} />
+            Export Excel
+          </Button>
+        )}
 
         <Button
           type="button"

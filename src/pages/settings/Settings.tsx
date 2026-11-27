@@ -29,9 +29,11 @@ import Button from '../../components/ui/Button';
 import TabBar, { TabItem } from '../../components/ui/TabBar';
 import Select from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
+import { isMobilePlatform } from '../../lib/runtime';
 import { usePermissions } from '../../lib/permissions';
 
-const APP_VERSION = '1.5.5';
+const APP_VERSION = __APP_VERSION__;
+const RELEASES_URL = 'https://github.com/AchiraStudio/kivo/releases/latest';
 
 // Keys that render as a unified <Select> instead of a text input
 const SELECT_OPTIONS: Record<string, { label: string; value: string }[]> = {
@@ -1273,7 +1275,7 @@ export default function Settings() {
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-bold text-heading">Kivo Desktop</h3>
+                  <h3 className="text-sm font-bold text-heading">{isMobilePlatform() ? 'Kivo Android' : 'Kivo Desktop'}</h3>
                   <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-muted text-dim">
                     v{APP_VERSION}
                   </span>
@@ -1297,11 +1299,21 @@ export default function Settings() {
                   type="button"
                   variant="primary"
                   size="sm"
-                  onClick={openModal}
+                  onClick={
+                    isMobilePlatform()
+                      ? () => {
+                          // Android installs APKs from the browser, so hand over the release link.
+                          navigator.clipboard
+                            .writeText(RELEASES_URL)
+                            .then(() => toast.success('Tautan rilis disalin', 'Tempel di browser HP untuk mengunduh APK terbaru.'))
+                            .catch(() => toast.info('Unduh APK terbaru di', RELEASES_URL));
+                        }
+                      : openModal
+                  }
                   className="w-full sm:w-auto"
                 >
                   <Download size={14} />
-                  <span>Perbarui ({updateInfo.latest_version})</span>
+                  <span>{isMobilePlatform() ? `Salin tautan v${updateInfo.latest_version.replace(/^v/i, '')}` : `Perbarui (${updateInfo.latest_version})`}</span>
                 </Button>
               ) : (
                 <Button

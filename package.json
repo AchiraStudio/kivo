@@ -24,6 +24,7 @@
     "@tauri-apps/api": "^2.0.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@types/react-joyride": "^2.0.2",
+    "@zxing/library": "^0.21.3",
     "lucide-react": "^1.16.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",

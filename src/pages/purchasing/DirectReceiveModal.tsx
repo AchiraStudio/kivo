@@ -29,6 +29,7 @@ import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
+import { isMobilePlatform } from '../../lib/runtime';
 import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
 import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 
@@ -485,26 +486,30 @@ export default function DirectReceiveModal({
               Daftar Barang ({lines.length})
             </h3>
             <div className="flex flex-wrap items-center gap-1.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadTemplate}
-                loading={isExportingTemplate}
-              >
-                {!isExportingTemplate && <Download size={14} />}
-                Template Excel
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleImportExcel}
-                loading={isParsingExcel}
-              >
-                {!isParsingExcel && <FileSpreadsheet size={14} />}
-                Import Excel
-              </Button>
+              {!isMobilePlatform() && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    loading={isExportingTemplate}
+                  >
+                    {!isExportingTemplate && <Download size={14} />}
+                    Template Excel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleImportExcel}
+                    loading={isParsingExcel}
+                  >
+                    {!isParsingExcel && <FileSpreadsheet size={14} />}
+                    Import Excel
+                  </Button>
+                </>
+              )}
               <Button type="button" variant="outline" size="sm" onClick={() => setShowCameraScanner(true)}>
                 <ScanBarcode size={14} />
                 Scan

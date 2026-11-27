@@ -15,6 +15,8 @@ import { useBarcodeScanner, playScanBeep } from '../../hooks/useBarcodeScanner';
 import { parseScan, toRegistrationCode } from '../../lib/barcode';
 import { findItemByScan } from '../../lib/itemLookup';
 import { usePermissions } from '../../lib/permissions';
+import { isMobilePlatform } from '../../lib/runtime';
+import { useCartBadgeStore } from '../../store/CartBadgeStore';
 import BarcodeCameraModal from '../../components/ui/BarcodeCameraModal';
 import { toast } from '../../components/ui/Toast';
 import PaymentModal from './PaymentModal';
@@ -734,6 +736,13 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
 
   const TIER_LABEL: Record<string, string> = { regular: 'Regular', member: 'Member', vip: 'VIP' };
 
+  // Mirror the cart size onto the mobile "Kasir" tab badge.
+  const setCartBadge = useCartBadgeStore((st) => st.setCount);
+  const cartPieces = cart.reduce((sum, l) => sum + l.qty, 0);
+  useEffect(() => {
+    setCartBadge(cartPieces);
+  }, [cartPieces, setCartBadge]);
+
   // Fast in-cart quantity map for item cards
   const cartQtyMap = cart.reduce<Record<string, number>>((acc, line) => {
     if (!line.is_bogo_free) {
@@ -749,7 +758,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
         <button
           type="button"
           onClick={() => setMobilePosTab('catalog')}
-          className={`flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          className={`flex items-center justify-center gap-1.5 h-10 px-2.5 rounded-md text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
             mobilePosTab === 'catalog'
               ? 'bg-card text-heading border border-line'
               : 'text-dim hover:text-heading border border-transparent'
@@ -762,7 +771,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
         <button
           type="button"
           onClick={() => setMobilePosTab('cart')}
-          className={`flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          className={`flex items-center justify-center gap-1.5 h-10 px-2.5 rounded-md text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
             mobilePosTab === 'cart'
               ? 'bg-card text-heading border border-line'
               : 'text-dim hover:text-heading border border-transparent'
@@ -794,8 +803,8 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
               onChange={e => { setSearch(e.target.value); setActiveItemIdx(-1); setUnknownScan(null); }}
               onKeyDown={handleBarcodeEnter}
               placeholder="Cari produk atau scan barcode..."
-              className="w-full h-9 pl-9 pr-16 bg-input border border-line rounded-lg text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-heading placeholder:text-dim transition-colors"
-              autoFocus
+              className="w-full h-11 lg:h-9 pl-9 pr-20 lg:pr-16 bg-input border border-line rounded-lg text-base lg:text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-heading placeholder:text-dim transition-colors"
+              autoFocus={!isMobilePlatform()}
             />
             <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
               {search && (
@@ -803,7 +812,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
                   type="button"
                   onClick={() => { setSearch(''); setUnknownScan(null); }}
                   aria-label="Hapus pencarian"
-                  className="text-dim hover:text-heading p-1 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="text-dim hover:text-heading w-9 h-9 lg:w-6 lg:h-6 flex items-center justify-center rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <XIcon size={14} />
                 </button>
@@ -813,9 +822,9 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
                 onClick={() => setShowCameraScanner(true)}
                 aria-label="Scan barcode dengan kamera"
                 title="Scan Barcode"
-                className="text-dim hover:text-primary hover:bg-muted p-1 rounded-md cursor-pointer transition-colors"
+                className="text-primary lg:text-dim hover:text-primary hover:bg-muted w-9 h-9 lg:w-6 lg:h-6 flex items-center justify-center rounded-md cursor-pointer transition-colors"
               >
-                <ScanBarcode size={15} />
+                <ScanBarcode size={20} className="lg:w-[15px] lg:h-[15px]" />
               </button>
             </div>
           </div>
@@ -899,7 +908,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
           <button
             type="button"
             onClick={() => setSelectedCategory('all')}
-            className={`px-2.5 py-1 rounded-md text-xs font-semibold shrink-0 transition-colors cursor-pointer whitespace-nowrap border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            className={`px-3 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md text-xs font-semibold shrink-0 transition-colors cursor-pointer whitespace-nowrap border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               selectedCategory === 'all'
                 ? 'bg-primary-soft text-primary border-primary/30'
                 : 'bg-muted text-body border-transparent hover:bg-muted-hover hover:text-heading'
@@ -912,7 +921,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
               key={cat.id}
               type="button"
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold shrink-0 transition-colors cursor-pointer whitespace-nowrap border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              className={`px-3 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md text-xs font-semibold shrink-0 transition-colors cursor-pointer whitespace-nowrap border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 selectedCategory === cat.id
                   ? 'bg-primary-soft text-primary border-primary/30'
                   : 'bg-muted text-body border-transparent hover:bg-muted-hover hover:text-heading'
@@ -1194,19 +1203,19 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
             <button
               type="button"
               onClick={() => setMobilePosTab('cart')}
-              className="w-full bg-primary hover:bg-primary-hover text-white px-3.5 py-2.5 rounded-lg flex items-center justify-between cursor-pointer active:scale-[0.99] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="w-full bg-primary hover:bg-primary-hover text-white px-4 h-14 rounded-xl flex items-center justify-between cursor-pointer active:scale-[0.99] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <div className="flex items-center gap-2">
                 <span className="min-w-5 h-5 px-1.5 rounded-full bg-white/20 flex items-center justify-center text-[11px] font-bold tnum">
                   {cart.reduce((sum, item) => sum + item.qty, 0)}
                 </span>
-                <span className="text-sm font-bold tnum">
+                <span className="text-base font-extrabold tnum">
                   Rp {finalPayableTotal.toLocaleString('id-ID')}
                 </span>
               </div>
               <div className="flex items-center gap-1 text-xs font-semibold">
-                <span>Keranjang</span>
-                <ArrowRight size={14} />
+                <span className="text-sm">Lihat Keranjang</span>
+                <ArrowRight size={16} />
               </div>
             </button>
           </div>
@@ -1248,7 +1257,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
           </div>
 
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-muted border border-line text-body rounded-lg text-xs font-medium shrink-0">
-            <kbd className="font-mono text-[10px] text-dim">F3</kbd>
+            <kbd className="hidden lg:inline font-mono text-[10px] text-dim">F3</kbd>
             <span>Ubah</span>
           </div>
         </button>
@@ -1385,7 +1394,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
                       type="button"
                       onClick={e => { e.stopPropagation(); removeItem(l.item_id); }}
                       aria-label={`Hapus ${l.item_name}`}
-                      className="text-dim hover:text-danger hover:bg-danger-soft p-1.5 rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      className="text-dim hover:text-danger hover:bg-danger-soft w-10 h-10 lg:w-auto lg:h-auto lg:p-1.5 -mt-1 -mr-1 lg:m-0 flex items-center justify-center rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       title="Hapus Item (Delete)"
                     >
                       <Trash2 size={14} />
@@ -1457,18 +1466,18 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
                           type="button"
                           onClick={e => { e.stopPropagation(); updateQty(l.item_id, -1); }}
                           aria-label={`Kurangi jumlah ${l.item_name}`}
-                          className="w-7 h-7 flex items-center justify-center bg-card text-heading hover:bg-danger-soft hover:text-danger rounded-md transition-colors active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          className="w-10 h-10 lg:w-7 lg:h-7 flex items-center justify-center bg-card text-heading hover:bg-danger-soft hover:text-danger rounded-md transition-colors active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                           <Minus size={13} />
                         </button>
-                        <span className="w-8 text-center text-xs font-bold text-heading tnum">
+                        <span className="w-10 lg:w-8 text-center text-sm lg:text-xs font-bold text-heading tnum">
                           {l.qty}
                         </span>
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); updateQty(l.item_id, 1); }}
                           aria-label={`Tambah jumlah ${l.item_name}`}
-                          className="w-7 h-7 flex items-center justify-center bg-card text-heading hover:bg-muted-hover rounded-md transition-colors active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          className="w-10 h-10 lg:w-7 lg:h-7 flex items-center justify-center bg-card text-heading hover:bg-muted-hover rounded-md transition-colors active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                           <Plus size={13} />
                         </button>
@@ -1594,7 +1603,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
               type="button"
               onClick={handleHold}
               disabled={cart.length === 0}
-              className="col-span-2 px-3"
+              className="col-span-2 px-3 h-12 lg:h-11"
             >
               <PauseCircle size={15} />
               <span>Tahan</span>
@@ -1606,7 +1615,7 @@ export default function POS({ onRegisterBarcode }: POSProps = {}) {
               type="button"
               onClick={() => setShowPayment(true)}
               disabled={cart.length === 0}
-              className="col-span-3 tour-pos-payment"
+              className="col-span-3 tour-pos-payment h-12 lg:h-11 text-base lg:text-sm"
             >
               <span>Bayar</span>
               <ArrowRight size={16} />

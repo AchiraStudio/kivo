@@ -316,11 +316,42 @@ Kivo menerapkan model keamanan zero-trust:
 
 6. **Build APK Android (opsional):**
    ```bash
-   npm run android:init       # sekali saja
+   npm run android:init       # sekali saja (proyek gen/android sudah ada di repo)
    npm run android:apk        # debug APK
    npm run android:apk:release
    npm run android:apk:universal
    ```
+   Di Linux/macOS (atau CI) cukup: `npm run tauri -- android build --apk`.
+
+### 📱 Aplikasi Android
+
+Aplikasi Android punya dua cara pakai, dipilih saat pertama dibuka:
+
+* **Terhubung ke komputer kasir (disarankan):** HP menjadi terminal untuk Kivo desktop lewat Wi-Fi yang sama. Pindai **Host QR** di topbar Kivo desktop (atau ketik alamat IP-nya) dan HP langsung masuk dengan akun kasir. Stok, penjualan, dan laporan selalu sama dengan komputer.
+* **Mandiri:** HP menyimpan database sendiri (SQLite lokal), lengkap dengan Setup Wizard dan sinkronisasi cloud.
+
+Antarmuka HP memakai bilah bawah dengan tombol **Kasir** di tengah, penanda koneksi ke komputer kasir, menu bergaya *bottom sheet*, dan tombol Kembali Android yang menutup panel sebelum keluar aplikasi. Pemindaian barcode memakai kamera HP (izin kamera diminta saat pertama dipakai).
+
+### 🚢 Rilis (Windows + Android sekaligus)
+
+Mendorong tag versi membangun installer Windows **dan** APK Android, lalu menerbitkannya dalam satu GitHub Release:
+
+```bash
+# naikkan versi di package.json, src-tauri/tauri.conf.json, dan src-tauri/Cargo.toml, lalu:
+git tag v1.5.6 && git push origin v1.5.6
+```
+
+Workflow `release.yml` baru menerbitkan rilis bila `.exe`/`.msi` **dan** `.apk` sudah terlampir. Menjalankan workflow lewat **Run workflow** hanya membangun dan menyimpan hasilnya sebagai artifact tanpa menerbitkan apa pun.
+
+**Penandatanganan APK.** Agar APK versi baru bisa menimpa versi lama di HP, tanda tangani dengan kunci yang sama setiap rilis. Buat kunci sekali saja, simpan baik-baik, dan jangan commit ke repositori:
+
+```bash
+keytool -genkeypair -v -keystore kivo-release.jks -alias kivo \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 kivo-release.jks   # salin hasilnya ke secret ANDROID_KEYSTORE_BASE64
+```
+
+Tambahkan empat secret di *Settings → Secrets and variables → Actions*: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Tanpa secret ini APK tetap terbangun, tetapi ditandatangani dengan kunci debug sementara (workflow menampilkan peringatan) dan tidak bisa menimpa APK yang ditandatangani dengan kunci lain. Untuk build lokal, taruh `storeFile` (path absolut), `storePassword`, `keyAlias`, `keyPassword` di `src-tauri/gen/android/keystore.properties` (sudah di-gitignore).
 
 ---
 

@@ -22,6 +22,7 @@ import { save } from '@tauri-apps/plugin-dialog';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
+import { isMobilePlatform } from '../../lib/runtime';
 
 interface StockOverviewProps {
   refreshTrigger: number;
@@ -108,9 +109,11 @@ export default function StockOverview({ refreshTrigger, onEditItem }: StockOverv
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportExcel}>
-            <FileSpreadsheet size={14} /> Ekspor Excel
-          </Button>
+          {!isMobilePlatform() && (
+            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+              <FileSpreadsheet size={14} /> Ekspor Excel
+            </Button>
+          )}
           <Button variant="primary" size="sm" onClick={() => setBulkAdjustOpen(true)}>
             <Activity size={14} /> Tambah Massal
           </Button>
