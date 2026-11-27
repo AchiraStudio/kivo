@@ -82,14 +82,17 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK platform, build tools and NDK
+      # The ubuntu runner image already ships the Android SDK and NDK; use them instead of the
+      # setup-android action (it runs `sdkmanager tools`, a package that no longer exists).
+      - name: Prepare Android SDK
         shell: bash
         run: |
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
-          echo "NDK_HOME=${ANDROID_HOME}/ndk/27.2.12479018" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/27.2.12479018" >> "$GITHUB_ENV"
+          SDKM=$(ls -d "${ANDROID_HOME}"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -n 1)
+          echo "Using $SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0"
+          echo "NDK_HOME=${ANDROID_NDK_HOME}" >> "$GITHUB_ENV"
+          echo "Using NDK at ${ANDROID_NDK_HOME}"
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -122,3 +125,21 @@ jobs:
           path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 7
+
+  build-demo:
+    name: Build demo site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The site embeds the real app UI, so a change to src/ can break it.
+      - name: Typecheck and build the showcase site
+        run: npm run demo:build

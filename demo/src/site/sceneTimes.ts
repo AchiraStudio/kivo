@@ -1,0 +1,22 @@
+// Rough running time (ms) of each scripted scene, used to chain them in loops.
+export const SCENE_MS: Record<string, number> = {
+  dashboard: 11500,
+  pos: 20000,
+  inventory: 15500,
+  customers: 14500,
+  purchasing: 10500,
+  reports: 15000,
+  ai: 8500,
+  settings: 10500,
+  'p-pos': 17000,
+  'p-customer': 17500,
+  'p-connect': 8000,
+  'p-update': 10500,
+  'p-home': 6500,
+  'p-dashboard': 9000,
+  'p-inventory': 9000,
+  'p-purchasing': 8000,
+  'p-reports': 8000,
+  'p-ai': 8000,
+  'p-settings': 8000,
+};

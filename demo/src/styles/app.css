@@ -1,0 +1,27 @@
+/* The real Kivo UI: same design tokens, same components. */
+@import "../../../src/index.css";
+@source "../../../src";
+
+/* Scripted "pointer" shown while the demo plays itself. */
+.demo-cursor {
+  position: fixed;
+  z-index: 2147483000;
+  left: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 9999px;
+  border: 2px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  pointer-events: none;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+  opacity: 0;
+}
+.demo-cursor.on { opacity: 1; }
+.demo-cursor.tap { animation: demo-tap 0.38s ease-out; }
+@keyframes demo-tap {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent); }
+  100% { box-shadow: 0 0 0 22px transparent; }
+}

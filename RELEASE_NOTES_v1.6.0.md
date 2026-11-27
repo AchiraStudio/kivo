@@ -37,6 +37,11 @@ Kivo v1.6.0 makes the **Android app** a first-class part of every release. Each 
 - The customer list gains tier filters (including "Segera habis"), expiry badges, call and WhatsApp buttons, and a one-tap **Perpanjang** for members who are expiring or expired.
 - In the cashier, **Pelanggan baru** inside the customer picker creates the customer and selects them for the current sale.
 
+### 5. New showcase website, always in sync
+- The demo site was rebuilt from scratch. It now runs the **real Kivo UI** (the same components and design tokens as the app) in the browser against an in-memory host, with scripted walkthroughs of checkout, stock, members, purchasing, reports, Kivo AI and settings, plus the Android app (connect, sell, add members, update) and an offline toggle.
+- Download buttons read the latest GitHub release at runtime, and the site is rebuilt and deployed to GitHub Pages automatically after every release (`demo.yml`, dispatched by the release workflow). One-time setup: Settings -> Pages -> Source: GitHub Actions.
+- `npm run demo:dev` / `npm run demo:build` run it locally; a `build-demo` job in the Build workflow keeps it from breaking when `src/` changes.
+
 ## Under the hood
 - The version shown in the UI now comes from `package.json` at build time (`__APP_VERSION__`), so a release only needs the three version files bumped.
 - `useMobileBack` reconciles its history entries, fixing a case where replacing one sheet with another closed the new one.

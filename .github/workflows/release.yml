@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # lets the publish job start the demo site deploy
 
 concurrency:
   group: release-${{ github.ref }}
@@ -196,14 +197,17 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK platform, build tools and NDK
+      # The ubuntu runner image already ships the Android SDK and NDK; use them instead of the
+      # setup-android action (it runs `sdkmanager tools`, a package that no longer exists).
+      - name: Prepare Android SDK
         shell: bash
         run: |
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
-          echo "NDK_HOME=${ANDROID_HOME}/ndk/27.2.12479018" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/27.2.12479018" >> "$GITHUB_ENV"
+          SDKM=$(ls -d "${ANDROID_HOME}"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -n 1)
+          echo "Using $SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0"
+          echo "NDK_HOME=${ANDROID_NDK_HOME}" >> "$GITHUB_ENV"
+          echo "Using NDK at ${ANDROID_NDK_HOME}"
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -330,3 +334,17 @@ jobs:
               make_latest: release.prerelease ? 'false' : 'true',
             });
             core.info(`Published ${release.tag_name} with ${release.assets.length} assets.`);
+
+            // Refresh the showcase site so it shows this release's app and download links.
+            // Dispatched on the default branch because GitHub Pages only deploys from there.
+            try {
+              const { data: repo } = await github.rest.repos.get({ ...context.repo });
+              await github.rest.actions.createWorkflowDispatch({
+                ...context.repo,
+                workflow_id: 'demo.yml',
+                ref: repo.default_branch,
+              });
+              core.info('Triggered the demo site deploy.');
+            } catch (e) {
+              core.warning(`Could not trigger the demo site deploy: ${e.message}`);
+            }

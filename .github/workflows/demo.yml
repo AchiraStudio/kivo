@@ -1,0 +1,68 @@
+name: Demo site
+
+# Builds the showcase website (demo/) and publishes it to GitHub Pages.
+#
+# The site runs the real Kivo UI from ../src, so it always shows the current app. It is rebuilt:
+#   - after every release (release.yml dispatches this workflow once the release is published),
+#   - when someone publishes a release by hand in the GitHub UI,
+#   - on pushes to main that touch the app or the site,
+#   - on demand from the Actions tab.
+#
+# One-time setup: Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+
+on:
+  release:
+    types: [published]
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'demo/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/demo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck and build the site
+        run: npm run demo:build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

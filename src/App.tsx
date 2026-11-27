@@ -232,6 +232,16 @@ export default function App() {
   
   useRealtimeSync();
 
+  // Lets the showcase site (and tests) drive the real navigation: window.dispatchEvent(new CustomEvent('kivo:navigate', { detail: 'pos' })).
+  useEffect(() => {
+    const onNavigate = (e: Event) => {
+      const menu = (e as CustomEvent<string>).detail;
+      if (typeof menu === 'string' && menu) setActiveMenu(menu);
+    };
+    window.addEventListener('kivo:navigate', onNavigate);
+    return () => window.removeEventListener('kivo:navigate', onNavigate);
+  }, []);
+
   // Bump refreshTrigger whenever the pull-worker syncs cloud data locally
   useEffect(() => {
     const handler = () => setRefreshTrigger(p => p + 1);

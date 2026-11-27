@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Kivo Banner](https://raw.githubusercontent.com/AchiraStudio/kivo/main/demo/dist/icon.png)
+![Kivo Banner](https://raw.githubusercontent.com/AchiraStudio/kivo/main/demo/public/icon.png)
 
 **Next-Generation Offline-First Point of Sale & Enterprise Resource Planning**  
 *Engineered with Rust, Tauri 2.0, React 19, SQLite, and Supabase Cloud Sync.*
@@ -306,12 +306,12 @@ Kivo menerapkan model keamanan zero-trust:
    ```
    *Server MCP otomatis aktif di `http://127.0.0.1:3700/mcp`.*
 
-4. **Jalankan Web Showcase Demo:**
+4. **Jalankan Situs Showcase (demo langsung):**
    ```bash
-   cd demo
-   npm install
-   npm run dev
+   npm run demo:dev      # http://localhost:1430
+   npm run demo:build    # hasil di demo/dist
    ```
+   Situs ini menjalankan **UI Kivo yang asli** (dari `src/`) di browser dengan host tiruan di memori, jadi selalu mengikuti tampilan terbaru. Setelah rilis diterbitkan, situs otomatis dibangun ulang dan dipublikasikan ke GitHub Pages (aktifkan sekali di *Settings → Pages → Source: GitHub Actions*). Detail di [`demo/README.md`](demo/README.md).
 
 5. **Build Installer Windows (.exe / .msi):**
    ```bash
@@ -444,7 +444,7 @@ kivo/
 │   ├── gen/android/              # Proyek Android (Tauri Mobile)
 │   ├── Cargo.toml                # Dependensi Rust
 │   └── tauri.conf.json           # Konfigurasi Window, Bundle, dan Versi
-├── demo/                         # Showcase Website Kivo (/demo)
+├── demo/                         # Situs showcase: UI Kivo asli + host tiruan (lihat demo/README.md)
 ├── scripts/                      # Skrip build (termasuk build APK Android)
 ├── hprt-sdk/                     # SDK & DLL Vendor Printer HPRT
 ├── supabase_full_bootstrap.sql   # Skrip DDL lengkap untuk Supabase Cloud
