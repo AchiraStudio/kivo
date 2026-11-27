@@ -3,6 +3,7 @@ import { Camera, ScanBarcode, AlertTriangle } from 'lucide-react';
 import Modal from './Modal';
 import Button from './Button';
 import { playScanBeep } from '../../hooks/useBarcodeScanner';
+import { createFrameDecoder, FrameDecoder } from '../../lib/cameraDecoder';
 
 interface BarcodeCameraModalProps {
   isOpen: boolean;
@@ -21,6 +22,11 @@ export default function BarcodeCameraModal({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
   const [detectorSupported, setDetectorSupported] = useState(true);
+  // Keep the latest callbacks in refs so a parent re-render never restarts the camera.
+  const onDetectedRef = useRef(onDetected);
+  const onCloseRef = useRef(onClose);
+  onDetectedRef.current = onDetected;
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -28,8 +34,7 @@ export default function BarcodeCameraModal({
     setCameraError(null);
     setManualCode('');
 
-    const hasDetector = typeof (window as any).BarcodeDetector !== 'undefined';
-    setDetectorSupported(hasDetector);
+    setDetectorSupported(true);
 
     let stream: MediaStream | null = null;
     let rafId = 0;
@@ -55,38 +60,32 @@ export default function BarcodeCameraModal({
           await videoRef.current.play();
         }
 
-        if (!hasDetector) {
+        let decode: FrameDecoder;
+        try {
+          decode = (await createFrameDecoder()).decode;
+        } catch {
+          setDetectorSupported(false);
           return;
         }
+        if (cancelled) return;
 
-        // Only request formats this device can decode: the constructor throws on an unsupported one.
-        const wanted = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code', 'data_matrix'];
-        let formats = wanted;
-        try {
-          const supported: string[] | undefined = await (window as any).BarcodeDetector.getSupportedFormats?.();
-          if (supported?.length) formats = wanted.filter((f) => supported.includes(f));
-        } catch {
-          // Fall back to the full list
-        }
-        const detector = new (window as any).BarcodeDetector({ formats });
-
-        const scanFrame = async () => {
+        // ~8 decodes per second is plenty and keeps low-end phones cool.
+        let lastRun = 0;
+        const scanFrame = async (now: number) => {
           if (cancelled || !videoRef.current) return;
-          try {
-            if (videoRef.current.readyState >= 2) {
-              const results = await detector.detect(videoRef.current);
-              if (results && results.length > 0 && results[0].rawValue) {
-                const value = String(results[0].rawValue).trim();
-                if (value) {
-                  playScanBeep(true);
-                  onDetected(value);
-                  onClose();
-                  return;
-                }
+          if (now - lastRun >= 120 && videoRef.current.readyState >= 2) {
+            lastRun = now;
+            try {
+              const value = await decode(videoRef.current);
+              if (value) {
+                playScanBeep(true);
+                onDetectedRef.current(value);
+                onCloseRef.current();
+                return;
               }
+            } catch {
+              // Keep scanning next frame
             }
-          } catch {
-            // Keep scanning next frame
           }
           rafId = requestAnimationFrame(scanFrame);
         };
@@ -104,7 +103,7 @@ export default function BarcodeCameraModal({
       if (rafId) cancelAnimationFrame(rafId);
       if (stream) stream.getTracks().forEach((t) => t.stop());
     };
-  }, [isOpen, onDetected, onClose]);
+  }, [isOpen]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,7 +153,7 @@ export default function BarcodeCameraModal({
         {!detectorSupported && !cameraError && (
           <div className="flex items-center gap-2 p-2.5 rounded-lg bg-warning-soft border border-warning/25 text-warning text-xs">
             <AlertTriangle size={14} className="shrink-0" />
-            <span>Deteksi barcode kamera otomatis belum didukung browser ini. Gunakan scanner USB atau ketik di bawah.</span>
+            <span>Pemindai kamera tidak dapat dimulai di perangkat ini. Gunakan scanner USB atau ketik kodenya di bawah.</span>
           </div>
         )}
 

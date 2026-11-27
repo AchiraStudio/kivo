@@ -53,9 +53,9 @@ export default function TitleBar({
       <div data-tauri-drag-region className="flex items-center gap-2 h-full z-10 pl-3">
         {leftContent || (
           <div className="flex items-center gap-2 select-none">
-            <img src="/kivo.png" alt="Kivo" className="w-4 h-4 rounded-sm object-contain" />
+            <img src={`${import.meta.env.BASE_URL}kivo.png`} alt="Kivo" className="w-4 h-4 rounded-sm object-contain" />
             <span className="text-xs font-bold text-heading tracking-tight">Kivo</span>
-            <span className="text-[11px] font-mono text-dim">1.5.5</span>
+            <span className="text-[11px] font-mono text-dim">{__APP_VERSION__}</span>
           </div>
         )}
       </div>

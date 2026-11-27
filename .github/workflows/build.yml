@@ -1,8 +1,9 @@
 name: Build
 
 # Builds and tests on every push to main and on pull requests, so a broken
-# change shows up right away. Installers are attached to the run as an artifact
-# for testing. Publishing a release is separate: push a tag, see release.yml.
+# change shows up right away. Windows installers and an Android APK are attached
+# to the run as artifacts for testing. Publishing a release is separate: push a
+# tag, see release.yml.
 
 on:
   push:
@@ -64,3 +65,81 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi
           if-no-files-found: error
           retention-days: 7
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # The ubuntu runner image already ships the Android SDK and NDK; use them instead of the
+      # setup-android action (it runs `sdkmanager tools`, a package that no longer exists).
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          SDKM=$(ls -d "${ANDROID_HOME}"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -n 1)
+          echo "Using $SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0"
+          echo "NDK_HOME=${ANDROID_NDK_HOME}" >> "$GITHUB_ENV"
+          echo "Using NDK at ${ANDROID_NDK_HOME}"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: android
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Typecheck frontend
+        run: npx tsc --noEmit
+
+      # arm64 only keeps CI fast. Without release secrets the build is signed with the debug key.
+      - name: Build APK (arm64)
+        run: npm run tauri -- android build --apk --target aarch64
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kivo-android-${{ github.sha }}
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  build-demo:
+    name: Build demo site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The site embeds the real app UI, so a change to src/ can break it.
+      - name: Typecheck and build the showcase site
+        run: npm run demo:build

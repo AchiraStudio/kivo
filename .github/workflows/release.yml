@@ -1,13 +1,21 @@
 name: Release
 
-# Push a tag like v1.5.1 to build the Windows installers and publish a GitHub
-# Release with generated changelog notes. The in-app updater reads the latest
-# release and picks the first .exe/.msi asset, so assets must stay attached.
+# Push a tag like v1.5.1 to build the Windows installers and the Android APK,
+# and publish one GitHub Release with generated changelog notes. The in-app
+# updater reads the latest release and picks the first .exe/.msi (desktop) or
+# .apk (Android) asset, so assets must stay attached.
 #
 #   git tag v1.5.1 && git push origin v1.5.1
 #
 # "Run workflow" from the Actions tab does a dry build of the chosen ref: it
-# builds and uploads the installers as a workflow artifact but publishes nothing.
+# builds and uploads the installers and APK as workflow artifacts but publishes
+# nothing.
+#
+# Android signing (optional but required for in-place upgrades between versions).
+# Add these repository secrets, see README "Rilis Android":
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# Without them the APK is signed with a throwaway debug key: it installs fine,
+# but a later build signed with a different key cannot update it in place.
 
 on:
   push:
@@ -17,6 +25,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # lets the publish job start the demo site deploy
 
 concurrency:
   group: release-${{ github.ref }}
@@ -167,9 +176,133 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi
           if-no-files-found: error
 
+  build-android:
+    name: Build Android APK
+    needs: [verify, create-release]
+    # Same gating as the Windows job: tags (after the draft exists) and manual dry runs.
+    if: ${{ always() && needs.verify.result == 'success' && (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # The ubuntu runner image already ships the Android SDK and NDK; use them instead of the
+      # setup-android action (it runs `sdkmanager tools`, a package that no longer exists).
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          SDKM=$(ls -d "${ANDROID_HOME}"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -n 1)
+          echo "Using $SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0"
+          echo "NDK_HOME=${ANDROID_NDK_HOME}" >> "$GITHUB_ENV"
+          echo "Using NDK at ${ANDROID_NDK_HOME}"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: android
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Restore release keystore
+        id: keystore
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > "${RUNNER_TEMP}/kivo-release.jks"
+            echo "KIVO_KEYSTORE_FILE=${RUNNER_TEMP}/kivo-release.jks" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set. The APK is signed with a throwaway debug key and cannot update an APK signed with a different key."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build APK (arm64 + armv7)
+        run: npm run tauri -- android build --apk --target aarch64 armv7
+        env:
+          KIVO_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KIVO_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KIVO_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Collect APK
+        id: apk
+        shell: bash
+        run: |
+          src=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' -path '*release*' | head -n 1)
+          if [ -z "$src" ]; then
+            echo "::error::No release APK was produced"
+            exit 1
+          fi
+          out="Kivo_${VERSION}_android.apk"
+          cp "$src" "$out"
+          sha256sum "$out" | tee "$out.sha256"
+          echo "name=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK to the draft release
+        if: github.ref_type == 'tag'
+        uses: actions/github-script@v7
+        env:
+          RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
+          APK_NAME: ${{ steps.apk.outputs.name }}
+        with:
+          script: |
+            const fs = require('fs');
+            const release_id = Number(process.env.RELEASE_ID);
+            const name = process.env.APK_NAME;
+
+            // Re-runs replace the asset instead of failing on a duplicate name.
+            const { data: assets } = await github.rest.repos.listReleaseAssets({ ...context.repo, release_id, per_page: 100 });
+            for (const a of assets.filter((x) => x.name === name || x.name === `${name}.sha256`)) {
+              await github.rest.repos.deleteReleaseAsset({ ...context.repo, asset_id: a.id });
+            }
+
+            for (const [assetName, contentType] of [[name, 'application/vnd.android.package-archive'], [`${name}.sha256`, 'text/plain']]) {
+              await github.rest.repos.uploadReleaseAsset({
+                ...context.repo,
+                release_id,
+                name: assetName,
+                headers: { 'content-type': contentType },
+                data: fs.readFileSync(assetName),
+              });
+            }
+            core.info(`Uploaded ${name}`);
+
+      - name: Upload APK as workflow artifact (dry run)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kivo-android-apk
+          path: |
+            ${{ steps.apk.outputs.name }}
+            ${{ steps.apk.outputs.name }}.sha256
+          if-no-files-found: error
+
   publish:
     name: Publish release
-    needs: [create-release, build-windows]
+    needs: [create-release, build-windows, build-android]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:
@@ -187,6 +320,11 @@ jobs:
               core.setFailed('No .exe/.msi installer was attached to the draft release; leaving it unpublished.');
               return;
             }
+            const hasApk = release.assets.some((a) => /\.apk$/i.test(a.name));
+            if (!hasApk) {
+              core.setFailed('No .apk was attached to the draft release; leaving it unpublished.');
+              return;
+            }
 
             await github.rest.repos.updateRelease({
               ...context.repo,
@@ -196,3 +334,17 @@ jobs:
               make_latest: release.prerelease ? 'false' : 'true',
             });
             core.info(`Published ${release.tag_name} with ${release.assets.length} assets.`);
+
+            // Refresh the showcase site so it shows this release's app and download links.
+            // Dispatched on the default branch because GitHub Pages only deploys from there.
+            try {
+              const { data: repo } = await github.rest.repos.get({ ...context.repo });
+              await github.rest.actions.createWorkflowDispatch({
+                ...context.repo,
+                workflow_id: 'demo.yml',
+                ref: repo.default_branch,
+              });
+              core.info('Triggered the demo site deploy.');
+            } catch (e) {
+              core.warning(`Could not trigger the demo site deploy: ${e.message}`);
+            }

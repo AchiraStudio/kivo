@@ -1,13 +1,13 @@
-# 🚀 Kivo — Modern Multi-Branch POS & ERP Platform (v1.5.5)
+# 🚀 Kivo — Modern Multi-Branch POS & ERP Platform (v1.6.0)
 
 <div align="center">
 
-![Kivo Banner](https://raw.githubusercontent.com/AchiraStudio/kivo/main/demo/dist/icon.png)
+![Kivo Banner](https://raw.githubusercontent.com/AchiraStudio/kivo/main/demo/public/icon.png)
 
 **Next-Generation Offline-First Point of Sale & Enterprise Resource Planning**  
 *Engineered with Rust, Tauri 2.0, React 19, SQLite, and Supabase Cloud Sync.*
 
-[![Release](https://img.shields.io/badge/version-1.5.5-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
+[![Release](https://img.shields.io/badge/version-1.6.0-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/tauri-v2.0-24C8D8.svg)](https://tauri.app/)
 [![React](https://img.shields.io/badge/react-v19-61DAFB.svg)](https://react.dev/)
@@ -45,25 +45,30 @@ Anda juga **tidak perlu menginstal aplikasi di setiap kasir**: nyalakan **Host Q
 
 ---
 
-## ✨ Apa yang Baru di Versi 1.5.5?
+## ✨ Apa yang Baru di Versi 1.6.0?
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                         HIGHLIGHT RILIS KIVO v1.5.5                    │
+│                         HIGHLIGHT RILIS KIVO v1.6.0                    │
 ├────────────────────────────────────────────────────────────────────────┤
-│ 🔫 Scan Langsung ke Keranjang · Scanner USB/Bluetooth 1D & 2D di kasir │
-│ 🧾 Kode 2D GS1               · QR / DataMatrix dikenali lewat GTIN     │
-│ ⚡ Registrasi Cepat          · Scan, pasangkan ke produk / buat baru   │
-│ 🛡️ Anti Duplikat             · Peringatan bila barcode sudah dipakai    │
+│ 📱 Aplikasi Android        · APK resmi di setiap rilis GitHub          │
+│ 🔄 Update Otomatis         · Unduh & pasang versi baru dari dalam app  │
+│ 🧭 UI HP Dirombak          · Bilah bawah, tombol Kasir, bottom sheet   │
+│ 👤 Input Pelanggan Cepat   · Form HP, tier 1 ketukan, Simpan + Baru    │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-* **Scanner 2D (QR / DataMatrix GS1):** Scan di kasir langsung menambah produk ke keranjang meski kursor ada di kotak pencarian. Kode GS1 (GTIN + batch + kedaluwarsa) dikenali lewat GTIN-nya, pencocokan SKU/barcode tidak peka huruf besar-kecil, dan barcode yang belum terdaftar bisa langsung didaftarkan dari kasir atau Daftar Produk. Saat registrasi, scan mengisi kolom Barcode di mana pun kursor berada, dengan peringatan bila barcode sudah dipakai produk lain.
-* **Registrasi Cepat:** Tombol **Registrasi Cepat** di Daftar Produk (juga muncul otomatis saat scan barcode yang belum terdaftar di kasir). Scan barcode, lalu cari produk berdasarkan nama untuk **memasangkan** barcode ke produk yang sudah ada, atau **buat produk baru** hanya dengan nama dan harga. Setelah disimpan langsung siap untuk scan berikutnya.
-* **Scan Langsung ke Keranjang:** Di kasir, hasil scan kini langsung masuk keranjang walau kursor sedang di kotak pencarian (sebelumnya diabaikan). Bunyi beep mengikuti pengaturan *Suara Beep Barcode*.
-* **Pembacaan Scan Lebih Andal:** Waktu antar-karakter dihitung dari waktu kejadian tombol, sehingga layar yang lambat tidak lagi memotong hasil scan menjadi potongan. Saat laci/jendela produk terbuka, hanya jendela itu yang menerima scan.
+* **Aplikasi Android:** Terhubung ke komputer kasir lewat Wi-Fi (pindai Host QR atau ketik IP) atau dipakai mandiri. Kamera HP untuk scan barcode, termasuk di WebView Android yang tidak punya detektor bawaan. Lihat [Aplikasi Android](#-aplikasi-android).
+* **Update Otomatis Android:** Aplikasi memeriksa rilis GitHub, mengunduh APK, memeriksa checksum dan kunci tanda tangan, lalu membukanya di pemasang Android.
+* **UI HP Dirombak:** Top bar dengan status koneksi, bilah bawah dengan tombol Kasir di tengah dan lencana keranjang, menu *bottom sheet*, daftar produk berbentuk kartu, area sentuh lebih besar di kasir, dan tombol Kembali Android yang menutup panel sebelum keluar.
+* **Input Pelanggan Cepat:** Form pelanggan di HP, filter tier, telepon/WhatsApp, **Perpanjang** member satu ketukan, dan tambah pelanggan langsung dari kasir.
+* **Rilis Windows + Android Sekaligus:** Satu tag versi membangun installer Windows dan APK, lalu menerbitkannya dalam satu rilis.
 
-Catatan rilis lengkap: [`RELEASE_NOTES_v1.5.5.md`](RELEASE_NOTES_v1.5.5.md).
+Catatan rilis lengkap: [`RELEASE_NOTES_v1.6.0.md`](RELEASE_NOTES_v1.6.0.md).
+
+### Sorotan v1.5.5
+
+* **Scanner 2D (QR / DataMatrix GS1)**, **Registrasi Cepat** barcode, scan langsung ke keranjang, dan pembacaan scan yang lebih andal. Lihat [`RELEASE_NOTES_v1.5.5.md`](RELEASE_NOTES_v1.5.5.md).
 
 ### Sorotan v1.5.4
 
@@ -301,12 +306,12 @@ Kivo menerapkan model keamanan zero-trust:
    ```
    *Server MCP otomatis aktif di `http://127.0.0.1:3700/mcp`.*
 
-4. **Jalankan Web Showcase Demo:**
+4. **Jalankan Situs Showcase (demo langsung):**
    ```bash
-   cd demo
-   npm install
-   npm run dev
+   npm run demo:dev      # http://localhost:1430
+   npm run demo:build    # hasil di demo/dist
    ```
+   Situs ini menjalankan **UI Kivo yang asli** (dari `src/`) di browser dengan host tiruan di memori, jadi selalu mengikuti tampilan terbaru. Situs bisa dihosting di Cloudflare Pages/Netlify/Vercel (root `demo`, build `npm run build`, output `dist`) atau di GitHub Pages (opsional: Source *GitHub Actions* + variabel repo `DEMO_GITHUB_PAGES=true`); tombol unduh selalu membaca rilis terbaru dari GitHub. Detail di [`demo/README.md`](demo/README.md).
 
 5. **Build Installer Windows (.exe / .msi):**
    ```bash
@@ -316,11 +321,45 @@ Kivo menerapkan model keamanan zero-trust:
 
 6. **Build APK Android (opsional):**
    ```bash
-   npm run android:init       # sekali saja
+   npm run android:init       # sekali saja (proyek gen/android sudah ada di repo)
    npm run android:apk        # debug APK
    npm run android:apk:release
    npm run android:apk:universal
    ```
+   Di Linux/macOS (atau CI) cukup: `npm run tauri -- android build --apk`.
+
+### 📱 Aplikasi Android
+
+Aplikasi Android punya dua cara pakai, dipilih saat pertama dibuka:
+
+* **Terhubung ke komputer kasir (disarankan):** HP menjadi terminal untuk Kivo desktop lewat Wi-Fi yang sama. Pindai **Host QR** di topbar Kivo desktop (atau ketik alamat IP-nya) dan HP langsung masuk dengan akun kasir. Stok, penjualan, dan laporan selalu sama dengan komputer.
+* **Mandiri:** HP menyimpan database sendiri (SQLite lokal), lengkap dengan Setup Wizard dan sinkronisasi cloud.
+
+Antarmuka HP memakai bilah bawah dengan tombol **Kasir** di tengah, penanda koneksi ke komputer kasir, menu bergaya *bottom sheet*, dan tombol Kembali Android yang menutup panel sebelum keluar aplikasi. Pemindaian barcode memakai kamera HP (izin kamera diminta saat pertama dipakai).
+
+* **Pembaruan otomatis:** aplikasi memeriksa rilis GitHub saat dibuka dan saat kembali ke latar depan. Bila ada versi baru, muncul panel *Pembaruan tersedia*; ketuk **Perbarui** dan APK diunduh, diperiksa (checksum dan kunci tanda tangan), lalu dibuka di pemasang Android. Android meminta izin *Pasang aplikasi tidak dikenal* untuk Kivo satu kali saja. Agar pembaruan bisa menimpa versi lama, setiap rilis harus ditandatangani dengan kunci yang sama (lihat di bawah).
+* **Input pelanggan cepat:** tombol **+ Pelanggan** membuka formulir bergaya *bottom sheet* dengan keypad nomor HP, pilihan tier satu ketukan, masa berlaku member (+1/3/6/12 bulan), dan **Simpan + Baru** untuk memasukkan banyak pelanggan berturut-turut. Daftar pelanggan menampilkan filter tier, penanda member yang akan habis, tombol telepon/WhatsApp, dan **Perpanjang** satu ketukan. Di kasir, **Pelanggan baru** langsung memilih pelanggan yang baru dibuat untuk transaksi berjalan.
+
+### 🚢 Rilis (Windows + Android sekaligus)
+
+Mendorong tag versi membangun installer Windows **dan** APK Android, lalu menerbitkannya dalam satu GitHub Release:
+
+```bash
+# naikkan versi di package.json, src-tauri/tauri.conf.json, dan src-tauri/Cargo.toml, lalu:
+git tag v1.5.6 && git push origin v1.5.6
+```
+
+Workflow `release.yml` baru menerbitkan rilis bila `.exe`/`.msi` **dan** `.apk` sudah terlampir. Menjalankan workflow lewat **Run workflow** hanya membangun dan menyimpan hasilnya sebagai artifact tanpa menerbitkan apa pun.
+
+**Penandatanganan APK.** Agar APK versi baru bisa menimpa versi lama di HP, tanda tangani dengan kunci yang sama setiap rilis. Buat kunci sekali saja, simpan baik-baik, dan jangan commit ke repositori:
+
+```bash
+keytool -genkeypair -v -keystore kivo-release.jks -alias kivo \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 kivo-release.jks   # salin hasilnya ke secret ANDROID_KEYSTORE_BASE64
+```
+
+Tambahkan empat secret di *Settings → Secrets and variables → Actions*: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Tanpa secret ini APK tetap terbangun, tetapi ditandatangani dengan kunci debug sementara (workflow menampilkan peringatan) dan tidak bisa menimpa APK yang ditandatangani dengan kunci lain. Untuk build lokal, taruh `storeFile` (path absolut), `storePassword`, `keyAlias`, `keyPassword` di `src-tauri/gen/android/keystore.properties` (sudah di-gitignore).
 
 ---
 
@@ -405,7 +444,7 @@ kivo/
 │   ├── gen/android/              # Proyek Android (Tauri Mobile)
 │   ├── Cargo.toml                # Dependensi Rust
 │   └── tauri.conf.json           # Konfigurasi Window, Bundle, dan Versi
-├── demo/                         # Showcase Website Kivo (/demo)
+├── demo/                         # Situs showcase: UI Kivo asli + host tiruan (lihat demo/README.md)
 ├── scripts/                      # Skrip build (termasuk build APK Android)
 ├── hprt-sdk/                     # SDK & DLL Vendor Printer HPRT
 ├── supabase_full_bootstrap.sql   # Skrip DDL lengkap untuk Supabase Cloud

@@ -8,6 +8,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : TauriActivity() {
+  // Native helpers for the web UI (in-app APK updates), reachable as window.KivoAndroid.
+  override fun onWebViewCreate(webView: android.webkit.WebView) {
+    webView.addJavascriptInterface(KivoBridge(this, webView), "KivoAndroid")
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge(
       statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),

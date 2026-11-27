@@ -24,11 +24,15 @@ import { useRealtimeSync } from './hooks/useRealtimeSync';
 import SetupWizard from './pages/onboarding/SetupWizard';
 import MobileNav from './components/layout/MobileNav';
 import MobileMenuDrawer from './components/layout/MobileMenuDrawer';
+import MobileAppBar from './components/layout/MobileAppBar';
+import { useMobileBack } from './hooks/useMobileBack';
 import HostQrModal from './components/common/HostQrModal';
 import { logoutUser, setSetting } from './lib/api';
-import { isTauri, isDesktopTauri, isMobilePlatform, getHostUrl } from './lib/runtime';
+import { isTauri, isDesktopTauri, isMobilePlatform, isMobileTauri, isRemoteClient, getMobileMode, getHostUrl, SKIP_AUTO_JOIN_KEY, skipAutoJoin } from './lib/runtime';
+import MobileConnect from './pages/mobile/MobileConnect';
 import { useUpdaterStore } from './store/UpdaterStore';
 import UpdateModal from './components/updater/UpdateModal';
+import AndroidUpdateSheet from './components/updater/AndroidUpdateSheet';
 
 interface MainContentProps {
   activeMenu: string;
@@ -96,6 +100,21 @@ function MainContent({
 }
 
 
+const MOBILE_TITLES: Record<string, string> = {
+  dashboard: 'Ringkasan',
+  inventory: 'Stok & Produk',
+  opname: 'Stok & Produk',
+  'stock-opname': 'Stok & Produk',
+  purchasing: 'Pembelian',
+  customers: 'Pelanggan & Promo',
+  reports: 'Laporan',
+  accounting: 'Laporan',
+  'laporan-penjualan': 'Laporan',
+  'laporan-item': 'Laporan',
+  'laporan-metode-pembayaran': 'Laporan',
+  settings: 'Pengaturan',
+};
+
 export default function App() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -141,17 +160,34 @@ export default function App() {
   }, []);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Android Back from any other tab returns to the dashboard instead of closing the app.
+  useMobileBack(isMobilePlatform() && !!token && activeMenu !== 'dashboard', () => setActiveMenu('dashboard'));
   const [isHostQrOpen, setIsHostQrOpen] = useState(false);
   const { updateInfo, isModalOpen, closeModal, checkUpdates } = useUpdaterStore();
 
-  // Non-intrusive background check for updates on startup (desktop only)
+  // Non-intrusive background check for updates on startup (desktop and the Android app)
   useEffect(() => {
-    if (!isDesktopTauri()) return;
+    if (!isDesktopTauri() && !isMobileTauri()) return;
     const timer = setTimeout(() => {
       checkUpdates(false);
     }, 3500);
     return () => clearTimeout(timer);
   }, [checkUpdates]);
+
+  // The Android app stays in memory for days: look again when it comes back to the foreground.
+  useEffect(() => {
+    if (!isMobileTauri()) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const { lastChecked, isChecking } = useUpdaterStore.getState();
+      if (!isChecking && (!lastChecked || Date.now() - lastChecked.getTime() > 6 * 60 * 60 * 1000)) {
+        useUpdaterStore.getState().checkUpdates(false);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   // Auto-collapse sidebar on tablet screens (< 1024px)
   useEffect(() => {
@@ -160,19 +196,25 @@ export default function App() {
     }
   }, []);
 
+  // Android app: until the user picks "connect to cashier PC" or "standalone", show the connect screen.
+  const needsMobileSetup = isMobileTauri() && getMobileMode() === null;
+  const [isSwitchHostOpen, setIsSwitchHostOpen] = useState(false);
+
   const handleLogout = async () => {
-    if (isTauri()) {
+    if (isTauri() && !isRemoteClient()) {
       setSetting('active_host_token', '').catch(() => {});
     }
     if (token) await logoutUser(token);
+    // Remote clients auto-join the host's session; remember an explicit logout so it sticks.
+    try { localStorage.setItem(SKIP_AUTO_JOIN_KEY, '1'); } catch { /* storage unavailable */ }
     clearAuth();
   };
 
   // Check if first-run setup has been completed
   useEffect(() => {
-    if (!isTauri()) {
-      // Remote web client (phone, tablet, browser) connecting to LAN host
-      // Never block web clients with desktop setup wizard!
+    if (isRemoteClient() || needsMobileSetup) {
+      // Remote client (browser, or the Android app joined to a cashier PC) uses the host's
+      // data. Never block it with the desktop setup wizard!
       setHasCompletedSetup(true);
       return;
     }
@@ -189,6 +231,16 @@ export default function App() {
   }, []);
   
   useRealtimeSync();
+
+  // Lets the showcase site (and tests) drive the real navigation: window.dispatchEvent(new CustomEvent('kivo:navigate', { detail: 'pos' })).
+  useEffect(() => {
+    const onNavigate = (e: Event) => {
+      const menu = (e as CustomEvent<string>).detail;
+      if (typeof menu === 'string' && menu) setActiveMenu(menu);
+    };
+    window.addEventListener('kivo:navigate', onNavigate);
+    return () => window.removeEventListener('kivo:navigate', onNavigate);
+  }, []);
 
   // Bump refreshTrigger whenever the pull-worker syncs cloud data locally
   useEffect(() => {
@@ -239,7 +291,7 @@ export default function App() {
     const verifySession = async () => {
       // 1. If running on a client browser (mobile web/tablet) without an existing token:
       // Automatically query the host for its active session so it uses the SAME account!
-      if (!isTauri() && !token) {
+      if (isRemoteClient() && !token && !skipAutoJoin()) {
         try {
           const hostUrl = getHostUrl();
           const res = await fetch(`${hostUrl}/api/lan/active_session`, {
@@ -373,6 +425,14 @@ export default function App() {
     };
   }, [token]);
 
+  if (needsMobileSetup) {
+    return <MobileConnect variant="first-run" />;
+  }
+
+  if (isSwitchHostOpen) {
+    return <MobileConnect variant="switch" onCancel={() => setIsSwitchHostOpen(false)} />;
+  }
+
   if (isVerifying || hasCompletedSetup === null) {
     return (
       <div className="flex h-[100dvh] w-full items-center justify-center bg-background">
@@ -381,7 +441,7 @@ export default function App() {
     );
   }
 
-  if ((isTauri() && hasCompletedSetup === false) || showSetupWizard) {
+  if ((isTauri() && !isRemoteClient() && hasCompletedSetup === false) || showSetupWizard) {
     return (
       <SetupWizard
         onComplete={() => {
@@ -398,7 +458,10 @@ export default function App() {
       <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-background">
         <TitleBar />
         <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative">
-          <LoginPage onOpenSetupWizard={() => setShowSetupWizard(true)} />
+          <LoginPage
+            onOpenSetupWizard={isRemoteClient() ? undefined : () => setShowSetupWizard(true)}
+            onChangeHost={isMobileTauri() ? () => setIsSwitchHostOpen(true) : undefined}
+          />
         </div>
       </div>
     );
@@ -425,6 +488,15 @@ export default function App() {
           onToggleCollapse={toggleSidebar}
         />
         <main className="flex-1 flex flex-col h-full min-h-0 min-w-0 relative overflow-hidden bg-background">
+          {/* Phone-only top bar (< 768px). The cashier screen has its own header, so it is skipped there. */}
+          {activeMenu !== 'pos' && (
+            <MobileAppBar
+              title={MOBILE_TITLES[activeMenu] ?? 'Kivo'}
+              onOpenMenu={() => setIsMobileMenuOpen(true)}
+              onOpenAIChat={() => setIsAIChatOpen(true)}
+              onChangeHost={isMobileTauri() ? () => setIsSwitchHostOpen(true) : undefined}
+            />
+          )}
           <div className={`flex-1 min-h-0 min-w-0 overflow-hidden relative flex flex-col ${activeMenu === 'pos' ? 'p-0' : 'p-2.5 sm:p-3.5 md:p-4 lg:p-5'}`}>
             <MainContent
               activeMenu={activeMenu}
@@ -478,6 +550,7 @@ export default function App() {
             setActiveMenu={setActiveMenu}
             onOpenHostQr={() => setIsHostQrOpen(true)}
             onOpenAIChat={() => setIsAIChatOpen(true)}
+            onChangeHost={isMobileTauri() ? () => setIsSwitchHostOpen(true) : undefined}
             onLogout={handleLogout}
           />
 
@@ -486,11 +559,11 @@ export default function App() {
             onClose={() => setIsHostQrOpen(false)}
           />
 
-          <UpdateModal
-            isOpen={isModalOpen}
-            onClose={closeModal}
-            updateInfo={updateInfo}
-          />
+          {isMobileTauri() ? (
+            <AndroidUpdateSheet isOpen={isModalOpen} onClose={closeModal} updateInfo={updateInfo} />
+          ) : (
+            <UpdateModal isOpen={isModalOpen} onClose={closeModal} updateInfo={updateInfo} />
+          )}
         </main>
       </div>
     </div>

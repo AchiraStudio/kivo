@@ -32,3 +32,8 @@ src-tauri/.env*
 *.db
 *.db-shm
 *.db-wal
+
+# Android signing material must never be committed
+*.jks
+*.keystore
+keystore.properties

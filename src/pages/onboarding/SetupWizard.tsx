@@ -491,7 +491,7 @@ export default function SetupWizard({ onComplete, onCancel }: SetupWizardProps) 
         leftContent={
           <div className="flex items-center gap-2">
             <KivoLogo size={18} showText textClassName="text-xs font-bold" />
-            <span className="text-[11px] font-mono text-dim">1.5.5</span>
+            <span className="text-[11px] font-mono text-dim">{__APP_VERSION__}</span>
           </div>
         }
         centerContent={<span className="text-xs font-semibold text-dim">Setup · {modeLabel}</span>}

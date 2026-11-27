@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { listen } from '../lib/events';
-import { isTauri, getHostUrl } from '../lib/runtime';
+import { isTauri, isRemoteClient, getHostUrl } from '../lib/runtime';
 
 const IGNORED_SYNC_TABLES = new Set([
   'calculate_discounts',
@@ -125,7 +125,7 @@ export function useRealtimeSync() {
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
     window.addEventListener('focus', handleVisibilityOrFocus);
 
-    if (!isTauri()) {
+    if (isRemoteClient()) {
       pollServer();
     }
 

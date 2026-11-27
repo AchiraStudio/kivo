@@ -1,7 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base light application theme. -->
     <style name="Theme.kivo" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:windowBackground">#f4f6fb</item>
+        <item name="android:windowBackground">#f7f7f8</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>

@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { checkForUpdates, UpdateCheckResult } from '../lib/api';
-import { isTauri } from '../lib/runtime';
+import { isTauri, isMobilePlatform } from '../lib/runtime';
+
+const DISMISSED_KEY = 'kivo_update_dismissed';
+const readDismissed = (): string | null => {
+  try { return localStorage.getItem(DISMISSED_KEY); } catch { return null; }
+};
 
 interface UpdaterState {
   updateInfo: UpdateCheckResult | null;
@@ -11,6 +16,8 @@ interface UpdaterState {
   checkUpdates: (isManual?: boolean) => Promise<UpdateCheckResult | null>;
   openModal: () => void;
   closeModal: () => void;
+  /** Phones: stop auto-opening the update sheet for this version ("Nanti"). */
+  dismissVersion: (version: string) => void;
 }
 
 export const useUpdaterStore = create<UpdaterState>((set) => ({
@@ -30,7 +37,8 @@ export const useUpdaterStore = create<UpdaterState>((set) => ({
       set({
         updateInfo: res,
         lastChecked: new Date(),
-        isModalOpen: res.has_update,
+        // A phone user who tapped "Nanti" is not nagged again for the same version.
+        isModalOpen: res.has_update && !(isMobilePlatform() && !isManual && readDismissed() === res.latest_version),
       });
       return res;
     } catch (err: any) {
@@ -49,5 +57,8 @@ export const useUpdaterStore = create<UpdaterState>((set) => ({
 
   openModal: () => set({ isModalOpen: true }),
   closeModal: () => set({ isModalOpen: false }),
+  dismissVersion: (version) => {
+    try { localStorage.setItem(DISMISSED_KEY, version); } catch { /* storage unavailable */ }
+  },
 }));
 

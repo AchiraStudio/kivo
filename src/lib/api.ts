@@ -1,5 +1,5 @@
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
-import { isTauri, getHostUrl } from './runtime';
+import { isTauri, isRemoteClient, getHostUrl } from './runtime';
 
 // --- LAN Client-Server (Model B) State & Gateway ---
 let cachedParentUrl: string | null = null;
@@ -16,7 +16,8 @@ export const setLanParentHost = (url: string | null) => {
 
 // fallow-ignore-next-line unused-export
 export const getLanParentHost = (): string | null => {
-  if (!isTauri()) {
+  // Browsers and the Android app in client mode always talk to the host.
+  if (isRemoteClient()) {
     return getHostUrl();
   }
   // Only route business queries to LAN Parent if user is actively logged in!
@@ -130,7 +131,8 @@ export const invoke = async <T>(cmd: string, args?: Record<string, any>): Promis
     return undefined as unknown as T;
   }
 
-  const isWeb = !isTauri();
+  // "Web" here means "business data lives on the host": a browser, or the Android app in client mode.
+  const isWeb = isRemoteClient();
   if (isWeb && DESKTOP_ONLY_COMMANDS.has(cmd)) {
     throw new Error('Fitur ini hanya tersedia di aplikasi desktop Kivo pada Server Induk.');
   }

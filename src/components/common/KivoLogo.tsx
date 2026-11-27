@@ -15,7 +15,7 @@ export default function KivoLogo({
   return (
     <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
       <img
-        src="/kivo.png"
+        src={`${import.meta.env.BASE_URL}kivo.png`}
         alt="Kivo"
         width={size}
         height={size}
