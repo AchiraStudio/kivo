@@ -1,4 +1,4 @@
-# 🚀 Kivo — Modern Multi-Branch POS & ERP Platform (v1.5.5)
+# 🚀 Kivo — Modern Multi-Branch POS & ERP Platform (v1.6.0)
 
 <div align="center">
 
@@ -7,7 +7,7 @@
 **Next-Generation Offline-First Point of Sale & Enterprise Resource Planning**  
 *Engineered with Rust, Tauri 2.0, React 19, SQLite, and Supabase Cloud Sync.*
 
-[![Release](https://img.shields.io/badge/version-1.5.5-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
+[![Release](https://img.shields.io/badge/version-1.6.0-blue.svg)](https://github.com/AchiraStudio/kivo/releases)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/tauri-v2.0-24C8D8.svg)](https://tauri.app/)
 [![React](https://img.shields.io/badge/react-v19-61DAFB.svg)](https://react.dev/)
@@ -45,25 +45,30 @@ Anda juga **tidak perlu menginstal aplikasi di setiap kasir**: nyalakan **Host Q
 
 ---
 
-## ✨ Apa yang Baru di Versi 1.5.5?
+## ✨ Apa yang Baru di Versi 1.6.0?
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                         HIGHLIGHT RILIS KIVO v1.5.5                    │
+│                         HIGHLIGHT RILIS KIVO v1.6.0                    │
 ├────────────────────────────────────────────────────────────────────────┤
-│ 🔫 Scan Langsung ke Keranjang · Scanner USB/Bluetooth 1D & 2D di kasir │
-│ 🧾 Kode 2D GS1               · QR / DataMatrix dikenali lewat GTIN     │
-│ ⚡ Registrasi Cepat          · Scan, pasangkan ke produk / buat baru   │
-│ 🛡️ Anti Duplikat             · Peringatan bila barcode sudah dipakai    │
+│ 📱 Aplikasi Android        · APK resmi di setiap rilis GitHub          │
+│ 🔄 Update Otomatis         · Unduh & pasang versi baru dari dalam app  │
+│ 🧭 UI HP Dirombak          · Bilah bawah, tombol Kasir, bottom sheet   │
+│ 👤 Input Pelanggan Cepat   · Form HP, tier 1 ketukan, Simpan + Baru    │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-* **Scanner 2D (QR / DataMatrix GS1):** Scan di kasir langsung menambah produk ke keranjang meski kursor ada di kotak pencarian. Kode GS1 (GTIN + batch + kedaluwarsa) dikenali lewat GTIN-nya, pencocokan SKU/barcode tidak peka huruf besar-kecil, dan barcode yang belum terdaftar bisa langsung didaftarkan dari kasir atau Daftar Produk. Saat registrasi, scan mengisi kolom Barcode di mana pun kursor berada, dengan peringatan bila barcode sudah dipakai produk lain.
-* **Registrasi Cepat:** Tombol **Registrasi Cepat** di Daftar Produk (juga muncul otomatis saat scan barcode yang belum terdaftar di kasir). Scan barcode, lalu cari produk berdasarkan nama untuk **memasangkan** barcode ke produk yang sudah ada, atau **buat produk baru** hanya dengan nama dan harga. Setelah disimpan langsung siap untuk scan berikutnya.
-* **Scan Langsung ke Keranjang:** Di kasir, hasil scan kini langsung masuk keranjang walau kursor sedang di kotak pencarian (sebelumnya diabaikan). Bunyi beep mengikuti pengaturan *Suara Beep Barcode*.
-* **Pembacaan Scan Lebih Andal:** Waktu antar-karakter dihitung dari waktu kejadian tombol, sehingga layar yang lambat tidak lagi memotong hasil scan menjadi potongan. Saat laci/jendela produk terbuka, hanya jendela itu yang menerima scan.
+* **Aplikasi Android:** Terhubung ke komputer kasir lewat Wi-Fi (pindai Host QR atau ketik IP) atau dipakai mandiri. Kamera HP untuk scan barcode, termasuk di WebView Android yang tidak punya detektor bawaan. Lihat [Aplikasi Android](#-aplikasi-android).
+* **Update Otomatis Android:** Aplikasi memeriksa rilis GitHub, mengunduh APK, memeriksa checksum dan kunci tanda tangan, lalu membukanya di pemasang Android.
+* **UI HP Dirombak:** Top bar dengan status koneksi, bilah bawah dengan tombol Kasir di tengah dan lencana keranjang, menu *bottom sheet*, daftar produk berbentuk kartu, area sentuh lebih besar di kasir, dan tombol Kembali Android yang menutup panel sebelum keluar.
+* **Input Pelanggan Cepat:** Form pelanggan di HP, filter tier, telepon/WhatsApp, **Perpanjang** member satu ketukan, dan tambah pelanggan langsung dari kasir.
+* **Rilis Windows + Android Sekaligus:** Satu tag versi membangun installer Windows dan APK, lalu menerbitkannya dalam satu rilis.
 
-Catatan rilis lengkap: [`RELEASE_NOTES_v1.5.5.md`](RELEASE_NOTES_v1.5.5.md).
+Catatan rilis lengkap: [`RELEASE_NOTES_v1.6.0.md`](RELEASE_NOTES_v1.6.0.md).
+
+### Sorotan v1.5.5
+
+* **Scanner 2D (QR / DataMatrix GS1)**, **Registrasi Cepat** barcode, scan langsung ke keranjang, dan pembacaan scan yang lebih andal. Lihat [`RELEASE_NOTES_v1.5.5.md`](RELEASE_NOTES_v1.5.5.md).
 
 ### Sorotan v1.5.4
 
